@@ -36,8 +36,11 @@ public:
     //Cell Size(default to zero)
     double CellSize = 0;
 
+    static  std::ofstream   mainlog;
+    static  std::ofstream   errlog; 
+
     //Cleaned functions
-    poretda();
+    poretda(std::string inputfilename);
     ~poretda();
     void superCell(vtkSmartPointer<vtkImageData> grid);
 
