@@ -2170,7 +2170,7 @@ auto poretda::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeV
     
     
     poretda::mainlog << "poretda: InputPrecondition Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n"<<fflush;
 
     //VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -2536,7 +2536,7 @@ auto  poretda::getIndex(vector<int> v, int K)
 auto poretda::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
     poretda::mainlog << "poretda: Morse Smale Complex Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << fflush;
 
     //Persistence Diagram of the data
     vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
@@ -2661,7 +2661,7 @@ auto poretda::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercen
     
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << fflush;
     
     return morseSmaleComplex;
     
@@ -2859,7 +2859,7 @@ auto poretda::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
 void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
 {
     poretda::mainlog << "poretda: Void Segmentation Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<fflush;
 
     //Writer of the .csv results file
     ofstream misDatos;
@@ -3061,7 +3061,7 @@ void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
     misDatos.close();
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << fflush;
     
 }
 
@@ -3078,7 +3078,7 @@ void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
 void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
 {
     poretda::mainlog << "poretda: Accessible Void Space Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << fflush;
 
     //Writer of the .csv results file
     ofstream segmentResults;
@@ -3260,7 +3260,7 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     segmentResults.close();
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<fflush;
     
 }
 
