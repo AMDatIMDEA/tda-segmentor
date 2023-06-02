@@ -20,10 +20,13 @@ poretda::poretda(string inputefilename){
     BaseFileName = inputefilename.substr(0, p);
     
     ostringstream logstrm;
+    ostringstream errstrm;
     logstrm << BaseFileName << ".log";
+    errstrm << BaseFileName << ".err";
     string logFilename = logstrm.str();
+    string errFilename = errstrm.str();
     mainlog.open(logFilename.c_str());
-    errlog.open(logFilename.c_str()); 
+    errlog.open(errFilename.c_str());
     if (!mainlog){
         std::cout << "Error opening mainlog file!" << endl;
         exit(0);
