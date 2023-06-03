@@ -27,11 +27,13 @@ poretda::poretda(string inputefilename){
     string errFilename = errstrm.str();
     mainlog.open(logFilename.c_str());
     errlog.open(errFilename.c_str());
+    
+    
     if (!mainlog){
         std::cout << "Error opening mainlog file!" << endl;
         exit(0);
     } else if (!errlog) {
-        std::cout << "Error open error log file!" << endl;
+        std::cout << "Error opening error log file!" << endl;
     }
 
     mainlog << "\n";
@@ -117,6 +119,12 @@ poretda::~poretda()
     {
         mainlog << "\n\nFinished Analysis!" << endl;
         mainlog.close();
+    }
+    
+    if (errlog.good())
+    {
+        errlog << "\n\nFinished Analysis!" << endl;
+        errlog.close();
     }
 
 }
