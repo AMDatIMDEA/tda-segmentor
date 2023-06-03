@@ -2,6 +2,20 @@ cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 
 
 project(poretda)
+
+
+
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk/vtkm")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ttk/ttk_install/lib/cmake/ttkVTK")
+
+
+
+
+
+
+
 find_package(VTK COMPONENTS 
   vtkCommonColor
   vtkCommonCore
