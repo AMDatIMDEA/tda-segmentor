@@ -15,7 +15,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 int main(int argc, char * argv[]){
        
 
-     auto startTotal = high_resolution_clock::now();
+     ttk::Timer programTimer;
 
      string inputfilename = argv[1];
 
@@ -29,9 +29,8 @@ int main(int argc, char * argv[]){
 
 
     //Computations' finish time(TDA)
-    auto stopTotal = high_resolution_clock::now();
-    auto durationTotal = duration_cast<seconds>(stopTotal - startTotal);
-    segmentor::mainlog << "Total Time taken for all the files: " << durationTotal.count() << " seconds" <<endl;
+    double elapsedTime = programTimer.getElapsedTime();
+    segmentor::mainlog << "Total Time taken for all the files: " << elapsedTime << " seconds" <<endl;
 
     delete analysis;
 

@@ -38,7 +38,7 @@ segmentor::segmentor(string inputefilename){
     mainlog << "\n";
     mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
     mainlog << "                                                                                      " << "\n";
-    mainlog << "                              P   O   R   E   T   D   A                               " << "\n";
+    mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
     mainlog << "                                                                                      " << "\n";
     mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
 
@@ -1585,7 +1585,7 @@ auto segmentor::reader(string inputFilePath,double gridResolution, bool writeGri
 {
     segmentor::mainlog << "segmentor: Reader Module" << "\n";
     segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-
+    ttk::Timer readerTime;
     //Creating the input material result's folder
     //----------------------------------------------------------------------------------------------
     //Get the material name form the input directory
@@ -1652,7 +1652,8 @@ auto segmentor::reader(string inputFilePath,double gridResolution, bool writeGri
  
     //Save the resolution to the class variables in order to be used in other functions
     GridResolution = gridResolution;
-
+    double elapsedTime = readerTime.getElapsedTime();
+    segmentor::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
     segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return imageData;
 }
@@ -2183,8 +2184,7 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
     
     
     segmentor::mainlog << "segmentor: InputPrecondition Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n"<<flush;
-
+    ttk::Timer periodicTimer;
     //VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
     periodGrid->SetUseAllCores(useAllCores);
@@ -2215,6 +2215,10 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
         }
         
     }
+    
+    double elapsedTime = periodicTimer.getElapsedTime();
+    segmentor::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n"<<flush;
 
     return periodGrid;
     
@@ -2549,8 +2553,8 @@ auto  segmentor::getIndex(vector<int> v, int K)
 auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
     segmentor::mainlog << "segmentor: Morse Smale Complex Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
-
+    
+    ttk::Timer MSCTimer;
     //Persistence Diagram of the data
     vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
     //persistenceDiagram->SetDebugLevel(3);
@@ -2673,7 +2677,8 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     }
     
     
-    
+    double elapsedTime = MSCTimer.getElapsedTime();
+    segmentor::mainlog << "Time elapsed in the Morse Smale Complex module: " << elapsedTime << "(s)" << endl;
     segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
     
     return morseSmaleComplex;
@@ -2694,7 +2699,6 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
 auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
     segmentor::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Given that in this analysis we are going to focus to the negative energy space of the material we have to take care
     //because in the points closer to the atoms te energy values are huge and following the process used in the energy grids
@@ -2872,8 +2876,8 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
 void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
 {
     segmentor::mainlog << "segmentor: Void Segmentation Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
-
+    
+    ttk::Timer VoidSegmentationTimer;
     //Writer of the .csv results file
     ofstream misDatos;
     misDatos.open((Directory+"/"+ BaseFileName +"_Void.csv").c_str());
@@ -3073,7 +3077,8 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     
     misDatos.close();
     
-    
+    double elapsedTime = VoidSegmentationTimer.getElapsedTime(); 
+    segmentor::mainlog << "Time elapsed in the void segmentation module: " << elapsedTime << "(s)\n" << flush;
     segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
     
 }
@@ -3091,8 +3096,8 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
 void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
 {
     segmentor::mainlog << "segmentor: Accessible Void Space Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
 
+    ttk::Timer VoidSpaceTimer;
     //Writer of the .csv results file
     ofstream segmentResults;
     segmentResults.open(("../Results/MaterialsInfo/"+ BaseFileName +".csv").c_str());
@@ -3272,7 +3277,8 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     
     segmentResults.close();
     
-    
+    double elapsedTime = VoidSpaceTimer.getElapsedTime();
+    segmentor::mainlog << "Time elapsed in the accesible void space module: " << elapsedTime << "(s) \n" << flush;
     segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
     
 }
