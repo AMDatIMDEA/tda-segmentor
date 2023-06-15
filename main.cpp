@@ -10,7 +10,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
  
 **********************************************************************/
 
-#include "poretda.h" 
+#include "segmentor.h" 
 
 int main(int argc, char * argv[]){
        
@@ -20,7 +20,7 @@ int main(int argc, char * argv[]){
      string inputfilename = argv[1];
 
 
-     poretda * analysis = new poretda(inputfilename);
+     segmentor * analysis = new segmentor(inputfilename);
      auto grid = analysis->reader(inputfilename,0.15,0);
      auto period = analysis->inputPrecondition(grid,true,true,false);
      auto morseSmale = analysis->MSC(period,0.12,1.0,true,false);
@@ -31,7 +31,7 @@ int main(int argc, char * argv[]){
     //Computations' finish time(TDA)
     auto stopTotal = high_resolution_clock::now();
     auto durationTotal = duration_cast<seconds>(stopTotal - startTotal);
-    poretda::mainlog << "Total Time taken for all the files: " << durationTotal.count() << " seconds" <<endl;
+    segmentor::mainlog << "Total Time taken for all the files: " << durationTotal.count() << " seconds" <<endl;
 
     delete analysis;
 

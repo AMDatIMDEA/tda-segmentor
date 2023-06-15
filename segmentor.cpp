@@ -10,10 +10,10 @@ Authors:                        Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gma
  
 **********************************************************************/
 
-ofstream      poretda::mainlog;
-ofstream      poretda::errlog;
+ofstream      segmentor::mainlog;
+ofstream      segmentor::errlog;
 
-poretda::poretda(string inputefilename){
+segmentor::segmentor(string inputefilename){
 
     std::string::size_type const p(inputefilename.find_last_of('.'));
     BaseFileName = inputefilename.substr(0, p);
@@ -101,12 +101,12 @@ poretda::poretda(string inputefilename){
 }
 
 /**
- * @brief poretda Destructor class
+ * @brief segmentor Destructor class
  *
  */
-poretda::~poretda()
+segmentor::~segmentor()
 {
-    mainlog << "poretda: Closing class" << "\n";
+    mainlog << "segmentor: Closing class" << "\n";
     //Creates a file with the material's name in the Done folder when the computation has been succesfully done.
     //This will be useful to check which material's are already computed in case a computation crashes
     string signalFile = "../Results/Done/" + BaseFileName;
@@ -138,12 +138,12 @@ poretda::~poretda()
  * @param writeSuperCell  Write the results to an output file
  * @return auto
  */
-void poretda::superCell(vtkSmartPointer<vtkImageData> grid)
+void segmentor::superCell(vtkSmartPointer<vtkImageData> grid)
 {
 
     ttk::Timer timer;
-    poretda::mainlog << "poretda: Super Cell Function  " << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Super Cell Function  " << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Invert the values of the distance field. Negative values for the void space and
     // positive values for the solid space of the Nanoporous Material
@@ -164,7 +164,7 @@ void poretda::superCell(vtkSmartPointer<vtkImageData> grid)
     double ylim = materialBounds[3];
     double zlim = materialBounds[5];
 
-    poretda::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
 
     //Possibilities to check when computing the super cell. 8 possibilities(instead of 24) will be used in order to save up memory
@@ -214,23 +214,23 @@ void poretda::superCell(vtkSmartPointer<vtkImageData> grid)
     }
    
     double elapsedTime = timer.getElapsedTime();
-    poretda::mainlog << "Time taken for creating super cell data : " << elapsedTime << endl;
-    poretda::mainlog << "Computing the Super Cell triangulation\n";
+    segmentor::mainlog << "Time taken for creating super cell data : " << elapsedTime << endl;
+    segmentor::mainlog << "Computing the Super Cell triangulation\n";
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
     triangulation->SetInputConnection(append->GetOutputPort());
     triangulation->Update();
 
     timer.reStart();
-    poretda::mainlog << "Printing SuperCell" << "\n";
+    segmentor::mainlog << "Printing SuperCell" << "\n";
     vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
     segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
     //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
     segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Grid.vtk").c_str());
     segmentationWriter->Write();
     elapsedTime = timer.getElapsedTime();
-    poretda::mainlog << "Time taken to write super cell data : " << elapsedTime << endl;
+    segmentor::mainlog << "Time taken to write super cell data : " << elapsedTime << endl;
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
      
 }
 
@@ -241,7 +241,7 @@ void poretda::superCell(vtkSmartPointer<vtkImageData> grid)
  * @param inputFolder Input directory where the grids are stored
  * @param resolution Grids resolution
  */
-void poretda::getVolume(string inputFolder,double resolution)
+void segmentor::getVolume(string inputFolder,double resolution)
 {
     
     //Volume of a unit cubic cell
@@ -269,11 +269,11 @@ void poretda::getVolume(string inputFolder,double resolution)
             }
             myFile.close();
         }
-        poretda::mainlog << files.size() << endl;
+        segmentor::mainlog << files.size() << endl;
     }
     else
     {
-        poretda::mainlog << "Folder not found" << endl;
+        segmentor::mainlog << "Folder not found" << endl;
         
     }
 
@@ -295,9 +295,9 @@ void poretda::getVolume(string inputFolder,double resolution)
         std::string::size_type const p(base_filename.find_last_of('.'));
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
-        poretda::mainlog << file_without_extension << endl;
+        segmentor::mainlog << file_without_extension << endl;
         
-        //poretda::mainlog << currentFile << endl;
+        //segmentor::mainlog << currentFile << endl;
 
         vtkSmartPointer<vtkUnstructuredGridReader> reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
         reader->SetFileName(currentFile.c_str());
@@ -309,13 +309,13 @@ void poretda::getVolume(string inputFolder,double resolution)
 
         double volume = numberOfCells * unitCellVolume;
 
-        poretda::mainlog << numberOfCells << "     " << volume << endl;
+        segmentor::mainlog << numberOfCells << "     " << volume << endl;
 
         output << files[i] << "," << volume << endl;
 
         
         counter++;
-        poretda::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
+        segmentor::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
         
 
     }
@@ -335,7 +335,7 @@ void poretda::getVolume(string inputFolder,double resolution)
  * @param inputFolder Input folder where the files are stored
  * @param resolution Resolution of the grids
  */
-void poretda::getCubeVolume(string inputFolder,double resolution)
+void segmentor::getCubeVolume(string inputFolder,double resolution)
 {
     
     double unitCellVolume = pow(resolution,3);
@@ -346,7 +346,7 @@ void poretda::getCubeVolume(string inputFolder,double resolution)
 
     if (!findFolder)
     {
-        poretda::mainlog << "Folder found\n";
+        segmentor::mainlog << "Folder found\n";
     }
     
     
@@ -365,11 +365,11 @@ void poretda::getCubeVolume(string inputFolder,double resolution)
             }
             myFile.close();
         }
-        poretda::mainlog << files.size() << endl;
+        segmentor::mainlog << files.size() << endl;
     }
     else
     {
-        poretda::mainlog << "Folder not found" << endl;
+        segmentor::mainlog << "Folder not found" << endl;
         
     }
     
@@ -388,9 +388,9 @@ void poretda::getCubeVolume(string inputFolder,double resolution)
         std::string::size_type const p(base_filename.find_last_of('.'));
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
-        poretda::mainlog << file_without_extension << endl;
+        segmentor::mainlog << file_without_extension << endl;
         
-        //poretda::mainlog << currentFile << endl;
+        //segmentor::mainlog << currentFile << endl;
         vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
         cubeReader->SetFileName(currentFile.data()); //Set the input file
         cubeReader->Update();
@@ -403,13 +403,13 @@ void poretda::getCubeVolume(string inputFolder,double resolution)
 
         double volume = numberOfCells * unitCellVolume;
 
-        poretda::mainlog << numberOfCells << "     " << volume << endl;
+        segmentor::mainlog << numberOfCells << "     " << volume << endl;
 
         output << file_without_extension << "," << volume << endl;
 
         
         counter++;
-        poretda::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
+        segmentor::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
         
 
     }
@@ -422,10 +422,10 @@ void poretda::getCubeVolume(string inputFolder,double resolution)
 }
 
 
-auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
+auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
 {
-    poretda::mainlog << "Segment Shapes Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Segment Shapes Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
 
     //Compute the outer box bounds of the material
@@ -437,7 +437,7 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
     int ylim = materialBounds[3];
     int zlim = materialBounds[5];
 
-    poretda::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
     //Segmentation corresponding to the void structure
     vtkSmartPointer<vtkThreshold> voidStructure = vtkSmartPointer<vtkThreshold>::New();
@@ -464,7 +464,7 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
     for (size_t i = 0; i < idList->GetNumberOfValues(); i++)
     {
         int segmentID = idList->GetVariantValue(i).ToInt();
-        poretda::mainlog << "Current Segment:" << segmentID << endl;
+        segmentor::mainlog << "Current Segment:" << segmentID << endl;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
@@ -503,7 +503,7 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
             if (segmentData->GetNumberOfPoints() > 200)
             {
                 
-                poretda::mainlog << "Segment: " << segmentID << " is completed\n";
+                segmentor::mainlog << "Segment: " << segmentID << " is completed\n";
                 //Triangulate the segment
                 vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
                 triangulation->SetInputConnection(segment->GetOutputPort());
@@ -527,7 +527,7 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
 
                 if (writeSegments)
                 {
-                    //poretda::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+                    //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
                     
                     vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
                     regionWriter->SetInputConnection(extraction->GetOutputPort());
@@ -540,7 +540,7 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
 
         else
         {
-            poretda::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
+            segmentor::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
             
             
             vtkSmartPointer<vtkAppendFilter> append = vtkSmartPointer<vtkAppendFilter>::New(); //Filter used to append several fragments of the region
@@ -610,7 +610,7 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
 
             if (writeSegments)
             {
-                //poretda::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+                //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
                 
                 vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
                 regionWriter->SetInputConnection(append->GetOutputPort());
@@ -628,10 +628,10 @@ auto poretda::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCom
 
 }
 
-auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
+auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
 {
-    poretda::mainlog << "Segment Shapes Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Segment Shapes Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
 
     //Compute the outer box bounds of the material
@@ -643,7 +643,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
     int ylim = materialBounds[3];
     int zlim = materialBounds[5];
 
-    poretda::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
     //Segmentation corresponding to the void structure
     vtkSmartPointer<vtkThreshold> voidStructure = vtkSmartPointer<vtkThreshold>::New();
@@ -671,7 +671,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
     for (size_t i = 0; i < idList->GetNumberOfValues(); i++)
     {
         int segmentID = idList->GetVariantValue(i).ToInt();
-        poretda::mainlog << "Current Segment:" << segmentID << endl;
+        segmentor::mainlog << "Current Segment:" << segmentID << endl;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
@@ -711,7 +711,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             if (segmentData->GetNumberOfPoints() > 200)
             {
                 
-                poretda::mainlog << "Segment: " << segmentID << " is completed\n";
+                segmentor::mainlog << "Segment: " << segmentID << " is completed\n";
                 //Triangulate the segment
                 vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
                 triangulation->SetInputConnection(segment->GetOutputPort());
@@ -735,7 +735,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
 
                 if (writeSegments)
                 {
-                    //poretda::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+                    //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
                     
                     vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
                     regionWriter->SetInputConnection(extraction->GetOutputPort());
@@ -748,7 +748,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
 
         else
         {
-            poretda::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
+            segmentor::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
             //Check how the pieces are splitted
             double segmentBounds[6];
             segmentData->GetBounds(segmentBounds);
@@ -757,7 +757,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             int segmentYLim = segmentBounds[3];
             int segmentZLim = segmentBounds[5];
 
-            poretda::mainlog << "Segment Limits: " << segmentXLim << "," << segmentYLim << "," << segmentZLim << "\n";
+            segmentor::mainlog << "Segment Limits: " << segmentXLim << "," << segmentYLim << "," << segmentZLim << "\n";
 
             bool signalX = false;
             bool signalY = false;
@@ -798,7 +798,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             
             if ((signalX==true) && (signalY==true) && (signalZ==false))
             {
-                poretda::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto x : xVec)
                 {
@@ -834,7 +834,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             }
             if (signalX == true && signalZ == true && (signalY == false))
             {
-                poretda::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto x : xVec)
                 {
@@ -871,7 +871,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             }
             if (signalY == true && signalZ == true && (signalX == false))
             {
-                poretda::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto z : zVec)
                 {
@@ -907,7 +907,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             }
             if (signalX == true && signalY == true && signalZ == true)
             {
-                poretda::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto x : xVec)
                 {
@@ -941,7 +941,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
                             // append->Update();
 
                             group->AddInputConnection(transform->GetOutputPort());
-                            poretda::mainlog << group->GetNumberOfInputConnections(0) << endl;
+                            segmentor::mainlog << group->GetNumberOfInputConnections(0) << endl;
 
 
                         }
@@ -954,11 +954,11 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
             group->Update();
             
             
-            poretda::mainlog <<group->GetNumberOfOutputPorts() << endl;
+            segmentor::mainlog <<group->GetNumberOfOutputPorts() << endl;
 
 
 
-            poretda::mainlog << "Merging points" << endl;
+            segmentor::mainlog << "Merging points" << endl;
             vtkSmartPointer<vtkAppendFilter> append = vtkSmartPointer<vtkAppendFilter>::New();
             append->SetInputConnection(group->GetOutputPort());
             append->MergePointsOn();
@@ -969,12 +969,12 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
 
             
 
-            // poretda::mainlog << group->GetNumberOfInputPorts() << endl;
-            // poretda::mainlog << group->GetNumberOfInputConnections() << endl;
+            // segmentor::mainlog << group->GetNumberOfInputPorts() << endl;
+            // segmentor::mainlog << group->GetNumberOfInputConnections() << endl;
 
 
             auto appendDataSet = vtkDataSet::SafeDownCast(append->GetOutputDataObject(0));
-            poretda::mainlog << appendDataSet->GetNumberOfPoints() << endl;
+            segmentor::mainlog << appendDataSet->GetNumberOfPoints() << endl;
 
             
             
@@ -988,7 +988,7 @@ auto poretda::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
 
 }
 
-auto poretda::superCellMSC(string inputFile, double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
+auto segmentor::superCellMSC(string inputFile, double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
 
     //Delete the extension from the filename
@@ -1138,7 +1138,7 @@ auto poretda::superCellMSC(string inputFile, double persistencePercentage, doubl
     
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     string signalFile = "../Results/Done/" + file_without_extension;
     ofstream signalR(signalFile);
@@ -1149,10 +1149,10 @@ auto poretda::superCellMSC(string inputFile, double persistencePercentage, doubl
 
 }
 
-auto poretda::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persistenceThreshold, double saddlesaddleIncrement, bool useAllCores, bool writeSuperCell, bool writeSegmentation)
+auto segmentor::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persistenceThreshold, double saddlesaddleIncrement, bool useAllCores, bool writeSuperCell, bool writeSegmentation)
 {
-    poretda::mainlog << "Super Cell Module 2 " << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Super Cell Module 2 " << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Invert the values of the distance field. Negative values for the void space and
     // positive values for the solid space
@@ -1171,7 +1171,7 @@ auto poretda::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persis
     double ylim = materialBounds[3];
     double zlim = materialBounds[5];
 
-    poretda::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
 
     //Possibilities to check when computing the super cell
@@ -1228,20 +1228,20 @@ auto poretda::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persis
                 // groupie->Update();
 
                 counter++;
-                poretda::mainlog << counter << endl;
+                segmentor::mainlog << counter << endl;
             }
         }
     }
    
 
-    poretda::mainlog << "Computing triangulation\n";
+    segmentor::mainlog << "Computing triangulation\n";
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
     triangulation->SetInputConnection(append->GetOutputPort());
     triangulation->Update();
 
     if(writeSuperCell)
     {
-       poretda::mainlog << "Printing SuperCell" << "\n";
+       segmentor::mainlog << "Printing SuperCell" << "\n";
        vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
        segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
        //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
@@ -1380,16 +1380,16 @@ auto poretda::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persis
     
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     
    
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
      
 }
 
-auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, bool writeOutputs,bool useAllCores)
+auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, bool writeOutputs,bool useAllCores)
 {
     //Delete the extension from the filename
     std::string base_filename = inputFile.substr(inputFile.find_last_of("/\\") + 1);
@@ -1404,7 +1404,7 @@ auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, boo
     
     
     
-    poretda::mainlog << "Reading segmentation" << endl;
+    segmentor::mainlog << "Reading segmentation" << endl;
     vtkSmartPointer<vtkUnstructuredGridReader> segmentation = vtkSmartPointer<vtkUnstructuredGridReader>::New();
     segmentation->SetFileName(filePath.c_str());
     segmentation->Update();
@@ -1425,9 +1425,9 @@ auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, boo
     double centerZMax = 0.75 * zlim;
     double centerZMin = 0.25 * zlim;
 
-    poretda::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
-    poretda::mainlog << centerXMin << "," << centerXMax << "|" << centerYMin << "," << centerYMax << "|" << centerZMin << "," << centerZMax << endl;
+    segmentor::mainlog << centerXMin << "," << centerXMax << "|" << centerYMin << "," << centerYMax << "|" << centerZMin << "," << centerZMax << endl;
 
 
     //Segmentation corresponding to the solid structure
@@ -1441,7 +1441,7 @@ auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, boo
 
     auto voidStructureDataSet = vtkDataSet::SafeDownCast(voidStructure->GetOutputDataObject(0));
 
-    poretda::mainlog << "Reading Critical Points" << endl;
+    segmentor::mainlog << "Reading Critical Points" << endl;
 
     //Critical points file
     vtkSmartPointer<vtkPolyDataReader> criticalPoints = vtkSmartPointer<vtkPolyDataReader>::New();
@@ -1467,7 +1467,7 @@ auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, boo
 
     auto minimasDataSet = vtkDataSet::SafeDownCast(minimasVoid->GetOutputDataObject(0));
 
-    poretda::mainlog << "Looking for the segments of interest" << endl;
+    segmentor::mainlog << "Looking for the segments of interest" << endl;
     for (size_t i = 0; i < minimasDataSet->GetNumberOfPoints(); i++)
     {
         double pointCoords[3];
@@ -1476,7 +1476,7 @@ auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, boo
 
         if ((pointCoords[0] > centerXMin) && (pointCoords[0] < centerXMax) && (pointCoords[1] > centerYMin) && (pointCoords[1] < centerYMax) && (pointCoords[2] > centerZMin) && (pointCoords[2] < centerZMax))
         {
-            poretda::mainlog << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << endl;
+            segmentor::mainlog << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << endl;
 
             
             int closestPoint = voidStructureDataSet->FindPoint(pointCoords);
@@ -1581,10 +1581,10 @@ auto poretda::segmentSelection(string inputFile, int numberOfEigenFunctions, boo
  * @param writeGridFile Write the results to an output file(OPTIONAL)
  * @return auto Grid from the Gaussian Cube file
  */
-auto poretda::reader(string inputFilePath,double gridResolution, bool writeGridFile)
+auto segmentor::reader(string inputFilePath,double gridResolution, bool writeGridFile)
 {
-    poretda::mainlog << "poretda: Reader Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Reader Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Creating the input material result's folder
     //----------------------------------------------------------------------------------------------
@@ -1600,7 +1600,7 @@ auto poretda::reader(string inputFilePath,double gridResolution, bool writeGridF
 
     //----------------------------------------------------------------------------------------------
 
-    poretda::mainlog << "Current File:  " << BaseFileName << endl;
+    segmentor::mainlog << "Current File:  " << BaseFileName << endl;
 
 
 
@@ -1616,12 +1616,12 @@ auto poretda::reader(string inputFilePath,double gridResolution, bool writeGridF
     status = system(func.c_str()); // Creating a directory
     if (status == -1)
     {
-        poretda::errlog << "Error : " << strerror(errno) << endl;
+        segmentor::errlog << "Error : " << strerror(errno) << endl;
     }
         
     else
     {
-        poretda::mainlog << "Directories created" << endl;
+        segmentor::mainlog << "Directories created" << endl;
     }
 
     //----------------------------------------------------------------------------------------------
@@ -1653,7 +1653,7 @@ auto poretda::reader(string inputFilePath,double gridResolution, bool writeGridF
     //Save the resolution to the class variables in order to be used in other functions
     GridResolution = gridResolution;
 
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return imageData;
 }
 
@@ -1671,10 +1671,10 @@ auto poretda::reader(string inputFilePath,double gridResolution, bool writeGridF
  * @param writeGridFile Write the output to file
  * @return auto Combined grid
  */
-auto poretda::readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile)
+auto segmentor::readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile)
 {
-    poretda::mainlog << "Combined Reader Function" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Combined Reader Function" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Creating folder:-----------------------------------------------------------------------------
     //We get the input file name
     std::string base_filename = inputFilePath1.substr(inputFilePath1.find_last_of("/\\") + 1);
@@ -1698,7 +1698,7 @@ auto poretda::readerCombined(string inputFilePath1,string inputFilePath2,double 
         
     else
     {
-        poretda::mainlog << "Directories created" << endl;
+        segmentor::mainlog << "Directories created" << endl;
     }
 
     //Read the first file(the one corresponding to the void space)
@@ -1740,7 +1740,7 @@ auto poretda::readerCombined(string inputFilePath1,string inputFilePath2,double 
     }
     GridResolution = gridResolution;
 
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return imageData;
 }
 
@@ -1752,16 +1752,16 @@ auto poretda::readerCombined(string inputFilePath1,string inputFilePath2,double 
  * @param writeGridFile  Write an output file that stores the grid
  * @return auto Output Grid
  */
-auto poretda::reader(string inputFilePath,int gridResolution, bool writeGridFile)
+auto segmentor::reader(string inputFilePath,int gridResolution, bool writeGridFile)
 {
-    poretda::mainlog << "Reader Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Reader Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Name of the input file without extension
     string base_filename = inputFilePath.substr(inputFilePath.find_last_of("/\\") + 1);
     BaseFileName = base_filename;
 
-    poretda::mainlog << "Current file: " << base_filename << endl;
+    segmentor::mainlog << "Current file: " << base_filename << endl;
         
     string::size_type const p(base_filename.find_last_of('.'));
     //Input File name
@@ -1783,7 +1783,7 @@ auto poretda::reader(string inputFilePath,int gridResolution, bool writeGridFile
             
     else
     {
-        poretda::mainlog << "Directories created" << endl;
+        segmentor::mainlog << "Directories created" << endl;
     }
 
     ifstream reader;
@@ -1949,11 +1949,11 @@ auto poretda::reader(string inputFilePath,int gridResolution, bool writeGridFile
     }
     else
     {
-        poretda::mainlog << "Check for grid dimensions and spacing" << "\n";
+        segmentor::mainlog << "Check for grid dimensions and spacing" << "\n";
     }
     grid->SetSpacing(deltaX,deltaY,deltaZ);
-    poretda::mainlog << "Grid resolution: " << gridResolution << " Number of Points: " << grid->GetNumberOfPoints() << " Cell size: " << CellSize << "\n";
-    poretda::mainlog << "Grid: " << deltaX << " x " << deltaY << " x " << deltaZ << "\n";
+    segmentor::mainlog << "Grid resolution: " << gridResolution << " Number of Points: " << grid->GetNumberOfPoints() << " Cell size: " << CellSize << "\n";
+    segmentor::mainlog << "Grid: " << deltaX << " x " << deltaY << " x " << deltaZ << "\n";
 
     //Grid parameters
 
@@ -2046,7 +2046,7 @@ auto poretda::reader(string inputFilePath,int gridResolution, bool writeGridFile
         imageWriter->SetFileName((directory+"/"+file_without_extension+"grid.vti").c_str());
         imageWriter->Write();
     }
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     return grid;
 }
@@ -2064,10 +2064,10 @@ auto poretda::reader(string inputFilePath,int gridResolution, bool writeGridFile
  * @param writeFile Write an output file of the grid including a distance field(if previously computed)
  * @return Grid with periodic conditions(if true) and distance field(if done) included
  */
-auto poretda::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool periodicConditions, bool computeDistanceField,bool writeFile)
+auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool periodicConditions, bool computeDistanceField,bool writeFile)
 {
-    poretda::mainlog << "poretda: InputPrecondition Function 2" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: InputPrecondition Function 2" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
     //vtkNew<ttkPeriodicGrid> periodGrid{};
@@ -2113,8 +2113,8 @@ auto poretda::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool period
             points->InsertPoint(i,coordinates);
             
         }
-        poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-        poretda::mainlog << "DISTANCE FIELD CALCULATION" << endl;
+        segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+        segmentor::mainlog << "DISTANCE FIELD CALCULATION" << endl;
         vtkSmartPointer<vtkDoubleArray> distanceArray = vtkSmartPointer<vtkDoubleArray>::New();
         distanceArray->SetName("This is distance grid");
         vtkSmartPointer<vtkPointSet> pointSet = vtkSmartPointer<vtkPointSet>::New();
@@ -2163,7 +2163,7 @@ auto poretda::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool period
         gridWriter->SetFileName((Directory+"/"+BaseFileName+"distance.vti").c_str());
         gridWriter->Write();
     }
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     return periodGrid;
 }
@@ -2178,12 +2178,12 @@ auto poretda::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool period
  * @param periodicConditions  Periodic Boundary Conditions
  * @return auto
  */
-auto poretda::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores)
+auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores)
 {
     
     
-    poretda::mainlog << "poretda: InputPrecondition Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n"<<flush;
+    segmentor::mainlog << "segmentor: InputPrecondition Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n"<<flush;
 
     //VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -2227,11 +2227,11 @@ auto poretda::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeV
  * @param periodicConditions  Periodic Boundary Conditions
  * @return auto Grid with Periodic Boundary Conditions(PBC) include
  */
-auto poretda::inputPrecondition_E(vtkSmartPointer<vtkImageData> grid, bool periodicConditions)
+auto segmentor::inputPrecondition_E(vtkSmartPointer<vtkImageData> grid, bool periodicConditions)
 {
 
-    poretda::mainlog << "poretda: InputPrecondition Module (Energy)" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: InputPrecondition Module (Energy)" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -2245,17 +2245,17 @@ auto poretda::inputPrecondition_E(vtkSmartPointer<vtkImageData> grid, bool perio
 }
 
 
-void poretda::oneGridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores)
+void segmentor::oneGridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores)
 {
-    poretda::mainlog << "Grid Files Creation" << endl;
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Grid Files Creation" << endl;
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
 
     //Creating Results folder:-----------------------------------------------------------------------------
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     if(!state)
     {
-        poretda::mainlog << "Grid Files Folder created" << "\n";
+        segmentor::mainlog << "Grid Files Folder created" << "\n";
 
     }
 
@@ -2303,7 +2303,7 @@ void poretda::oneGridFileCreator(string scalarName, string inputFilePath, double
     }
     else
     {
-        poretda::mainlog << "Already computed\n";
+        segmentor::mainlog << "Already computed\n";
     }
     
 
@@ -2321,15 +2321,15 @@ void poretda::oneGridFileCreator(string scalarName, string inputFilePath, double
  *
  * @param inputFilePath Input file path
  */
-void poretda::gridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores)
+void segmentor::gridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores)
 {
-    poretda::mainlog << "GridFileCreator Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "GridFileCreator Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Creating folder:-----------------------------------------------------------------------------
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     if(!state)
     {
-        poretda::mainlog << "Grid Files Folder created" << "\n";
+        segmentor::mainlog << "Grid Files Folder created" << "\n";
 
     }
 
@@ -2343,7 +2343,7 @@ void poretda::gridFileCreator(string scalarName, string inputFilePath, double pe
 
     if (!crystals)
     {
-        poretda::mainlog << "File with the filenames created" << endl;
+        segmentor::mainlog << "File with the filenames created" << endl;
     }
 
     string line;
@@ -2362,7 +2362,7 @@ void poretda::gridFileCreator(string scalarName, string inputFilePath, double pe
     #pragma omp parallel for
     for (size_t i = 0; i < inputFiles.size(); i++) //For each of the materials
     {
-        poretda::mainlog << inputFiles[i] << endl;
+        segmentor::mainlog << inputFiles[i] << endl;
         string input = inputFilePath + "/" + inputFiles[i]; //Materials .cube path
 
         std::string base_filename = inputFiles[i].substr(inputFiles[i].find_last_of("-") + 1);
@@ -2408,7 +2408,7 @@ void poretda::gridFileCreator(string scalarName, string inputFilePath, double pe
                     minimumEnergy = currentEnergy;
                 }
             }
-            poretda::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
+            segmentor::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
             
             //Persistence Diagram of the data
             vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
@@ -2444,7 +2444,7 @@ void poretda::gridFileCreator(string scalarName, string inputFilePath, double pe
                 
             }
 
-            poretda::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
+            segmentor::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
             
             //Persistence Threshold for simplification
             double minimumPersistence = persistencePercentage * maximumPersistence;
@@ -2493,14 +2493,14 @@ void poretda::gridFileCreator(string scalarName, string inputFilePath, double pe
         }
         else
         {
-            poretda::mainlog << "Already computed \n";
+            segmentor::mainlog << "Already computed \n";
         }
         
     }
 
     
 
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -2513,7 +2513,7 @@ void poretda::gridFileCreator(string scalarName, string inputFilePath, double pe
  * @param K Value to check
  * @return auto Index of the value if present
  */
-auto  poretda::getIndex(vector<int> v, int K)
+auto  segmentor::getIndex(vector<int> v, int K)
 {
     auto it = find(v.begin(), v.end(), K);
  
@@ -2546,10 +2546,10 @@ auto  poretda::getIndex(vector<int> v, int K)
  * @param useAllCores Use all cores available to speed up computations
  * @return auto Morse Smale Complex complete field information
  */
-auto poretda::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
+auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
-    poretda::mainlog << "poretda: Morse Smale Complex Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
+    segmentor::mainlog << "segmentor: Morse Smale Complex Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
 
     //Persistence Diagram of the data
     vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
@@ -2674,7 +2674,7 @@ auto poretda::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercen
     
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
     
     return morseSmaleComplex;
     
@@ -2691,10 +2691,10 @@ auto poretda::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercen
  *  simplification of the sadde-saddle connectors
  * @return auto Morse Smale Complex complete field information
  */
-auto poretda::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
+auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
-    poretda::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Given that in this analysis we are going to focus to the negative energy space of the material we have to take care
     //because in the points closer to the atoms te energy values are huge and following the process used in the energy grids
@@ -2715,7 +2715,7 @@ auto poretda::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
             minimumEnergy = currentEnergy;
         }
     }
-    poretda::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
+    segmentor::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
     
     //Persistence Diagram of the data
     vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
@@ -2750,7 +2750,7 @@ auto poretda::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
         
     }
 
-    poretda::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
+    segmentor::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
     
     //Persistence Threshold for simplification
     double minimumPersistence = persistencePercentage * maximumPersistence;
@@ -2854,7 +2854,7 @@ auto poretda::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     return morseSmaleComplex;
     
@@ -2869,10 +2869,10 @@ auto poretda::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
  * @param useAllCores Use all available cores in the computer
  
  */
-void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
+void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
 {
-    poretda::mainlog << "poretda: Void Segmentation Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
+    segmentor::mainlog << "segmentor: Void Segmentation Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
 
     //Writer of the .csv results file
     ofstream misDatos;
@@ -2889,7 +2889,7 @@ void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
     //Cell size of the current dataset
     double cellSize = cellDimensions[1] - cellDimensions[0];
     CellSize = cellSize;
-    poretda::mainlog << "Cell Size: " << cellSize << "\n";
+    segmentor::mainlog << "Cell Size: " << cellSize << "\n";
 
     //---------------------------------------------------------------------------------------------
 
@@ -2955,11 +2955,11 @@ void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
         pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //poretda::mainlog << "Current Saddle ID: " << k << endl;
+        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //poretda::mainlog << currentClosestRegion << endl;
+            //segmentor::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
@@ -3074,7 +3074,7 @@ void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
     misDatos.close();
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
     
 }
 
@@ -3088,10 +3088,10 @@ void poretda::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
  * some computational crashes)
  
  */
-void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
+void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
 {
-    poretda::mainlog << "poretda: Accessible Void Space Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
+    segmentor::mainlog << "segmentor: Accessible Void Space Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
 
     //Writer of the .csv results file
     ofstream segmentResults;
@@ -3145,14 +3145,14 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     //DataSet of the accessible saddles to the molecule
     auto saddlesDataSet = vtkDataSet::SafeDownCast(accessibleSaddles->GetOutputDataObject(0));
-    //poretda::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
+    //segmentor::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
     vector<int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
-        //poretda::mainlog << "Current Saddle ID:" << endl;
+        //segmentor::mainlog << "Current Saddle ID:" << endl;
         double currentSaddleCoords[3]; //Coordinates of the current saddle
         saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
         
@@ -3167,11 +3167,11 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
        
         //Find the closest segments to each of the saddles that work as connectors between segments
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //poretda::mainlog << "Current Saddle ID: " << k << endl;
+        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = accessibleSpaceDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //poretda::mainlog << currentClosestRegion << endl;
+            //segmentor::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
@@ -3180,11 +3180,11 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
         if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
         {
-            //poretda::mainlog << "YES" <<endl;
+            //segmentor::mainlog << "YES" <<endl;
             int contador = 0;
             for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
             {
-                //poretda::mainlog << closestRegionsToSaddle[mm] << endl;
+                //segmentor::mainlog << closestRegionsToSaddle[mm] << endl;
 
                 saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
                 ++contador;
@@ -3202,7 +3202,7 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     for (size_t i = 0; i < segmentsID->GetNumberOfValues(); i++) //For each of the void segments
     {
         int currentRegion = segmentsID->GetVariantValue(i).ToInt();
-        //poretda::mainlog << "Current Region: " <<  currentRegion << endl;
+        //segmentor::mainlog << "Current Region: " <<  currentRegion << endl;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
@@ -3219,7 +3219,7 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         
         
         int segmentNumberOfCells = segmentDataset->GetNumberOfCells();
-        //poretda::mainlog << segmentNumberOfCells << endl;
+        //segmentor::mainlog << segmentNumberOfCells << endl;
         //---------------------------------------------------------------------------
         int numberOfConnections = 0; //Number of connections of the current region
         if(segmentDataset->GetNumberOfPoints() > 0) //If not an empty region
@@ -3238,7 +3238,7 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
             }
         }
-        //poretda::mainlog << numberOfConnections << endl;
+        //segmentor::mainlog << numberOfConnections << endl;
 
         //Check the number of Connections of each segment
         if (numberOfConnections == 0)
@@ -3251,7 +3251,7 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
             
         }
 
-        //poretda::mainlog << numberOfConnections << endl;
+        //segmentor::mainlog << numberOfConnections << endl;
 
         
         //Array corresponding to the scalar values of the Region
@@ -3273,7 +3273,7 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     segmentResults.close();
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
     
 }
 
@@ -3283,10 +3283,10 @@ void poretda::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
  * @param morseSmaleComplex Input MSC results from the MSC functions
 
  */
-void poretda::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
+void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    poretda::mainlog << "poretda: Void Segmentation Module (Energy)" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Void Segmentation Module (Energy)" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Writer of the .csv results file
     ofstream misDatos;
@@ -3307,7 +3307,7 @@ void poretda::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     //Cell size of the current dataset
     double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
     CellSize = cellSize;
-    poretda::mainlog << "Cell Size: " << cellSize << "\n";
+    segmentor::mainlog << "Cell Size: " << cellSize << "\n";
 
     //Segmentation corresponding to the solid structure
     vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
@@ -3407,11 +3407,11 @@ void poretda::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //poretda::mainlog << "Current Saddle ID: " << k << endl;
+        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //poretda::mainlog << currentClosestRegion << endl;
+            //segmentor::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
@@ -3529,7 +3529,7 @@ void poretda::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     materialInfo.close();
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -3540,10 +3540,10 @@ void poretda::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
  * @param morseSmaleComplex
  * @return auto
  */
-auto poretda::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
+auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    poretda::mainlog << "poretda: Solid Segmentation Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Solid Segmentation Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Writer of the .csv results file
     ofstream misDatos;
@@ -3559,7 +3559,7 @@ auto poretda::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     //Cell size of the current dataset
     double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
     CellSize = cellSize;
-    poretda::mainlog << "Cell Size: " << cellSize << "\n";
+    segmentor::mainlog << "Cell Size: " << cellSize << "\n";
 
     //Segmentation corresponding to the solid structure
     vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
@@ -3615,11 +3615,11 @@ auto poretda::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
         pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //poretda::mainlog << "Current Saddle ID: " << k << endl;
+        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //poretda::mainlog << currentClosestRegion << endl;
+            //segmentor::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
@@ -3734,7 +3734,7 @@ auto poretda::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     misDatos.close();
     
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -3749,10 +3749,10 @@ auto poretda::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
  * @param writeSegments Write an output file with the segment reconstructed and the file attached
  * @return auto
  */
-void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar,bool useAllCores)
+void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar,bool useAllCores)
 {
-    poretda::mainlog << "poretda: Eigen Field Module " << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Eigen Field Module " << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
    
 
@@ -3834,11 +3834,11 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
                 currentIsolatedRegion->ThresholdBetween(j,j);
                 currentIsolatedRegion->Update();
                 auto currentIsolatedRegionDataSet = vtkDataSet::SafeDownCast(currentIsolatedRegion->GetOutputDataObject(0));
-                //poretda::mainlog << "Current Isolated Number Of Points : " << currentIsolatedRegionDataSet->GetNumberOfPoints() << endl;
+                //segmentor::mainlog << "Current Isolated Number Of Points : " << currentIsolatedRegionDataSet->GetNumberOfPoints() << endl;
                 double currentIsolatedBounds[6];
                 currentIsolatedRegionDataSet->GetBounds(currentIsolatedBounds);
-                //poretda::mainlog << "Current Isolated Region Bounds:" << endl;
-                //poretda::mainlog << currentIsolatedBounds[0] << " " << currentIsolatedBounds[1] << " " << currentIsolatedBounds[2] << " " << currentIsolatedBounds[3] << " " << currentIsolatedBounds[4] << " " << currentIsolatedBounds[5] << endl;
+                //segmentor::mainlog << "Current Isolated Region Bounds:" << endl;
+                //segmentor::mainlog << currentIsolatedBounds[0] << " " << currentIsolatedBounds[1] << " " << currentIsolatedBounds[2] << " " << currentIsolatedBounds[3] << " " << currentIsolatedBounds[4] << " " << currentIsolatedBounds[5] << endl;
                 
                 
                 //Move the isolated regions to a common location
@@ -3893,13 +3893,13 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
 
             //Now we have all the isolated regions merged on a single one
 
-            //poretda::mainlog << "Get append data" << endl;
+            //segmentor::mainlog << "Get append data" << endl;
             auto appendDataSet = vtkDataSet::SafeDownCast(append->GetOutputDataObject(0));
-            //poretda::mainlog << "Remoce POINT REGION" << endl;
+            //segmentor::mainlog << "Remoce POINT REGION" << endl;
             appendDataSet->GetPointData()->RemoveArray("RegionId");
-            //poretda::mainlog << "Remove CELL REGION" << endl;
+            //segmentor::mainlog << "Remove CELL REGION" << endl;
             appendDataSet->GetCellData()->RemoveArray("RegionId");
-            //poretda::mainlog << "Update" << endl;
+            //segmentor::mainlog << "Update" << endl;
             append->Update();
 
             //Check that all the fragments are merged
@@ -3980,7 +3980,7 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
     //#pragma omp parallel for
     for (size_t i = 0; i < acceptedRegions.size(); i++)
     {
-        poretda::mainlog << acceptedRegions[i] << endl;
+        segmentor::mainlog << acceptedRegions[i] << endl;
         
         eigenFields[i]->SetUseAllCores(useAllCores);
         eigenFields[i]->SetEigenNumber(numberOfEigenFunctions);
@@ -3999,7 +3999,7 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
 
         if (writeSegments)
         {
-            //poretda::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+            //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
             
             vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
             regionWriter->SetInputConnection(extraction->GetOutputPort());
@@ -4016,7 +4016,7 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
         
         
 
-        //poretda::mainlog << "Writing persistence diagram" << acceptedRegions[i] << endl;
+        //segmentor::mainlog << "Writing persistence diagram" << acceptedRegions[i] << endl;
 
         vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
         regionWriter->SetInputConnection(persistenceDiagram->GetOutputPort());
@@ -4026,7 +4026,7 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
     
 
    
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 }
 
 /**
@@ -4038,7 +4038,7 @@ void poretda::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex
  * @param useAllCores
  * @return auto
  */
-void poretda::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEigenFunctions, bool useAllCores)
+void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEigenFunctions, bool useAllCores)
 {
     
     //Get the name of the material and create a folder to store the results
@@ -4050,7 +4050,7 @@ void poretda::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEig
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     if(!state)
     {
-        poretda::mainlog << "Grid Files Folder created" << "\n";
+        segmentor::mainlog << "Grid Files Folder created" << "\n";
 
     }
 
@@ -4159,10 +4159,10 @@ void poretda::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEig
  * @param morseSmaleComplex
  * @return auto
  */
-void poretda::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
+void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    poretda::mainlog << "Void Separatrices Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Void Separatrices Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     ofstream sepFile;
     sepFile.open((Directory+"/Separatrices.csv").c_str());
     sepFile << "x,y,z,pointCellId,separatrixID,SepOriginID,SepDestinationID,SepMinValue,isMinima,isSaddle,xScaled,yScaled,zScaled" << "\n";
@@ -4245,7 +4245,7 @@ void poretda::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
         }
 
     }
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -4258,10 +4258,10 @@ void poretda::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
  * 3) propertiesEvolutionPython.csv -> CSV file with the information of the regions for each of the stages of compression(if we have them).
  * @param morseSmaleComplex Container with all the Morse Smale Complex computation results.
  */
-auto poretda::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, vtkSmartPointer<vtkThreshold> previousSolid)
+auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, vtkSmartPointer<vtkThreshold> previousSolid)
 {
-    poretda::mainlog << "poretda: Evolution Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Evolution Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Output stream to create evolutionPython.csv
     ofstream evolutionFilePython;
@@ -4283,13 +4283,13 @@ auto poretda::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
     vtkDataSet * previousDataSet;
     if (previousSolid) //Check that we are not in the first file
     {
-        poretda::mainlog << "We have previous stages information" << "\n";
+        segmentor::mainlog << "We have previous stages information" << "\n";
         previousDataSet = vtkDataSet::SafeDownCast(previousSolid->GetOutputDataObject(0));
-        //poretda::mainlog << "Previous data set number of points" << previousDataSet->GetNumberOfPoints() << "\n";
+        //segmentor::mainlog << "Previous data set number of points" << previousDataSet->GetNumberOfPoints() << "\n";
     }
     else
     {
-        poretda::mainlog << "We don't have previous stages information" << "\n";
+        segmentor::mainlog << "We don't have previous stages information" << "\n";
     }
     //---------------------------------------------------------------------------------------------
     //We get the 2-saddle criticalPoints
@@ -4491,8 +4491,8 @@ auto poretda::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
         if (previousSolid)
         {
             closestRegion = findMostCommonValue(closestPreviousStageRegionID);
-            //poretda::mainlog << "Closest region: " << closestRegion << "\n";
-            //poretda::mainlog << "Closest region to the maxima: " << previousDataSet->GetPointData()->GetArray("AscendingManifold")->GetVariantValue(previousDataSet->FindPoint(maximumCoords)).ToInt() << "\n";
+            //segmentor::mainlog << "Closest region: " << closestRegion << "\n";
+            //segmentor::mainlog << "Closest region to the maxima: " << previousDataSet->GetPointData()->GetArray("AscendingManifold")->GetVariantValue(previousDataSet->FindPoint(maximumCoords)).ToInt() << "\n";
 
         }
 
@@ -4519,7 +4519,7 @@ auto poretda::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
     misDatos.close();
     evolutionFilePython.close();
     
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return solidSegmentation;
 
 }
@@ -4533,7 +4533,7 @@ auto poretda::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCo
  * @param currentFile Name of the current segmentation file
  * @return auto Solid structure of the segmentation file
  */
-auto poretda::solidGetter(string currentFile)
+auto segmentor::solidGetter(string currentFile)
 {
     
     
@@ -4560,7 +4560,7 @@ auto poretda::solidGetter(string currentFile)
 
     
     auto currentSolidDataSet = vtkDataSet::SafeDownCast(ascendingManifoldIDList->GetOutputDataObject(0));
-    //poretda::mainlog << currentSolidDataSet->GetNumberOfPoints() << "\n";
+    //segmentor::mainlog << currentSolidDataSet->GetNumberOfPoints() << "\n";
     
     return ascendingManifoldIDList;
 
@@ -4573,7 +4573,7 @@ auto poretda::solidGetter(string currentFile)
  * @param currentFile Name of the file currenly readed
  * @return auto 2-saddles located in the solid structure
  */
-auto poretda::saddlesGetter(string currentFile)
+auto segmentor::saddlesGetter(string currentFile)
 {
     string inputFile = "../results_dump.stress." + currentFile + "/criticalPoints.vtk"; //Current stage input file
     //Read critical points input file
@@ -4604,10 +4604,10 @@ auto poretda::saddlesGetter(string currentFile)
  * @param fileNames Name of the different regions that the function will compute
  * @return auto
  */
-auto poretda::stagesEvolution(vector<string> fileNames)
+auto segmentor::stagesEvolution(vector<string> fileNames)
 {
-    poretda::mainlog << "Stages Evolution Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Stages Evolution Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     ofstream evolutionData; //Stream to write segmentation data for each of the regions
     evolutionData.open("../stagesEvolution.csv"); //Opening the writer
     assert(evolutionData.is_open()); //Check if the file is open
@@ -4632,7 +4632,7 @@ auto poretda::stagesEvolution(vector<string> fileNames)
         provisionalDataSet->GetCellBounds(0,dimensionesCelda);
         //Cell size of the current dataset
         double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
-        poretda::mainlog << "Tamaño celda " << cellSize << "\n";
+        segmentor::mainlog << "Tamaño celda " << cellSize << "\n";
 
         vtkSmartPointer<vtkThresholdPoints> currentSolid = vtkSmartPointer<vtkThresholdPoints>::New();
         currentSolid->SetInputConnection(currentStageReader->GetOutputPort());
@@ -4658,8 +4658,8 @@ auto poretda::stagesEvolution(vector<string> fileNames)
        
         
         
-        poretda::mainlog << "Current Stage: " << fileNames[i] << "\n";
-        poretda::mainlog << "Current Stage:Number of Points: " << currentStageDataSet->GetNumberOfPoints() << "\n";
+        segmentor::mainlog << "Current Stage: " << fileNames[i] << "\n";
+        segmentor::mainlog << "Current Stage:Number of Points: " << currentStageDataSet->GetNumberOfPoints() << "\n";
         auto segmentationIDS = currentStageDataSet->GetFieldData()->GetAbstractArray("UniqueAscendingManifold");
         //---------------------------------------------------------------------------
 
@@ -4710,7 +4710,7 @@ auto poretda::stagesEvolution(vector<string> fileNames)
             currentRegion->ThresholdBetween(segmentationIDS->GetVariantValue(j).ToInt(),segmentationIDS->GetVariantValue(j).ToInt());
             currentRegion->Update();
             auto currentRegionDataSet = vtkDataSet::SafeDownCast(currentRegion->GetOutputDataObject(0));
-            //poretda::mainlog << "CurrentRegion:Number of Points: " << currentRegionDataSet->GetNumberOfPoints() << "\n";
+            //segmentor::mainlog << "CurrentRegion:Number of Points: " << currentRegionDataSet->GetNumberOfPoints() << "\n";
             //---------------------------------------------------------------------------
             int numberOfConnections = 0; //Number of connections of the current region
             vector<int> regionsConnected; //ID of the regions connected to the current region
@@ -4766,7 +4766,7 @@ auto poretda::stagesEvolution(vector<string> fileNames)
                 double currentPointCoords[3];
                 currentRegionDataSet->GetPoint(k,currentPointCoords); //Save current point coordinates
                 
-                //poretda::mainlog << currentPointCoords[0] <<","<< currentPointCoords[1] << "," << currentPointCoords[2] << "\n";
+                //segmentor::mainlog << currentPointCoords[0] <<","<< currentPointCoords[1] << "," << currentPointCoords[2] << "\n";
 
                 acumulatedPotentialEnergy += currentRegionDataSet->GetPointData()->GetArray("potentialEnergyAtom")->GetVariantValue(k).ToDouble();
                 acumulatedSigmaXXStress += currentRegionDataSet->GetPointData()->GetArray("sigmaXX_Atom")->GetVariantValue(k).ToDouble();
@@ -4817,28 +4817,28 @@ auto poretda::stagesEvolution(vector<string> fileNames)
             if (fileNames[i] != "300000")
             {
                 closestNext = findMostCommonValue(closestNextStageRegionID);
-                //poretda::mainlog << "Closest Next Region:" << closestNext << "\n";
+                //segmentor::mainlog << "Closest Next Region:" << closestNext << "\n";
             }
             else if(fileNames[i] == "300000")
             {
                 closestNext = -1;
-                //poretda::mainlog << "Closest Next Region:" << closestNext << "\n";
+                //segmentor::mainlog << "Closest Next Region:" << closestNext << "\n";
             }
 
             int closestPrev;
             if (fileNames[i] != "87690")
             {
                 closestPrev = findMostCommonValue(closestPrevStageRegionID);
-                //poretda::mainlog << "Closest Prev Region:" << closestPrev << "\n";
+                //segmentor::mainlog << "Closest Prev Region:" << closestPrev << "\n";
             }
             if (fileNames[i] == "87690")
             {
                 closestPrev = -1;
-                //poretda::mainlog << "Closest Prev Region:" << closestPrev << "\n";
+                //segmentor::mainlog << "Closest Prev Region:" << closestPrev << "\n";
             }
             
             int currentReg = segmentationIDS->GetVariantValue(j).ToInt();
-            //poretda::mainlog << "Current Region:" << currentReg << "\n";
+            //segmentor::mainlog << "Current Region:" << currentReg << "\n";
             evolutionData << fileNames[i] << "," << currentReg << "," << closestNext << "," << closestPrev << "," << currentRegionDataSet->GetNumberOfPoints() <<","<< numberOfConnections << "," << averagePotentialEnergy << "," << averageSigmaXXStress << "," << averageSigmaYYStress << "," << averageSigmaZZStress<< "," << averageSigmaXYStress << "," << averageSigmaXZStress << "," << averageSigmaYZStress << "\n";
             
             // if (regionsConnected.size() > 0)
@@ -4889,7 +4889,7 @@ auto poretda::stagesEvolution(vector<string> fileNames)
  * @param inputVector Input vector
  * @return int Most common element in the vector
  */
-int poretda::findMostCommonValue(vector<int> &inputVector)
+int segmentor::findMostCommonValue(vector<int> &inputVector)
 {
     if (inputVector.empty())
     {
@@ -4945,11 +4945,11 @@ void isFileExist(const char *fileName)
         int status = remove(fileName);
         if (status == 0)
         {
-            poretda::mainlog << "Removed propertiesEvolutionPython.csv file from previous computations" << "\n";
+            segmentor::mainlog << "Removed propertiesEvolutionPython.csv file from previous computations" << "\n";
         }
         else
         {
-            poretda::mainlog << "Error while trying to remove propertiesEvolutionPython.csv file from previous computations" << "\n";
+            segmentor::mainlog << "Error while trying to remove propertiesEvolutionPython.csv file from previous computations" << "\n";
         }
      
     }
@@ -4962,10 +4962,10 @@ void isFileExist(const char *fileName)
  * @param grid Input grid from a reader function
  * @param useAllCores Use all cores available
  */
-void poretda::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
+void segmentor::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
 {
-    poretda::mainlog << "poretda: Energy Diagrams Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "segmentor: Energy Diagrams Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //VTK Function to apply Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -5055,10 +5055,10 @@ void poretda::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCore
  * @param grid Input grid from a reader function
  * @param useAllCores Use all available cores
  */
-void poretda::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
+void segmentor::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
 {
-    poretda::mainlog << "Energy Diagrams Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Energy Diagrams Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Apply Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -5169,10 +5169,10 @@ void poretda::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCor
  * @param grid Input grid from a reader function
  * @param useAllCores Use all available cores
  */
-void poretda::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
+void segmentor::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
 {
-    poretda::mainlog << "Distance Diagrams Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Distance Diagrams Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Apply Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -5237,10 +5237,10 @@ void poretda::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllC
  * @param useAllCores Use all cores available
  * @return auto
  */
-auto poretda::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string energyFile,double persistenceThreshold, bool useAllCores)
+auto segmentor::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string energyFile,double persistenceThreshold, bool useAllCores)
 {
-    poretda::mainlog << "Energy Includer Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Energy Includer Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     vtkSmartPointer<vtkGaussianCubeReader2> energyReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
     energyReader->SetFileName(energyFile.data()); //Set the input file
@@ -5344,10 +5344,10 @@ auto poretda::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string e
  * @param distanceSimp
  * @param energySimp
  */
-void poretda::energyVsDistance(string inputFile, string distanceDirectory, string energyDirectory)
+void segmentor::energyVsDistance(string inputFile, string distanceDirectory, string energyDirectory)
 {
-    poretda::mainlog << "Energy vs Distance Module" << "\n";
-    poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "Energy vs Distance Module" << "\n";
+    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     
@@ -5426,7 +5426,7 @@ void poretda::energyVsDistance(string inputFile, string distanceDirectory, strin
  * @param fileList  Vector storing the names of the Persistence Diagram files
  * @return auto
  */
-auto poretda::persistenceMatchings(bool useAllCores)
+auto segmentor::persistenceMatchings(bool useAllCores)
 {
     //We create a directory to save the results
     std::string func = "mkdir -p "; //Commands needed to create the folder
@@ -5442,7 +5442,7 @@ auto poretda::persistenceMatchings(bool useAllCores)
         
     else
     {
-        poretda::mainlog << "Voids Comparative Directories created" << endl;
+        segmentor::mainlog << "Voids Comparative Directories created" << endl;
     }
 
     system("rm -f diagramsList.txt"); //Delete previous one if existed
@@ -5460,7 +5460,7 @@ auto poretda::persistenceMatchings(bool useAllCores)
         }
         myFile.close();
     }
-    poretda::mainlog << files.size() << endl;
+    segmentor::mainlog << files.size() << endl;
 
 
     #pragma omp parallel for
@@ -5474,7 +5474,7 @@ auto poretda::persistenceMatchings(bool useAllCores)
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
 
-        poretda::mainlog << file_without_extension << endl;
+        segmentor::mainlog << file_without_extension << endl;
 
         ofstream comparativeData; //Stream to write the comparatives of each region
         comparativeData.open("../Results/VoidsComparative/" + file_without_extension + ".csv"); //Opening the writer
@@ -5572,7 +5572,7 @@ auto poretda::persistenceMatchings(bool useAllCores)
     // }
 }
 
-auto poretda::persistenceDiagramsWriter(bool useAllCores)
+auto segmentor::persistenceDiagramsWriter(bool useAllCores)
 {
     //We create a directory to save the results
     std::string func = "mkdir -p "; //Commands needed to create the folder
@@ -5588,7 +5588,7 @@ auto poretda::persistenceDiagramsWriter(bool useAllCores)
         
     else
     {
-        poretda::mainlog << "Directories created" << endl;
+        segmentor::mainlog << "Directories created" << endl;
     }
 
     system("rm -f diagramsList.txt"); //Delete previous one if existed
@@ -5606,7 +5606,7 @@ auto poretda::persistenceDiagramsWriter(bool useAllCores)
         }
         myFile.close();
     }
-    poretda::mainlog << files.size() << endl;
+    segmentor::mainlog << files.size() << endl;
 
     #pragma omp parallel for
     for (size_t i = 0; i < files.size(); i++)
@@ -5617,7 +5617,7 @@ auto poretda::persistenceDiagramsWriter(bool useAllCores)
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
 
-        poretda::mainlog << file_without_extension << endl;
+        segmentor::mainlog << file_without_extension << endl;
 
         ofstream comparativeData; //Stream to write the comparatives of each region
         comparativeData.open("../Results/DiagramsGrids/" + file_without_extension + ".csv"); //Opening the writer

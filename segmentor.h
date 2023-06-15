@@ -10,13 +10,13 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
  
 **********************************************************************/
 
-#ifndef poretda_h
-#define poretda_h
+#ifndef segmentor_h
+#define segmentor_h
 
 #include <stdio.h>
 #include "headers.h"
 
-class poretda
+class segmentor
 {
 private:
     
@@ -39,8 +39,8 @@ public:
     static  std::ofstream   errlog; 
 
     //Cleaned functions
-    poretda(std::string inputfilename);
-    ~poretda();
+    segmentor(std::string inputfilename);
+    ~segmentor();
     void superCell(vtkSmartPointer<vtkImageData> grid);
 
     void getVolume(string inputFolder, double resolution);
@@ -109,7 +109,7 @@ public:
 
 };
 
-#include "poretda.cpp"
+#include "segmentor.cpp"
 
 
 #endif 
