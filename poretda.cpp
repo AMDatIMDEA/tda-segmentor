@@ -1,14 +1,13 @@
 /*********************************************************************
 
-poretda - A segmentation tool for porous structures using the topology
-          toolkit (https://topology-tool-kit.github.io/)
+TDA-Segmentor     -     A segmentation tool for porous structures using the topology
+                 toolkit (https://topology-tool-kit.github.io/)
 
-Authors: Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com) 
-         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
-	 Maciek Haranczyk (maciej.haranczyk@imdea.org)
-   
-	 IMDEA Materiales Institute
-
+Authors:                        Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
+                 Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+                 Maciek Haranczyk (maciej.haranczyk@imdea.org)
+                 IMDEA Materiales Institute
+ 
 **********************************************************************/
 
 ofstream      poretda::mainlog;
@@ -141,6 +140,8 @@ poretda::~poretda()
  */
 void poretda::superCell(vtkSmartPointer<vtkImageData> grid)
 {
+
+    ttk::Timer timer;
     poretda::mainlog << "poretda: Super Cell Function  " << "\n";
     poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
@@ -212,21 +213,22 @@ void poretda::superCell(vtkSmartPointer<vtkImageData> grid)
         }
     }
    
-
+    double elapsedTime = timer.getElapsedTime();
+    poretda::mainlog << "Time taken for creating super cell data : " << elapsedTime << endl;
     poretda::mainlog << "Computing the Super Cell triangulation\n";
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
     triangulation->SetInputConnection(append->GetOutputPort());
     triangulation->Update();
 
-    
+    timer.reStart();
     poretda::mainlog << "Printing SuperCell" << "\n";
     vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
     segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
     //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
     segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Grid.vtk").c_str());
     segmentationWriter->Write();
-       
-
+    elapsedTime = timer.getElapsedTime();
+    poretda::mainlog << "Time taken to write super cell data : " << elapsedTime << endl;
     
     poretda::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
      

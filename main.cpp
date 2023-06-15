@@ -1,14 +1,13 @@
 /*********************************************************************
 
-poretda - A segmentation tool for porous structures using the topology
-          toolkit (https://topology-tool-kit.github.io/)
+TDA-Segmentor     -     A segmentation tool for porous structures using the topology
+                 toolkit (https://topology-tool-kit.github.io/)
 
-Authors: Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com) 
-         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
-         Maciek Haranczyk (maciej.haranczyk@imdea.org)
-
-         IMDEA Materiales Institute
-
+Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
+                 Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+                 Maciek Haranczyk (maciej.haranczyk@imdea.org)
+                 IMDEA Materiales Institute
+ 
 **********************************************************************/
 
 #include "poretda.h" 
