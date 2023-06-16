@@ -13,11 +13,11 @@ Authors:                        Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gma
 ofstream      segmentor::mainlog;
 ofstream      segmentor::errlog;
 
-segmentor::segmentor(string inputefilename){
+segmentor::segmentor(string inputfileName){
 
-    std::string::size_type const p(inputefilename.find_last_of('.'));
-    BaseFileName = inputefilename.substr(0, p);
-    
+    fileName = inputfileName;
+    std::string::size_type const p(inputfileName.find_last_of('.'));
+    BaseFileName = inputfileName.substr(0, p);
     ostringstream logstrm;
     ostringstream errstrm;
     logstrm << BaseFileName << ".log";
@@ -41,63 +41,31 @@ segmentor::segmentor(string inputefilename){
     mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
     mainlog << "                                                                                      " << "\n";
     mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
+    
+    mainlog << "\nBase file name:                         " << BaseFileName << "\n\n";
 
-    
-    //Results directory. All the output files will be saved here
 
-    //Linux system function to create folders
-    std::string func = "mkdir -p ";
-    //Place where the folder will be stored
-    std::string directory = "../Results"; //Directory
-    
-    func.append(directory);
-    
-    //Creating results directory
-    //---------------------------------------------------------------------------------------------
-    int status;
-    status = system(func.c_str());
-    if (status == -1)
+    // All the results will be saved in cwd/segmentor-BaseFileName.results/
+    std::stringstream str;
+    str << "segmentor-" << BaseFileName << ".results";
+    Directory = str.str();
+
+    std::ifstream check(Directory.c_str());
+    if (!check)
     {
-        errlog << "Error : " << strerror(errno) << endl;
+        std::stringstream com;
+        com << "mkdir " << Directory;
+        if( system( com.str().c_str() ) != 0)
+            std::cout << "\n Unable to make directory";
     }
-        
     else
     {
-        mainlog << "Results Directory created" << endl;
+        std::stringstream com;
+        com << "rm -f " << Directory << "/*";
+        if( system( com.str().c_str() ) != 0)
+            std::cout << "\n Unable to remove directory";
     }
-    //---------------------------------------------------------------------------------------------
 
-
-    //We create a subdirectory where the Persistence Diagrams will be computed(if needed)
-    //---------------------------------------------------------------------------------------------
-    std::string func2 = "mkdir -p "; //Commands needed to create the folder
-    std::string directory2 = "../Results/PersistenceDiagrams"; //Directory
-    
-    func2.append(directory2);
-    
-    int status2;
-    status2 = system(func2.c_str()); // Creating a directory
-    if (status2 == -1)
-    {
-        errlog << "Error : " << strerror(errno) << endl;
-    }
-        
-    else
-    {
-        mainlog << "Persistence Diagrams Directory created\n" << endl;
-        
-    }
-    //---------------------------------------------------------------------------------------------
-
-    //Subdirectories used to save some results(when computed)
-    //---------------------------------------------------------------------------------------------
-    //The "Done" folder will be used to save the name of the files which computation have been
-    //succesfully done
-    system("mkdir -p ../Results/Done");
-
-    system("mkdir -p ../Results/MaterialsInfo");
-    system("mkdir -p ../Results/MaterialsRegions");
-    //---------------------------------------------------------------------------------------------
 }
 
 /**
@@ -106,7 +74,8 @@ segmentor::segmentor(string inputefilename){
  */
 segmentor::~segmentor()
 {
-    mainlog << "segmentor: Closing class" << "\n";
+    segmentor::mainlog << "segmentor: Closing class" << "\n";
+
     //Creates a file with the material's name in the Done folder when the computation has been succesfully done.
     //This will be useful to check which material's are already computed in case a computation crashes
     string signalFile = "../Results/Done/" + BaseFileName;
@@ -1581,58 +1550,19 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
  * @param writeGridFile Write the results to an output file(OPTIONAL)
  * @return auto Grid from the Gaussian Cube file
  */
-auto segmentor::reader(string inputFilePath,double gridResolution, bool writeGridFile)
+auto segmentor::reader(double gridResolution, bool writeGridFile)
 {
-    segmentor::mainlog << "segmentor: Reader Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    segmentor::mainlog << "\nSegmentor: Reader Module" << "\n";
     ttk::Timer readerTime;
-    //Creating the input material result's folder
-    //----------------------------------------------------------------------------------------------
-    //Get the material name form the input directory
-
-    //Remove the directory from the input file path
-    std::string base_filename = inputFilePath.substr(inputFilePath.find_last_of("/\\") + 1);
-    std::string::size_type const p(base_filename.find_last_of('.'));
-    //Remove the extension from the material's name
-    std::string file_without_extension = base_filename.substr(0, p);
     
-    BaseFileName = file_without_extension;
-
-    //----------------------------------------------------------------------------------------------
-
-    segmentor::mainlog << "Current File:  " << BaseFileName << endl;
-
-
-
-    //Create the directory to save the results
-    //----------------------------------------------------------------------------------------------
-    std::string func = "mkdir -p "; //Commands needed to create the folder
-    std::string directory = "../Results/" +file_without_extension; //Directory
-    //directory.append(file_without_extension);
-    func.append(directory);
-    Directory = directory;
-
-    int status;
-    status = system(func.c_str()); // Creating a directory
-    if (status == -1)
-    {
-        segmentor::errlog << "Error : " << strerror(errno) << endl;
-    }
-        
-    else
-    {
-        segmentor::mainlog << "Directories created" << endl;
-    }
-
-    //----------------------------------------------------------------------------------------------
-
+    
     //Read the input files
     //----------------------------------------------------------------------------------------------
 
     //VTK function to reader Gaussian Cube files(*.cube)
     vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
     //Set the input path
-    cubeReader->SetFileName(inputFilePath.data());
+    cubeReader->SetFileName(fileName.c_str());
     cubeReader->Update();
 
     //Image data output(grid) from the Gaussian Cube file
@@ -1645,7 +1575,7 @@ auto segmentor::reader(string inputFilePath,double gridResolution, bool writeGri
         //VTK tool to write image data files
         vtkSmartPointer<vtkXMLImageDataWriter> imageWriter = vtkSmartPointer<vtkXMLImageDataWriter>::New();
         imageWriter->SetInputData(imageData);
-        imageWriter->SetFileName((directory+"/"+file_without_extension+"_grid.vti").c_str());
+        imageWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vti").c_str());
         imageWriter->Write();
     }
 
@@ -1654,7 +1584,6 @@ auto segmentor::reader(string inputFilePath,double gridResolution, bool writeGri
     GridResolution = gridResolution;
     double elapsedTime = readerTime.getElapsedTime();
     segmentor::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return imageData;
 }
 
@@ -2183,7 +2112,7 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
 {
     
     
-    segmentor::mainlog << "segmentor: InputPrecondition Module" << "\n";
+    segmentor::mainlog << "\nSegmentor: InputPrecondition Module" << "\n";
     ttk::Timer periodicTimer;
     //VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -2218,7 +2147,6 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
     
     double elapsedTime = periodicTimer.getElapsedTime();
     segmentor::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n"<<flush;
 
     return periodGrid;
     
@@ -2552,7 +2480,7 @@ auto  segmentor::getIndex(vector<int> v, int K)
  */
 auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
-    segmentor::mainlog << "segmentor: Morse Smale Complex Module" << "\n";
+    segmentor::mainlog << "\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
     
     ttk::Timer MSCTimer;
     //Persistence Diagram of the data
@@ -2620,7 +2548,10 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     morseSmaleComplex->SetComputeDescendingSeparatrices1(false);
     morseSmaleComplex->SetComputeDescendingSeparatrices2(false);
     morseSmaleComplex->Update();
-
+    
+    double timeTakenForMSC = MSCTimer.getElapsedTime();
+    MSCTimer.reStart();
+    segmentor::mainlog << "Time taken for MSC creation: " << timeTakenForMSC << "(s)" << endl;
     if (writeOutputs)
     {
         //Critical points file
@@ -2677,9 +2608,10 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     }
     
     
-    double elapsedTime = MSCTimer.getElapsedTime();
-    segmentor::mainlog << "Time elapsed in the Morse Smale Complex module: " << elapsedTime << "(s)" << endl;
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
+    double writeTime = MSCTimer.getElapsedTime();
+    segmentor::mainlog << "Time taken to write MSC files: " << writeTime << "(s)" << endl;
+    double totalTime = timeTakenForMSC + writeTime;
+    segmentor::mainlog << "Total time elapsed in the Morse Smale Complex module: " << totalTime << "(s)" << endl;
     
     return morseSmaleComplex;
     
@@ -2875,12 +2807,12 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
  */
 void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
 {
-    segmentor::mainlog << "segmentor: Void Segmentation Module" << "\n";
+    segmentor::mainlog << "\nSegmentor: Void Segmentation Module" << "\n" << flush;
     
     ttk::Timer VoidSegmentationTimer;
     //Writer of the .csv results file
     ofstream misDatos;
-    misDatos.open((Directory+"/"+ BaseFileName +"_Void.csv").c_str());
+    misDatos.open((Directory + "/" + BaseFileName + "_Void_Segments.csv").c_str());
     assert(misDatos.is_open());
     misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinimum,isSaddle,numberOfPoints,numberOfConnections,xScaled,yScaled,zScaled" << "\n";
 
@@ -2893,8 +2825,6 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     //Cell size of the current dataset
     double cellSize = cellDimensions[1] - cellDimensions[0];
     CellSize = cellSize;
-    segmentor::mainlog << "Cell Size: " << cellSize << "\n";
-
     //---------------------------------------------------------------------------------------------
 
 
@@ -3079,7 +3009,6 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     
     double elapsedTime = VoidSegmentationTimer.getElapsedTime(); 
     segmentor::mainlog << "Time elapsed in the void segmentation module: " << elapsedTime << "(s)\n" << flush;
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" << flush;
     
 }
 
@@ -3095,12 +3024,12 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
  */
 void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
 {
-    segmentor::mainlog << "segmentor: Accessible Void Space Module" << "\n";
+    segmentor::mainlog << "\nSegmentor: Accessible Void Space Module" << "\n" << flush;
 
     ttk::Timer VoidSpaceTimer;
     //Writer of the .csv results file
     ofstream segmentResults;
-    segmentResults.open(("../Results/MaterialsInfo/"+ BaseFileName +".csv").c_str());
+    segmentResults.open((Directory + "/" + BaseFileName + "-accessible-void-space-mRad-" + to_string(moleculeRadius) + ".csv").c_str());
     assert(segmentResults.is_open());
     segmentResults << "regionID,Scalar,Volume,NumberOfConexions" << "\n";
 
@@ -3279,7 +3208,6 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     
     double elapsedTime = VoidSpaceTimer.getElapsedTime();
     segmentor::mainlog << "Time elapsed in the accesible void space module: " << elapsedTime << "(s) \n" << flush;
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n" <<flush;
     
 }
 

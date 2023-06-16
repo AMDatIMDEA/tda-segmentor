@@ -21,7 +21,7 @@ int main(int argc, char * argv[]){
 
 
      segmentor * analysis = new segmentor(inputfilename);
-     auto grid = analysis->reader(inputfilename,0.15,0);
+     auto grid = analysis->reader(0.15,0);
      auto period = analysis->inputPrecondition(grid,true,true,false);
      auto morseSmale = analysis->MSC(period,0.12,1.0,true,false);
      analysis->accessibleVoidSpace(morseSmale,1.6,false);
@@ -30,7 +30,7 @@ int main(int argc, char * argv[]){
 
     //Computations' finish time(TDA)
     double elapsedTime = programTimer.getElapsedTime();
-    segmentor::mainlog << "Total Time taken for all the files: " << elapsedTime << " seconds" <<endl;
+    segmentor::mainlog << "\nTotal Time taken for all the files: " << elapsedTime << " seconds" <<endl;
 
     delete analysis;
 
