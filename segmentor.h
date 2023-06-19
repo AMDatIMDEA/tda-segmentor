@@ -25,7 +25,7 @@ private:
     
 public:
     //Nanoporous Material name
-    string BaseFileName, fileName;
+    string BaseFileName, fileName, extensionName;
     //Directory where the results will be store
     string Directory;
     //Input grid
@@ -44,9 +44,10 @@ public:
     void superCell(vtkSmartPointer<vtkImageData> grid);
 
     void getVolume(string inputFolder, double resolution);
+    double getGridResolution();
     void getCubeVolume(string inputFolder, double resolution);
     auto reader(string inputFilePath,int gridResolution, bool writeGridFile);
-    auto reader(double gridResolution,bool writeGridFile);
+    auto reader(bool writeGridFile = false);
     auto readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile);
     auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);

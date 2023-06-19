@@ -18,6 +18,9 @@ segmentor::segmentor(string inputfileName){
     fileName = inputfileName;
     std::string::size_type const p(inputfileName.find_last_of('.'));
     BaseFileName = inputfileName.substr(0, p);
+    extensionName = inputfileName.substr(p,inputfileName.length());
+    
+    
     ostringstream logstrm;
     ostringstream errstrm;
     logstrm << BaseFileName << ".log";
@@ -40,10 +43,10 @@ segmentor::segmentor(string inputfileName){
     mainlog << "                                                                                      " << "\n";
     mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
     mainlog << "                                                                                      " << "\n";
-    mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
+    mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n\n"<< flush;
     
-    mainlog << "\nBase file name:                         " << BaseFileName << "\n\n";
-
+    mainlog << "Base file name  :                         " << BaseFileName << "\n" << flush;
+    mainlog << "Extension       :                         " << extensionName << "\n\n" << flush;
 
     // All the results will be saved in cwd/segmentor-BaseFileName.results/
     std::stringstream str;
@@ -1550,7 +1553,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
  * @param writeGridFile Write the results to an output file(OPTIONAL)
  * @return auto Grid from the Gaussian Cube file
  */
-auto segmentor::reader(double gridResolution, bool writeGridFile)
+auto segmentor::reader(bool writeGridFile)
 {
     segmentor::mainlog << "\nSegmentor: Reader Module" << "\n";
     ttk::Timer readerTime;
@@ -1581,11 +1584,82 @@ auto segmentor::reader(double gridResolution, bool writeGridFile)
 
  
     //Save the resolution to the class variables in order to be used in other functions
-    GridResolution = gridResolution;
+    GridResolution = getGridResolution();
+    segmentor::mainlog << "Grid Resolution :          " << GridResolution << "\n";
+    
     double elapsedTime = readerTime.getElapsedTime();
     segmentor::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
     return imageData;
 }
+
+
+
+
+double segmentor::getGridResolution() {
+    
+    ifstream inputFile;
+    double gridResX[3], gridResY[3], gridResZ[3];
+    
+    if (extensionName == ".cube")
+    {
+        
+        inputFile.open(fileName);
+        
+        if (inputFile.is_open())
+        {
+            
+            string line;
+            //Number of the line that is being readed
+            int lineNumber = 0;
+            while (getline(inputFile,line))
+            {
+                if (lineNumber == 3)
+                {
+                    stringstream ss(line);
+                    int nx; ss >> nx;
+                    ss >> gridResX[0]; ss >> gridResX[1]; ss >> gridResX[2];
+                }
+                
+                if (lineNumber == 4)
+                {
+                    stringstream ss(line);
+                    int ny; ss >> ny;
+                    ss >> gridResY[0]; ss >> gridResY[1]; ss >> gridResY[2];
+                }
+                
+                if (lineNumber == 5)
+                {
+                    stringstream ss(line);
+                    int nz; ss >> nz;
+                    ss >> gridResZ[0]; ss >> gridResZ[1]; ss >> gridResZ[2];
+                }
+                
+                lineNumber++;
+            }
+                    
+        }
+        
+        inputFile.close();
+        segmentor::mainlog << "grid Resolution X :   " << gridResX[0] << "    " << gridResX[1] << "    " << gridResX[2] << "\n";
+        segmentor::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
+        segmentor::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
+        
+        if ( (gridResX[0] != gridResY[1])  || (gridResY[1] != gridResZ[2]) || (gridResZ[2] != gridResX[0])  )
+        {
+            segmentor::mainlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
+            segmentor::errlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
+        }
+        
+    } else {
+        
+        segmentor::mainlog << "File is not of .cube type, grid resolution is not set automatically" << endl;
+        segmentor::errlog  << "File is not of .cube type, grid resolution is not set automatically" << endl;
+        
+    }
+    
+    return gridResX[0];
+}
+
 
 
 
