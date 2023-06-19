@@ -11,20 +11,29 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 **********************************************************************/
 
 #include "segmentor.h" 
+#include "instructions.h"
+
 
 int main(int argc, char * argv[]){
        
 
      ttk::Timer programTimer;
-
-     string inputfilename = argv[1];
+    
+    if (argc != 4) {
+        printInstructions();
+        exit(0);
+    }
+    
+    double persistenceValue = stod(argv[1]);
+    double proberadius = stod(argv[2]);
+    string inputfilename = argv[3];
 
 
      segmentor * analysis = new segmentor(inputfilename);
      auto grid = analysis->reader();
-     auto period = analysis->inputPrecondition(grid,true,true,false);
-     auto morseSmale = analysis->MSC(period,0.12,1.0,true,false);
-     analysis->accessibleVoidSpace(morseSmale,1.6,false);
+     auto periodicGrid = analysis->inputPrecondition(grid,true,true,false);
+     auto morseSmale = analysis->MSC(periodicGrid,persistenceValue,1.0,true,false);
+     analysis->accessibleVoidSpace(morseSmale,proberadius,false);
      analysis->voidSegmentation(morseSmale,0);
 
 
