@@ -2589,6 +2589,8 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     
     //Persistence Threshold for simplification
     double minimumPersistence = persistencePercentage * maximumPersistence;
+    segmentor::mainlog << "Maximum persistence = " << maximumPersistence << ", Persistent Percentage (input) = " << persistencePercentage << endl;
+    segmentor::mainlog << "Persistence threshold = " << minimumPersistence << endl;
     //Persistence threshold for future simplifications
     vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
     persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
@@ -2626,6 +2628,13 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     double timeTakenForMSC = MSCTimer.getElapsedTime();
     MSCTimer.reStart();
     segmentor::mainlog << "Time taken for MSC creation: " << timeTakenForMSC << "(s)" << endl;
+    
+    int numberOfDescendingManifolds = getNumberOfDescendingManifolds(morseSmaleComplex);
+    int numberOfAscendingManifolds = getNumberOfAscendingManifolds(morseSmaleComplex);
+    
+    segmentor::mainlog << "Total number of descending manifolds (typically void segments) : " << numberOfDescendingManifolds << endl;
+    segmentor::mainlog << "Total number of ascending manifolds (typically solid segments) : " << numberOfAscendingManifolds << endl;
+
     if (writeOutputs)
     {
         //Critical points file
@@ -2688,6 +2697,54 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     segmentor::mainlog << "Total time elapsed in the Morse Smale Complex module: " << totalTime << "(s)" << endl;
     
     return morseSmaleComplex;
+    
+}
+
+
+
+
+int segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
+        
+    // Output the number of descending manifolds
+    vtkSmartPointer<ttkExtract> descendingManifolds = vtkSmartPointer<ttkExtract>::New();
+    //accessibleSpace->SetDebugLevel(1);
+    descendingManifolds->SetUseAllCores(true);
+    descendingManifolds->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    descendingManifolds->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
+    descendingManifolds->SetExtractionMode(3); //Array Values
+    descendingManifolds->SetExtractUniqueValues(true);
+    descendingManifolds->Update();
+
+    auto descendingManifoldsDataset = vtkDataSet::SafeDownCast(descendingManifolds->GetOutputDataObject(0));
+    auto descendingManifoldsID = descendingManifoldsDataset->GetFieldData()->GetAbstractArray("UniqueDescendingManifold");
+
+    int numberOfDescendingManifolds = descendingManifoldsID->GetNumberOfValues();
+    
+    return numberOfDescendingManifolds;
+    
+}
+
+
+
+
+int segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
+    
+    // Output the number of descending manifolds
+    vtkSmartPointer<ttkExtract> ascendingManifolds = vtkSmartPointer<ttkExtract>::New();
+    //accessibleSpace->SetDebugLevel(1);
+    ascendingManifolds->SetUseAllCores(true);
+    ascendingManifolds->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    ascendingManifolds->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
+    ascendingManifolds->SetExtractionMode(3); //Array Values
+    ascendingManifolds->SetExtractUniqueValues(true);
+    ascendingManifolds->Update();
+
+    auto ascendingManifoldsDataset = vtkDataSet::SafeDownCast(ascendingManifolds->GetOutputDataObject(0));
+    auto ascendingManifoldsID = ascendingManifoldsDataset->GetFieldData()->GetAbstractArray("UniqueAscendingManifold");
+
+    int numberOfAscendingManifolds = ascendingManifoldsID->GetNumberOfValues();
+    
+    return numberOfAscendingManifolds;
     
 }
 

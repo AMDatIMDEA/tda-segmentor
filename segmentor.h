@@ -44,6 +44,9 @@ public:
     void superCell(vtkSmartPointer<vtkImageData> grid);
 
     void getVolume(string inputFolder, double resolution);
+    int getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
+    int getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
+
     double getGridResolution();
     void getCubeVolume(string inputFolder, double resolution);
     auto reader(string inputFilePath,int gridResolution, bool writeGridFile);
