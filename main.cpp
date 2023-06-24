@@ -16,7 +16,6 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 
 int main(int argc, char * argv[]){
        
-
      ttk::Timer programTimer;
     
     if (argc != 4) {

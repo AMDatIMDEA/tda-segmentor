@@ -79,13 +79,6 @@ segmentor::~segmentor()
 {
     segmentor::mainlog << "segmentor: Closing class" << "\n";
 
-    //Creates a file with the material's name in the Done folder when the computation has been succesfully done.
-    //This will be useful to check which material's are already computed in case a computation crashes
-    string signalFile = "../Results/Done/" + BaseFileName;
-    ofstream signalR(signalFile);
-    signalR << "Checking \n";
-    signalR.close();
-
     if (mainlog.good())
     {
         mainlog << "\n\nFinished Analysis!" << endl;
