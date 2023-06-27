@@ -45,7 +45,7 @@ if (VTK_VERSION VERSION_LESS "8.90.0")
   target_link_libraries(ReadCML PRIVATE ${VTK_LIBRARIES})
 else ()
   # include all components
-  add_executable(poretda MACOSX_BUNDLE main.cpp instructions.cpp)
+  add_executable(poretda MACOSX_BUNDLE src/main.cpp src/instructions.cpp src/parameters.cpp src/logger.cpp)
   target_link_libraries(poretda PRIVATE ${VTK_LIBRARIES})
   # vtk_module_autoinit is needed
   vtk_module_autoinit(
