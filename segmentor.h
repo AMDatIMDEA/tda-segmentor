@@ -15,6 +15,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 
 #include <stdio.h>
 #include "headers.h"
+#include "logger.h"
 
 class segmentor
 {
@@ -34,9 +35,6 @@ public:
     double GridResolution;
     //Cell Size(default to zero)
     double CellSize = 0;
-
-    static  std::ofstream   mainlog;
-    static  std::ofstream   errlog; 
 
     //Cleaned functions
     segmentor(std::string inputfilename);

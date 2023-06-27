@@ -12,35 +12,54 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 
 #include "segmentor.h" 
 #include "instructions.h"
+#include "parameters.h"
+#include "logger.h"
 
-
-int main(int argc, char * argv[]){
-       
-     ttk::Timer programTimer;
+int main(int argc, char ** argv){
     
-    if (argc != 4) {
-        printInstructions();
-        exit(0);
-    }
+    ttk::Timer programTimer;
     
-    double persistenceValue = stod(argv[1]);
-    double proberadius = stod(argv[2]);
-    string inputfilename = argv[3];
+    parameters param;
+    param.parser(argc,argv);
+    logger::openLogfiles(param.inputfilename, param.saveLogFile);
+    param.printinvocation(argc, argv);
+    param.writetoLogFile();
+        
+    
+    segmentor * analysis = new segmentor(param.inputfilename);
+    
 
-
-     segmentor * analysis = new segmentor(inputfilename);
      auto grid = analysis->reader();
      auto periodicGrid = analysis->inputPrecondition(grid,true,true,false);
-     auto morseSmale = analysis->MSC(periodicGrid,persistenceValue,1.0,true,false);
-     analysis->accessibleVoidSpace(morseSmale,proberadius,false);
-     analysis->voidSegmentation(morseSmale,0);
+     
+    vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;
+    
+    if (param.segmentationFlag){
+        morseSmaleComplex = analysis->MSC(periodicGrid,param.persistenceThreshold,1.0,true,false);
+    }
 
+    for (size_t i = 0; i < param.moduleNames.size(); i++ )
+    {
+        if (param.moduleNames[i] == "accessiblevoidspace")
+            analysis->accessibleVoidSpace(morseSmaleComplex,param.probeRadius,false);
+        else if (param.moduleNames[i] == "voidsegmentation")
+            analysis->voidSegmentation(morseSmaleComplex,0);
+        else if (param.moduleNames[i] == "persistencecurve")
+        {
+            // To be completed
+        } else if (param.moduleNames[i] == "solidsegmentation"){
+            // to be completed
+        }
+        
+    }
+     
 
     //Computations' finish time(TDA)
     double elapsedTime = programTimer.getElapsedTime();
-    segmentor::mainlog << "\nTotal Time taken for all the files: " << elapsedTime << " seconds" <<endl;
+    logger::mainlog << "\nTotal Time taken for all the files: " << elapsedTime << " seconds" <<endl;
 
     delete analysis;
+    logger::closeLogfiles();
 
     return 0;
 }

@@ -10,8 +10,6 @@ Authors:                        Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gma
  
 **********************************************************************/
 
-ofstream      segmentor::mainlog;
-ofstream      segmentor::errlog;
 
 segmentor::segmentor(string inputfileName){
 
@@ -19,34 +17,16 @@ segmentor::segmentor(string inputfileName){
     std::string::size_type const p(inputfileName.find_last_of('.'));
     BaseFileName = inputfileName.substr(0, p);
     extensionName = inputfileName.substr(p,inputfileName.length());
-    
-    
-    ostringstream logstrm;
-    ostringstream errstrm;
-    logstrm << BaseFileName << ".log";
-    errstrm << BaseFileName << ".err";
-    string logFilename = logstrm.str();
-    string errFilename = errstrm.str();
-    mainlog.open(logFilename.c_str());
-    errlog.open(errFilename.c_str());
-    
-    
-    if (!mainlog){
-        std::cout << "Error opening mainlog file!" << endl;
-        exit(0);
-    } else if (!errlog) {
-        std::cout << "Error opening error log file!" << endl;
-    }
 
-    mainlog << "\n";
-    mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
-    mainlog << "                                                                                      " << "\n";
-    mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
-    mainlog << "                                                                                      " << "\n";
-    mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n\n"<< flush;
+    logger::mainlog << "\n";
+    logger::mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
+    logger::mainlog << "                                                                                      " << "\n";
+    logger::mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
+    logger::mainlog << "                                                                                      " << "\n";
+    logger::mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n\n"<< flush;
     
-    mainlog << "Base file name  :                         " << BaseFileName << "\n" << flush;
-    mainlog << "Extension       :                         " << extensionName << "\n\n" << flush;
+    logger::mainlog << "Base file name  :                         " << BaseFileName << "\n" << flush;
+    logger::mainlog << "Extension       :                         " << extensionName << "\n\n" << flush;
 
     // All the results will be saved in cwd/segmentor-BaseFileName.results/
     std::stringstream str;
@@ -77,19 +57,7 @@ segmentor::segmentor(string inputfileName){
  */
 segmentor::~segmentor()
 {
-    segmentor::mainlog << "segmentor: Closing class" << "\n";
-
-    if (mainlog.good())
-    {
-        mainlog << "\n\nFinished Analysis!" << endl;
-        mainlog.close();
-    }
-    
-    if (errlog.good())
-    {
-        errlog << "\n\nFinished Analysis!" << endl;
-        errlog.close();
-    }
+    logger::mainlog << "segmentor: Closing class" << "\n";
 
 }
 
@@ -107,8 +75,8 @@ void segmentor::superCell(vtkSmartPointer<vtkImageData> grid)
 {
 
     ttk::Timer timer;
-    segmentor::mainlog << "segmentor: Super Cell Function  " << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: Super Cell Function  " << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Invert the values of the distance field. Negative values for the void space and
     // positive values for the solid space of the Nanoporous Material
@@ -129,7 +97,7 @@ void segmentor::superCell(vtkSmartPointer<vtkImageData> grid)
     double ylim = materialBounds[3];
     double zlim = materialBounds[5];
 
-    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
 
     //Possibilities to check when computing the super cell. 8 possibilities(instead of 24) will be used in order to save up memory
@@ -179,23 +147,23 @@ void segmentor::superCell(vtkSmartPointer<vtkImageData> grid)
     }
    
     double elapsedTime = timer.getElapsedTime();
-    segmentor::mainlog << "Time taken for creating super cell data : " << elapsedTime << endl;
-    segmentor::mainlog << "Computing the Super Cell triangulation\n";
+    logger::mainlog << "Time taken for creating super cell data : " << elapsedTime << endl;
+    logger::mainlog << "Computing the Super Cell triangulation\n";
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
     triangulation->SetInputConnection(append->GetOutputPort());
     triangulation->Update();
 
     timer.reStart();
-    segmentor::mainlog << "Printing SuperCell" << "\n";
+    logger::mainlog << "Printing SuperCell" << "\n";
     vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
     segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
     //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
     segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Grid.vtk").c_str());
     segmentationWriter->Write();
     elapsedTime = timer.getElapsedTime();
-    segmentor::mainlog << "Time taken to write super cell data : " << elapsedTime << endl;
+    logger::mainlog << "Time taken to write super cell data : " << elapsedTime << endl;
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
      
 }
 
@@ -234,11 +202,11 @@ void segmentor::getVolume(string inputFolder,double resolution)
             }
             myFile.close();
         }
-        segmentor::mainlog << files.size() << endl;
+        logger::mainlog << files.size() << endl;
     }
     else
     {
-        segmentor::mainlog << "Folder not found" << endl;
+        logger::mainlog << "Folder not found" << endl;
         
     }
 
@@ -260,9 +228,9 @@ void segmentor::getVolume(string inputFolder,double resolution)
         std::string::size_type const p(base_filename.find_last_of('.'));
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
-        segmentor::mainlog << file_without_extension << endl;
+        logger::mainlog << file_without_extension << endl;
         
-        //segmentor::mainlog << currentFile << endl;
+        //logger::mainlog << currentFile << endl;
 
         vtkSmartPointer<vtkUnstructuredGridReader> reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
         reader->SetFileName(currentFile.c_str());
@@ -274,13 +242,13 @@ void segmentor::getVolume(string inputFolder,double resolution)
 
         double volume = numberOfCells * unitCellVolume;
 
-        segmentor::mainlog << numberOfCells << "     " << volume << endl;
+        logger::mainlog << numberOfCells << "     " << volume << endl;
 
         output << files[i] << "," << volume << endl;
 
         
         counter++;
-        segmentor::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
+        logger::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
         
 
     }
@@ -311,7 +279,7 @@ void segmentor::getCubeVolume(string inputFolder,double resolution)
 
     if (!findFolder)
     {
-        segmentor::mainlog << "Folder found\n";
+        logger::mainlog << "Folder found\n";
     }
     
     
@@ -330,11 +298,11 @@ void segmentor::getCubeVolume(string inputFolder,double resolution)
             }
             myFile.close();
         }
-        segmentor::mainlog << files.size() << endl;
+        logger::mainlog << files.size() << endl;
     }
     else
     {
-        segmentor::mainlog << "Folder not found" << endl;
+        logger::mainlog << "Folder not found" << endl;
         
     }
     
@@ -353,9 +321,9 @@ void segmentor::getCubeVolume(string inputFolder,double resolution)
         std::string::size_type const p(base_filename.find_last_of('.'));
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
-        segmentor::mainlog << file_without_extension << endl;
+        logger::mainlog << file_without_extension << endl;
         
-        //segmentor::mainlog << currentFile << endl;
+        //logger::mainlog << currentFile << endl;
         vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
         cubeReader->SetFileName(currentFile.data()); //Set the input file
         cubeReader->Update();
@@ -368,13 +336,13 @@ void segmentor::getCubeVolume(string inputFolder,double resolution)
 
         double volume = numberOfCells * unitCellVolume;
 
-        segmentor::mainlog << numberOfCells << "     " << volume << endl;
+        logger::mainlog << numberOfCells << "     " << volume << endl;
 
         output << file_without_extension << "," << volume << endl;
 
         
         counter++;
-        segmentor::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
+        logger::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
         
 
     }
@@ -389,8 +357,8 @@ void segmentor::getCubeVolume(string inputFolder,double resolution)
 
 auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
 {
-    segmentor::mainlog << "Segment Shapes Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Segment Shapes Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
 
     //Compute the outer box bounds of the material
@@ -402,7 +370,7 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
     int ylim = materialBounds[3];
     int zlim = materialBounds[5];
 
-    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
     //Segmentation corresponding to the void structure
     vtkSmartPointer<vtkThreshold> voidStructure = vtkSmartPointer<vtkThreshold>::New();
@@ -429,7 +397,7 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
     for (size_t i = 0; i < idList->GetNumberOfValues(); i++)
     {
         int segmentID = idList->GetVariantValue(i).ToInt();
-        segmentor::mainlog << "Current Segment:" << segmentID << endl;
+        logger::mainlog << "Current Segment:" << segmentID << endl;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
@@ -468,7 +436,7 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
             if (segmentData->GetNumberOfPoints() > 200)
             {
                 
-                segmentor::mainlog << "Segment: " << segmentID << " is completed\n";
+                logger::mainlog << "Segment: " << segmentID << " is completed\n";
                 //Triangulate the segment
                 vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
                 triangulation->SetInputConnection(segment->GetOutputPort());
@@ -492,7 +460,7 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
 
                 if (writeSegments)
                 {
-                    //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+                    //logger::mainlog << "Writing segment" << acceptedRegions[i] << endl;
                     
                     vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
                     regionWriter->SetInputConnection(extraction->GetOutputPort());
@@ -505,7 +473,7 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
 
         else
         {
-            segmentor::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
+            logger::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
             
             
             vtkSmartPointer<vtkAppendFilter> append = vtkSmartPointer<vtkAppendFilter>::New(); //Filter used to append several fragments of the region
@@ -575,7 +543,7 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
 
             if (writeSegments)
             {
-                //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+                //logger::mainlog << "Writing segment" << acceptedRegions[i] << endl;
                 
                 vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
                 regionWriter->SetInputConnection(append->GetOutputPort());
@@ -595,8 +563,8 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
 
 auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
 {
-    segmentor::mainlog << "Segment Shapes Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Segment Shapes Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
 
     //Compute the outer box bounds of the material
@@ -608,7 +576,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     int ylim = materialBounds[3];
     int zlim = materialBounds[5];
 
-    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
     //Segmentation corresponding to the void structure
     vtkSmartPointer<vtkThreshold> voidStructure = vtkSmartPointer<vtkThreshold>::New();
@@ -636,7 +604,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     for (size_t i = 0; i < idList->GetNumberOfValues(); i++)
     {
         int segmentID = idList->GetVariantValue(i).ToInt();
-        segmentor::mainlog << "Current Segment:" << segmentID << endl;
+        logger::mainlog << "Current Segment:" << segmentID << endl;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
@@ -676,7 +644,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             if (segmentData->GetNumberOfPoints() > 200)
             {
                 
-                segmentor::mainlog << "Segment: " << segmentID << " is completed\n";
+                logger::mainlog << "Segment: " << segmentID << " is completed\n";
                 //Triangulate the segment
                 vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
                 triangulation->SetInputConnection(segment->GetOutputPort());
@@ -700,7 +668,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
 
                 if (writeSegments)
                 {
-                    //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+                    //logger::mainlog << "Writing segment" << acceptedRegions[i] << endl;
                     
                     vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
                     regionWriter->SetInputConnection(extraction->GetOutputPort());
@@ -713,7 +681,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
 
         else
         {
-            segmentor::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
+            logger::mainlog << "Segment: " << segmentID << " is splitted in pieces\n";
             //Check how the pieces are splitted
             double segmentBounds[6];
             segmentData->GetBounds(segmentBounds);
@@ -722,7 +690,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             int segmentYLim = segmentBounds[3];
             int segmentZLim = segmentBounds[5];
 
-            segmentor::mainlog << "Segment Limits: " << segmentXLim << "," << segmentYLim << "," << segmentZLim << "\n";
+            logger::mainlog << "Segment Limits: " << segmentXLim << "," << segmentYLim << "," << segmentZLim << "\n";
 
             bool signalX = false;
             bool signalY = false;
@@ -763,7 +731,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             
             if ((signalX==true) && (signalY==true) && (signalZ==false))
             {
-                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                logger::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto x : xVec)
                 {
@@ -799,7 +767,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             }
             if (signalX == true && signalZ == true && (signalY == false))
             {
-                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                logger::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto x : xVec)
                 {
@@ -836,7 +804,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             }
             if (signalY == true && signalZ == true && (signalX == false))
             {
-                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                logger::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto z : zVec)
                 {
@@ -872,7 +840,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             }
             if (signalX == true && signalY == true && signalZ == true)
             {
-                segmentor::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
+                logger::mainlog << "SignalX: " << signalX << " SignalY: " << signalY << " SignalZ: " << signalZ << endl;
                 
                 for(auto x : xVec)
                 {
@@ -906,7 +874,7 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
                             // append->Update();
 
                             group->AddInputConnection(transform->GetOutputPort());
-                            segmentor::mainlog << group->GetNumberOfInputConnections(0) << endl;
+                            logger::mainlog << group->GetNumberOfInputConnections(0) << endl;
 
 
                         }
@@ -919,11 +887,11 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             group->Update();
             
             
-            segmentor::mainlog <<group->GetNumberOfOutputPorts() << endl;
+            logger::mainlog <<group->GetNumberOfOutputPorts() << endl;
 
 
 
-            segmentor::mainlog << "Merging points" << endl;
+            logger::mainlog << "Merging points" << endl;
             vtkSmartPointer<vtkAppendFilter> append = vtkSmartPointer<vtkAppendFilter>::New();
             append->SetInputConnection(group->GetOutputPort());
             append->MergePointsOn();
@@ -934,12 +902,12 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
 
             
 
-            // segmentor::mainlog << group->GetNumberOfInputPorts() << endl;
-            // segmentor::mainlog << group->GetNumberOfInputConnections() << endl;
+            // logger::mainlog << group->GetNumberOfInputPorts() << endl;
+            // logger::mainlog << group->GetNumberOfInputConnections() << endl;
 
 
             auto appendDataSet = vtkDataSet::SafeDownCast(append->GetOutputDataObject(0));
-            segmentor::mainlog << appendDataSet->GetNumberOfPoints() << endl;
+            logger::mainlog << appendDataSet->GetNumberOfPoints() << endl;
 
             
             
@@ -1103,7 +1071,7 @@ auto segmentor::superCellMSC(string inputFile, double persistencePercentage, dou
     
     
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     string signalFile = "../Results/Done/" + file_without_extension;
     ofstream signalR(signalFile);
@@ -1116,8 +1084,8 @@ auto segmentor::superCellMSC(string inputFile, double persistencePercentage, dou
 
 auto segmentor::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persistenceThreshold, double saddlesaddleIncrement, bool useAllCores, bool writeSuperCell, bool writeSegmentation)
 {
-    segmentor::mainlog << "Super Cell Module 2 " << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Super Cell Module 2 " << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Invert the values of the distance field. Negative values for the void space and
     // positive values for the solid space
@@ -1136,7 +1104,7 @@ auto segmentor::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double pers
     double ylim = materialBounds[3];
     double zlim = materialBounds[5];
 
-    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
 
     //Possibilities to check when computing the super cell
@@ -1193,20 +1161,20 @@ auto segmentor::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double pers
                 // groupie->Update();
 
                 counter++;
-                segmentor::mainlog << counter << endl;
+                logger::mainlog << counter << endl;
             }
         }
     }
    
 
-    segmentor::mainlog << "Computing triangulation\n";
+    logger::mainlog << "Computing triangulation\n";
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
     triangulation->SetInputConnection(append->GetOutputPort());
     triangulation->Update();
 
     if(writeSuperCell)
     {
-       segmentor::mainlog << "Printing SuperCell" << "\n";
+       logger::mainlog << "Printing SuperCell" << "\n";
        vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
        segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
        //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
@@ -1345,12 +1313,12 @@ auto segmentor::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double pers
     
     
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     
    
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
      
 }
 
@@ -1369,7 +1337,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
     
     
     
-    segmentor::mainlog << "Reading segmentation" << endl;
+    logger::mainlog << "Reading segmentation" << endl;
     vtkSmartPointer<vtkUnstructuredGridReader> segmentation = vtkSmartPointer<vtkUnstructuredGridReader>::New();
     segmentation->SetFileName(filePath.c_str());
     segmentation->Update();
@@ -1390,9 +1358,9 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
     double centerZMax = 0.75 * zlim;
     double centerZMin = 0.25 * zlim;
 
-    segmentor::mainlog << xlim << "," << ylim << "," << zlim << endl;
+    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
-    segmentor::mainlog << centerXMin << "," << centerXMax << "|" << centerYMin << "," << centerYMax << "|" << centerZMin << "," << centerZMax << endl;
+    logger::mainlog << centerXMin << "," << centerXMax << "|" << centerYMin << "," << centerYMax << "|" << centerZMin << "," << centerZMax << endl;
 
 
     //Segmentation corresponding to the solid structure
@@ -1406,7 +1374,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
 
     auto voidStructureDataSet = vtkDataSet::SafeDownCast(voidStructure->GetOutputDataObject(0));
 
-    segmentor::mainlog << "Reading Critical Points" << endl;
+    logger::mainlog << "Reading Critical Points" << endl;
 
     //Critical points file
     vtkSmartPointer<vtkPolyDataReader> criticalPoints = vtkSmartPointer<vtkPolyDataReader>::New();
@@ -1432,7 +1400,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
 
     auto minimasDataSet = vtkDataSet::SafeDownCast(minimasVoid->GetOutputDataObject(0));
 
-    segmentor::mainlog << "Looking for the segments of interest" << endl;
+    logger::mainlog << "Looking for the segments of interest" << endl;
     for (size_t i = 0; i < minimasDataSet->GetNumberOfPoints(); i++)
     {
         double pointCoords[3];
@@ -1441,7 +1409,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
 
         if ((pointCoords[0] > centerXMin) && (pointCoords[0] < centerXMax) && (pointCoords[1] > centerYMin) && (pointCoords[1] < centerYMax) && (pointCoords[2] > centerZMin) && (pointCoords[2] < centerZMax))
         {
-            segmentor::mainlog << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << endl;
+            logger::mainlog << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << endl;
 
             
             int closestPoint = voidStructureDataSet->FindPoint(pointCoords);
@@ -1548,7 +1516,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
  */
 auto segmentor::reader(bool writeGridFile)
 {
-    segmentor::mainlog << "\nSegmentor: Reader Module" << "\n";
+    logger::mainlog << "\nSegmentor: Reader Module" << "\n";
     ttk::Timer readerTime;
     
     
@@ -1578,10 +1546,10 @@ auto segmentor::reader(bool writeGridFile)
  
     //Save the resolution to the class variables in order to be used in other functions
     GridResolution = getGridResolution();
-    segmentor::mainlog << "Grid Resolution :          " << GridResolution << "\n";
+    logger::mainlog << "Grid Resolution :          " << GridResolution << "\n";
     
     double elapsedTime = readerTime.getElapsedTime();
-    segmentor::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
+    logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
     return imageData;
 }
 
@@ -1633,20 +1601,20 @@ double segmentor::getGridResolution() {
         }
         
         inputFile.close();
-        segmentor::mainlog << "grid Resolution X :   " << gridResX[0] << "    " << gridResX[1] << "    " << gridResX[2] << "\n";
-        segmentor::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
-        segmentor::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
+        logger::mainlog << "grid Resolution X :   " << gridResX[0] << "    " << gridResX[1] << "    " << gridResX[2] << "\n";
+        logger::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
+        logger::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
         
         if ( (gridResX[0] != gridResY[1])  || (gridResY[1] != gridResZ[2]) || (gridResZ[2] != gridResX[0])  )
         {
-            segmentor::mainlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
-            segmentor::errlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
+            logger::mainlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
+            logger::errlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
         }
         
     } else {
         
-        segmentor::mainlog << "File is not of .cube type, grid resolution is not set automatically" << endl;
-        segmentor::errlog  << "File is not of .cube type, grid resolution is not set automatically" << endl;
+        logger::mainlog << "File is not of .cube type, grid resolution is not set automatically" << endl;
+        logger::errlog  << "File is not of .cube type, grid resolution is not set automatically" << endl;
         
     }
     
@@ -1670,8 +1638,8 @@ double segmentor::getGridResolution() {
  */
 auto segmentor::readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile)
 {
-    segmentor::mainlog << "Combined Reader Function" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Combined Reader Function" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Creating folder:-----------------------------------------------------------------------------
     //We get the input file name
     std::string base_filename = inputFilePath1.substr(inputFilePath1.find_last_of("/\\") + 1);
@@ -1695,7 +1663,7 @@ auto segmentor::readerCombined(string inputFilePath1,string inputFilePath2,doubl
         
     else
     {
-        segmentor::mainlog << "Directories created" << endl;
+        logger::mainlog << "Directories created" << endl;
     }
 
     //Read the first file(the one corresponding to the void space)
@@ -1737,7 +1705,7 @@ auto segmentor::readerCombined(string inputFilePath1,string inputFilePath2,doubl
     }
     GridResolution = gridResolution;
 
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return imageData;
 }
 
@@ -1751,14 +1719,14 @@ auto segmentor::readerCombined(string inputFilePath1,string inputFilePath2,doubl
  */
 auto segmentor::reader(string inputFilePath,int gridResolution, bool writeGridFile)
 {
-    segmentor::mainlog << "Reader Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Reader Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Name of the input file without extension
     string base_filename = inputFilePath.substr(inputFilePath.find_last_of("/\\") + 1);
     BaseFileName = base_filename;
 
-    segmentor::mainlog << "Current file: " << base_filename << endl;
+    logger::mainlog << "Current file: " << base_filename << endl;
         
     string::size_type const p(base_filename.find_last_of('.'));
     //Input File name
@@ -1780,7 +1748,7 @@ auto segmentor::reader(string inputFilePath,int gridResolution, bool writeGridFi
             
     else
     {
-        segmentor::mainlog << "Directories created" << endl;
+        logger::mainlog << "Directories created" << endl;
     }
 
     ifstream reader;
@@ -1946,11 +1914,11 @@ auto segmentor::reader(string inputFilePath,int gridResolution, bool writeGridFi
     }
     else
     {
-        segmentor::mainlog << "Check for grid dimensions and spacing" << "\n";
+        logger::mainlog << "Check for grid dimensions and spacing" << "\n";
     }
     grid->SetSpacing(deltaX,deltaY,deltaZ);
-    segmentor::mainlog << "Grid resolution: " << gridResolution << " Number of Points: " << grid->GetNumberOfPoints() << " Cell size: " << CellSize << "\n";
-    segmentor::mainlog << "Grid: " << deltaX << " x " << deltaY << " x " << deltaZ << "\n";
+    logger::mainlog << "Grid resolution: " << gridResolution << " Number of Points: " << grid->GetNumberOfPoints() << " Cell size: " << CellSize << "\n";
+    logger::mainlog << "Grid: " << deltaX << " x " << deltaY << " x " << deltaZ << "\n";
 
     //Grid parameters
 
@@ -2043,7 +2011,7 @@ auto segmentor::reader(string inputFilePath,int gridResolution, bool writeGridFi
         imageWriter->SetFileName((directory+"/"+file_without_extension+"grid.vti").c_str());
         imageWriter->Write();
     }
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     return grid;
 }
@@ -2063,8 +2031,8 @@ auto segmentor::reader(string inputFilePath,int gridResolution, bool writeGridFi
  */
 auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool periodicConditions, bool computeDistanceField,bool writeFile)
 {
-    segmentor::mainlog << "segmentor: InputPrecondition Function 2" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: InputPrecondition Function 2" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
     //vtkNew<ttkPeriodicGrid> periodGrid{};
@@ -2110,8 +2078,8 @@ auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool peri
             points->InsertPoint(i,coordinates);
             
         }
-        segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-        segmentor::mainlog << "DISTANCE FIELD CALCULATION" << endl;
+        logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+        logger::mainlog << "DISTANCE FIELD CALCULATION" << endl;
         vtkSmartPointer<vtkDoubleArray> distanceArray = vtkSmartPointer<vtkDoubleArray>::New();
         distanceArray->SetName("This is distance grid");
         vtkSmartPointer<vtkPointSet> pointSet = vtkSmartPointer<vtkPointSet>::New();
@@ -2160,7 +2128,7 @@ auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool peri
         gridWriter->SetFileName((Directory+"/"+BaseFileName+"distance.vti").c_str());
         gridWriter->Write();
     }
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     return periodGrid;
 }
@@ -2179,7 +2147,7 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
 {
     
     
-    segmentor::mainlog << "\nSegmentor: InputPrecondition Module" << "\n";
+    logger::mainlog << "\nSegmentor: InputPrecondition Module" << "\n";
     ttk::Timer periodicTimer;
     //VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -2213,7 +2181,7 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
     }
     
     double elapsedTime = periodicTimer.getElapsedTime();
-    segmentor::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
+    logger::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
 
     return periodGrid;
     
@@ -2229,8 +2197,8 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
 auto segmentor::inputPrecondition_E(vtkSmartPointer<vtkImageData> grid, bool periodicConditions)
 {
 
-    segmentor::mainlog << "segmentor: InputPrecondition Module (Energy)" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: InputPrecondition Module (Energy)" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -2246,15 +2214,15 @@ auto segmentor::inputPrecondition_E(vtkSmartPointer<vtkImageData> grid, bool per
 
 void segmentor::oneGridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores)
 {
-    segmentor::mainlog << "Grid Files Creation" << endl;
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Grid Files Creation" << endl;
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
 
     //Creating Results folder:-----------------------------------------------------------------------------
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     if(!state)
     {
-        segmentor::mainlog << "Grid Files Folder created" << "\n";
+        logger::mainlog << "Grid Files Folder created" << "\n";
 
     }
 
@@ -2302,7 +2270,7 @@ void segmentor::oneGridFileCreator(string scalarName, string inputFilePath, doub
     }
     else
     {
-        segmentor::mainlog << "Already computed\n";
+        logger::mainlog << "Already computed\n";
     }
     
 
@@ -2322,13 +2290,13 @@ void segmentor::oneGridFileCreator(string scalarName, string inputFilePath, doub
  */
 void segmentor::gridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores)
 {
-    segmentor::mainlog << "GridFileCreator Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "GridFileCreator Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Creating folder:-----------------------------------------------------------------------------
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     if(!state)
     {
-        segmentor::mainlog << "Grid Files Folder created" << "\n";
+        logger::mainlog << "Grid Files Folder created" << "\n";
 
     }
 
@@ -2342,7 +2310,7 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
 
     if (!crystals)
     {
-        segmentor::mainlog << "File with the filenames created" << endl;
+        logger::mainlog << "File with the filenames created" << endl;
     }
 
     string line;
@@ -2361,7 +2329,7 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
     #pragma omp parallel for
     for (size_t i = 0; i < inputFiles.size(); i++) //For each of the materials
     {
-        segmentor::mainlog << inputFiles[i] << endl;
+        logger::mainlog << inputFiles[i] << endl;
         string input = inputFilePath + "/" + inputFiles[i]; //Materials .cube path
 
         std::string base_filename = inputFiles[i].substr(inputFiles[i].find_last_of("-") + 1);
@@ -2407,7 +2375,7 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
                     minimumEnergy = currentEnergy;
                 }
             }
-            segmentor::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
+            logger::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
             
             //Persistence Diagram of the data
             vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
@@ -2443,7 +2411,7 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
                 
             }
 
-            segmentor::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
+            logger::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
             
             //Persistence Threshold for simplification
             double minimumPersistence = persistencePercentage * maximumPersistence;
@@ -2492,14 +2460,14 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
         }
         else
         {
-            segmentor::mainlog << "Already computed \n";
+            logger::mainlog << "Already computed \n";
         }
         
     }
 
     
 
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -2547,7 +2515,7 @@ auto  segmentor::getIndex(vector<int> v, int K)
  */
 auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
-    segmentor::mainlog << "\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
+    logger::mainlog << "\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
     
     ttk::Timer MSCTimer;
     //Persistence Diagram of the data
@@ -2582,8 +2550,8 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     
     //Persistence Threshold for simplification
     double minimumPersistence = persistencePercentage * maximumPersistence;
-    segmentor::mainlog << "Maximum persistence = " << maximumPersistence << ", Persistent Percentage (input) = " << persistencePercentage << endl;
-    segmentor::mainlog << "Persistence threshold = " << minimumPersistence << endl;
+    logger::mainlog << "Maximum persistence = " << maximumPersistence << ", Persistent Percentage (input) = " << persistencePercentage << endl;
+    logger::mainlog << "Persistence threshold = " << minimumPersistence << endl;
     //Persistence threshold for future simplifications
     vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
     persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
@@ -2620,13 +2588,13 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     
     double timeTakenForMSC = MSCTimer.getElapsedTime();
     MSCTimer.reStart();
-    segmentor::mainlog << "Time taken for MSC creation: " << timeTakenForMSC << "(s)" << endl;
+    logger::mainlog << "Time taken for MSC creation: " << timeTakenForMSC << "(s)" << endl;
     
     int numberOfDescendingManifolds = getNumberOfDescendingManifolds(morseSmaleComplex);
     int numberOfAscendingManifolds = getNumberOfAscendingManifolds(morseSmaleComplex);
     
-    segmentor::mainlog << "Total number of descending manifolds (typically void segments) : " << numberOfDescendingManifolds << endl;
-    segmentor::mainlog << "Total number of ascending manifolds (typically solid segments) : " << numberOfAscendingManifolds << endl;
+    logger::mainlog << "Total number of descending manifolds (typically void segments) : " << numberOfDescendingManifolds << endl;
+    logger::mainlog << "Total number of ascending manifolds (typically solid segments) : " << numberOfAscendingManifolds << endl;
 
     if (writeOutputs)
     {
@@ -2685,9 +2653,9 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     
     
     double writeTime = MSCTimer.getElapsedTime();
-    segmentor::mainlog << "Time taken to write MSC files: " << writeTime << "(s)" << endl;
+    logger::mainlog << "Time taken to write MSC files: " << writeTime << "(s)" << endl;
     double totalTime = timeTakenForMSC + writeTime;
-    segmentor::mainlog << "Total time elapsed in the Morse Smale Complex module: " << totalTime << "(s)" << endl;
+    logger::mainlog << "Total time elapsed in the Morse Smale Complex module: " << totalTime << "(s)" << endl;
     
     return morseSmaleComplex;
     
@@ -2754,7 +2722,7 @@ int segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComple
  */
 auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
-    segmentor::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
+    logger::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
     
     //Given that in this analysis we are going to focus to the negative energy space of the material we have to take care
     //because in the points closer to the atoms te energy values are huge and following the process used in the energy grids
@@ -2775,7 +2743,7 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
             minimumEnergy = currentEnergy;
         }
     }
-    segmentor::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
+    logger::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
     
     //Persistence Diagram of the data
     vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
@@ -2810,7 +2778,7 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
         
     }
 
-    segmentor::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
+    logger::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
     
     //Persistence Threshold for simplification
     double minimumPersistence = persistencePercentage * maximumPersistence;
@@ -2914,7 +2882,7 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
     
     
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     return morseSmaleComplex;
     
@@ -2931,7 +2899,7 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
  */
 void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
 {
-    segmentor::mainlog << "\nSegmentor: Void Segmentation Module" << "\n" << flush;
+    logger::mainlog << "\nSegmentor: Void Segmentation Module" << "\n" << flush;
     
     ttk::Timer VoidSegmentationTimer;
     //Writer of the .csv results file
@@ -3013,11 +2981,11 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
+        //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //segmentor::mainlog << currentClosestRegion << endl;
+            //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
@@ -3132,7 +3100,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     misDatos.close();
     
     double elapsedTime = VoidSegmentationTimer.getElapsedTime(); 
-    segmentor::mainlog << "Time elapsed in the void segmentation module: " << elapsedTime << "(s)\n" << flush;
+    logger::mainlog << "Time elapsed in the void segmentation module: " << elapsedTime << "(s)\n" << flush;
     
 }
 
@@ -3148,7 +3116,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
  */
 void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
 {
-    segmentor::mainlog << "\nSegmentor: Accessible Void Space Module" << "\n" << flush;
+    logger::mainlog << "\nSegmentor: Accessible Void Space Module" << "\n" << flush;
 
     ttk::Timer VoidSpaceTimer;
     //Writer of the .csv results file
@@ -3203,14 +3171,14 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
     //DataSet of the accessible saddles to the molecule
     auto saddlesDataSet = vtkDataSet::SafeDownCast(accessibleSaddles->GetOutputDataObject(0));
-    //segmentor::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
+    //logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
     vector<int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
-        //segmentor::mainlog << "Current Saddle ID:" << endl;
+        //logger::mainlog << "Current Saddle ID:" << endl;
         double currentSaddleCoords[3]; //Coordinates of the current saddle
         saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
         
@@ -3225,11 +3193,11 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
        
         //Find the closest segments to each of the saddles that work as connectors between segments
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
+        //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = accessibleSpaceDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //segmentor::mainlog << currentClosestRegion << endl;
+            //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
@@ -3238,11 +3206,11 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
         if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
         {
-            //segmentor::mainlog << "YES" <<endl;
+            //logger::mainlog << "YES" <<endl;
             int contador = 0;
             for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
             {
-                //segmentor::mainlog << closestRegionsToSaddle[mm] << endl;
+                //logger::mainlog << closestRegionsToSaddle[mm] << endl;
 
                 saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
                 ++contador;
@@ -3260,7 +3228,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     for (size_t i = 0; i < segmentsID->GetNumberOfValues(); i++) //For each of the void segments
     {
         int currentRegion = segmentsID->GetVariantValue(i).ToInt();
-        //segmentor::mainlog << "Current Region: " <<  currentRegion << endl;
+        //logger::mainlog << "Current Region: " <<  currentRegion << endl;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
@@ -3277,7 +3245,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         
         
         int segmentNumberOfCells = segmentDataset->GetNumberOfCells();
-        //segmentor::mainlog << segmentNumberOfCells << endl;
+        //logger::mainlog << segmentNumberOfCells << endl;
         //---------------------------------------------------------------------------
         int numberOfConnections = 0; //Number of connections of the current region
         if(segmentDataset->GetNumberOfPoints() > 0) //If not an empty region
@@ -3296,7 +3264,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
             }
         }
-        //segmentor::mainlog << numberOfConnections << endl;
+        //logger::mainlog << numberOfConnections << endl;
 
         //Check the number of Connections of each segment
         if (numberOfConnections == 0)
@@ -3309,7 +3277,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
             
         }
 
-        //segmentor::mainlog << numberOfConnections << endl;
+        //logger::mainlog << numberOfConnections << endl;
 
         
         //Array corresponding to the scalar values of the Region
@@ -3331,7 +3299,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     segmentResults.close();
     
     double elapsedTime = VoidSpaceTimer.getElapsedTime();
-    segmentor::mainlog << "Time elapsed in the accesible void space module: " << elapsedTime << "(s) \n" << flush;
+    logger::mainlog << "Time elapsed in the accesible void space module: " << elapsedTime << "(s) \n" << flush;
     
 }
 
@@ -3343,8 +3311,8 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
  */
 void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    segmentor::mainlog << "segmentor: Void Segmentation Module (Energy)" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: Void Segmentation Module (Energy)" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Writer of the .csv results file
     ofstream misDatos;
@@ -3365,7 +3333,7 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
     //Cell size of the current dataset
     double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
     CellSize = cellSize;
-    segmentor::mainlog << "Cell Size: " << cellSize << "\n";
+    logger::mainlog << "Cell Size: " << cellSize << "\n";
 
     //Segmentation corresponding to the solid structure
     vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
@@ -3465,11 +3433,11 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
         pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
+        //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //segmentor::mainlog << currentClosestRegion << endl;
+            //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
@@ -3587,7 +3555,7 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
     materialInfo.close();
     
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -3600,8 +3568,8 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
  */
 auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    segmentor::mainlog << "segmentor: Solid Segmentation Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: Solid Segmentation Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Writer of the .csv results file
     ofstream misDatos;
@@ -3617,7 +3585,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     //Cell size of the current dataset
     double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
     CellSize = cellSize;
-    segmentor::mainlog << "Cell Size: " << cellSize << "\n";
+    logger::mainlog << "Cell Size: " << cellSize << "\n";
 
     //Segmentation corresponding to the solid structure
     vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
@@ -3673,11 +3641,11 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //segmentor::mainlog << "Current Saddle ID: " << k << endl;
+        //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //segmentor::mainlog << currentClosestRegion << endl;
+            //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
@@ -3792,7 +3760,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     misDatos.close();
     
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -3809,8 +3777,8 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
  */
 void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar,bool useAllCores)
 {
-    segmentor::mainlog << "segmentor: Eigen Field Module " << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: Eigen Field Module " << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
    
 
@@ -3892,11 +3860,11 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
                 currentIsolatedRegion->ThresholdBetween(j,j);
                 currentIsolatedRegion->Update();
                 auto currentIsolatedRegionDataSet = vtkDataSet::SafeDownCast(currentIsolatedRegion->GetOutputDataObject(0));
-                //segmentor::mainlog << "Current Isolated Number Of Points : " << currentIsolatedRegionDataSet->GetNumberOfPoints() << endl;
+                //logger::mainlog << "Current Isolated Number Of Points : " << currentIsolatedRegionDataSet->GetNumberOfPoints() << endl;
                 double currentIsolatedBounds[6];
                 currentIsolatedRegionDataSet->GetBounds(currentIsolatedBounds);
-                //segmentor::mainlog << "Current Isolated Region Bounds:" << endl;
-                //segmentor::mainlog << currentIsolatedBounds[0] << " " << currentIsolatedBounds[1] << " " << currentIsolatedBounds[2] << " " << currentIsolatedBounds[3] << " " << currentIsolatedBounds[4] << " " << currentIsolatedBounds[5] << endl;
+                //logger::mainlog << "Current Isolated Region Bounds:" << endl;
+                //logger::mainlog << currentIsolatedBounds[0] << " " << currentIsolatedBounds[1] << " " << currentIsolatedBounds[2] << " " << currentIsolatedBounds[3] << " " << currentIsolatedBounds[4] << " " << currentIsolatedBounds[5] << endl;
                 
                 
                 //Move the isolated regions to a common location
@@ -3951,13 +3919,13 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
 
             //Now we have all the isolated regions merged on a single one
 
-            //segmentor::mainlog << "Get append data" << endl;
+            //logger::mainlog << "Get append data" << endl;
             auto appendDataSet = vtkDataSet::SafeDownCast(append->GetOutputDataObject(0));
-            //segmentor::mainlog << "Remoce POINT REGION" << endl;
+            //logger::mainlog << "Remoce POINT REGION" << endl;
             appendDataSet->GetPointData()->RemoveArray("RegionId");
-            //segmentor::mainlog << "Remove CELL REGION" << endl;
+            //logger::mainlog << "Remove CELL REGION" << endl;
             appendDataSet->GetCellData()->RemoveArray("RegionId");
-            //segmentor::mainlog << "Update" << endl;
+            //logger::mainlog << "Update" << endl;
             append->Update();
 
             //Check that all the fragments are merged
@@ -4038,7 +4006,7 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
     //#pragma omp parallel for
     for (size_t i = 0; i < acceptedRegions.size(); i++)
     {
-        segmentor::mainlog << acceptedRegions[i] << endl;
+        logger::mainlog << acceptedRegions[i] << endl;
         
         eigenFields[i]->SetUseAllCores(useAllCores);
         eigenFields[i]->SetEigenNumber(numberOfEigenFunctions);
@@ -4057,7 +4025,7 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
 
         if (writeSegments)
         {
-            //segmentor::mainlog << "Writing segment" << acceptedRegions[i] << endl;
+            //logger::mainlog << "Writing segment" << acceptedRegions[i] << endl;
             
             vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
             regionWriter->SetInputConnection(extraction->GetOutputPort());
@@ -4074,7 +4042,7 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
         
         
 
-        //segmentor::mainlog << "Writing persistence diagram" << acceptedRegions[i] << endl;
+        //logger::mainlog << "Writing persistence diagram" << acceptedRegions[i] << endl;
 
         vtkSmartPointer<vtkUnstructuredGridWriter> regionWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
         regionWriter->SetInputConnection(persistenceDiagram->GetOutputPort());
@@ -4084,7 +4052,7 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
     
 
    
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 }
 
 /**
@@ -4108,7 +4076,7 @@ void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfE
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     if(!state)
     {
-        segmentor::mainlog << "Grid Files Folder created" << "\n";
+        logger::mainlog << "Grid Files Folder created" << "\n";
 
     }
 
@@ -4219,8 +4187,8 @@ void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfE
  */
 void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    segmentor::mainlog << "Void Separatrices Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Void Separatrices Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     ofstream sepFile;
     sepFile.open((Directory+"/Separatrices.csv").c_str());
     sepFile << "x,y,z,pointCellId,separatrixID,SepOriginID,SepDestinationID,SepMinValue,isMinima,isSaddle,xScaled,yScaled,zScaled" << "\n";
@@ -4303,7 +4271,7 @@ void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         }
 
     }
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
 }
 
@@ -4318,8 +4286,8 @@ void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
  */
 auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, vtkSmartPointer<vtkThreshold> previousSolid)
 {
-    segmentor::mainlog << "segmentor: Evolution Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: Evolution Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Output stream to create evolutionPython.csv
     ofstream evolutionFilePython;
@@ -4341,13 +4309,13 @@ auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     vtkDataSet * previousDataSet;
     if (previousSolid) //Check that we are not in the first file
     {
-        segmentor::mainlog << "We have previous stages information" << "\n";
+        logger::mainlog << "We have previous stages information" << "\n";
         previousDataSet = vtkDataSet::SafeDownCast(previousSolid->GetOutputDataObject(0));
-        //segmentor::mainlog << "Previous data set number of points" << previousDataSet->GetNumberOfPoints() << "\n";
+        //logger::mainlog << "Previous data set number of points" << previousDataSet->GetNumberOfPoints() << "\n";
     }
     else
     {
-        segmentor::mainlog << "We don't have previous stages information" << "\n";
+        logger::mainlog << "We don't have previous stages information" << "\n";
     }
     //---------------------------------------------------------------------------------------------
     //We get the 2-saddle criticalPoints
@@ -4549,8 +4517,8 @@ auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
         if (previousSolid)
         {
             closestRegion = findMostCommonValue(closestPreviousStageRegionID);
-            //segmentor::mainlog << "Closest region: " << closestRegion << "\n";
-            //segmentor::mainlog << "Closest region to the maxima: " << previousDataSet->GetPointData()->GetArray("AscendingManifold")->GetVariantValue(previousDataSet->FindPoint(maximumCoords)).ToInt() << "\n";
+            //logger::mainlog << "Closest region: " << closestRegion << "\n";
+            //logger::mainlog << "Closest region to the maxima: " << previousDataSet->GetPointData()->GetArray("AscendingManifold")->GetVariantValue(previousDataSet->FindPoint(maximumCoords)).ToInt() << "\n";
 
         }
 
@@ -4577,7 +4545,7 @@ auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     misDatos.close();
     evolutionFilePython.close();
     
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return solidSegmentation;
 
 }
@@ -4618,7 +4586,7 @@ auto segmentor::solidGetter(string currentFile)
 
     
     auto currentSolidDataSet = vtkDataSet::SafeDownCast(ascendingManifoldIDList->GetOutputDataObject(0));
-    //segmentor::mainlog << currentSolidDataSet->GetNumberOfPoints() << "\n";
+    //logger::mainlog << currentSolidDataSet->GetNumberOfPoints() << "\n";
     
     return ascendingManifoldIDList;
 
@@ -4664,8 +4632,8 @@ auto segmentor::saddlesGetter(string currentFile)
  */
 auto segmentor::stagesEvolution(vector<string> fileNames)
 {
-    segmentor::mainlog << "Stages Evolution Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Stages Evolution Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     ofstream evolutionData; //Stream to write segmentation data for each of the regions
     evolutionData.open("../stagesEvolution.csv"); //Opening the writer
     assert(evolutionData.is_open()); //Check if the file is open
@@ -4690,7 +4658,7 @@ auto segmentor::stagesEvolution(vector<string> fileNames)
         provisionalDataSet->GetCellBounds(0,dimensionesCelda);
         //Cell size of the current dataset
         double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
-        segmentor::mainlog << "Tamaño celda " << cellSize << "\n";
+        logger::mainlog << "Tamaño celda " << cellSize << "\n";
 
         vtkSmartPointer<vtkThresholdPoints> currentSolid = vtkSmartPointer<vtkThresholdPoints>::New();
         currentSolid->SetInputConnection(currentStageReader->GetOutputPort());
@@ -4716,8 +4684,8 @@ auto segmentor::stagesEvolution(vector<string> fileNames)
        
         
         
-        segmentor::mainlog << "Current Stage: " << fileNames[i] << "\n";
-        segmentor::mainlog << "Current Stage:Number of Points: " << currentStageDataSet->GetNumberOfPoints() << "\n";
+        logger::mainlog << "Current Stage: " << fileNames[i] << "\n";
+        logger::mainlog << "Current Stage:Number of Points: " << currentStageDataSet->GetNumberOfPoints() << "\n";
         auto segmentationIDS = currentStageDataSet->GetFieldData()->GetAbstractArray("UniqueAscendingManifold");
         //---------------------------------------------------------------------------
 
@@ -4768,7 +4736,7 @@ auto segmentor::stagesEvolution(vector<string> fileNames)
             currentRegion->ThresholdBetween(segmentationIDS->GetVariantValue(j).ToInt(),segmentationIDS->GetVariantValue(j).ToInt());
             currentRegion->Update();
             auto currentRegionDataSet = vtkDataSet::SafeDownCast(currentRegion->GetOutputDataObject(0));
-            //segmentor::mainlog << "CurrentRegion:Number of Points: " << currentRegionDataSet->GetNumberOfPoints() << "\n";
+            //logger::mainlog << "CurrentRegion:Number of Points: " << currentRegionDataSet->GetNumberOfPoints() << "\n";
             //---------------------------------------------------------------------------
             int numberOfConnections = 0; //Number of connections of the current region
             vector<int> regionsConnected; //ID of the regions connected to the current region
@@ -4824,7 +4792,7 @@ auto segmentor::stagesEvolution(vector<string> fileNames)
                 double currentPointCoords[3];
                 currentRegionDataSet->GetPoint(k,currentPointCoords); //Save current point coordinates
                 
-                //segmentor::mainlog << currentPointCoords[0] <<","<< currentPointCoords[1] << "," << currentPointCoords[2] << "\n";
+                //logger::mainlog << currentPointCoords[0] <<","<< currentPointCoords[1] << "," << currentPointCoords[2] << "\n";
 
                 acumulatedPotentialEnergy += currentRegionDataSet->GetPointData()->GetArray("potentialEnergyAtom")->GetVariantValue(k).ToDouble();
                 acumulatedSigmaXXStress += currentRegionDataSet->GetPointData()->GetArray("sigmaXX_Atom")->GetVariantValue(k).ToDouble();
@@ -4875,28 +4843,28 @@ auto segmentor::stagesEvolution(vector<string> fileNames)
             if (fileNames[i] != "300000")
             {
                 closestNext = findMostCommonValue(closestNextStageRegionID);
-                //segmentor::mainlog << "Closest Next Region:" << closestNext << "\n";
+                //logger::mainlog << "Closest Next Region:" << closestNext << "\n";
             }
             else if(fileNames[i] == "300000")
             {
                 closestNext = -1;
-                //segmentor::mainlog << "Closest Next Region:" << closestNext << "\n";
+                //logger::mainlog << "Closest Next Region:" << closestNext << "\n";
             }
 
             int closestPrev;
             if (fileNames[i] != "87690")
             {
                 closestPrev = findMostCommonValue(closestPrevStageRegionID);
-                //segmentor::mainlog << "Closest Prev Region:" << closestPrev << "\n";
+                //logger::mainlog << "Closest Prev Region:" << closestPrev << "\n";
             }
             if (fileNames[i] == "87690")
             {
                 closestPrev = -1;
-                //segmentor::mainlog << "Closest Prev Region:" << closestPrev << "\n";
+                //logger::mainlog << "Closest Prev Region:" << closestPrev << "\n";
             }
             
             int currentReg = segmentationIDS->GetVariantValue(j).ToInt();
-            //segmentor::mainlog << "Current Region:" << currentReg << "\n";
+            //logger::mainlog << "Current Region:" << currentReg << "\n";
             evolutionData << fileNames[i] << "," << currentReg << "," << closestNext << "," << closestPrev << "," << currentRegionDataSet->GetNumberOfPoints() <<","<< numberOfConnections << "," << averagePotentialEnergy << "," << averageSigmaXXStress << "," << averageSigmaYYStress << "," << averageSigmaZZStress<< "," << averageSigmaXYStress << "," << averageSigmaXZStress << "," << averageSigmaYZStress << "\n";
             
             // if (regionsConnected.size() > 0)
@@ -5003,11 +4971,11 @@ void isFileExist(const char *fileName)
         int status = remove(fileName);
         if (status == 0)
         {
-            segmentor::mainlog << "Removed propertiesEvolutionPython.csv file from previous computations" << "\n";
+            logger::mainlog << "Removed propertiesEvolutionPython.csv file from previous computations" << "\n";
         }
         else
         {
-            segmentor::mainlog << "Error while trying to remove propertiesEvolutionPython.csv file from previous computations" << "\n";
+            logger::mainlog << "Error while trying to remove propertiesEvolutionPython.csv file from previous computations" << "\n";
         }
      
     }
@@ -5022,8 +4990,8 @@ void isFileExist(const char *fileName)
  */
 void segmentor::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
 {
-    segmentor::mainlog << "segmentor: Energy Diagrams Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "segmentor: Energy Diagrams Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //VTK Function to apply Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -5115,8 +5083,8 @@ void segmentor::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCo
  */
 void segmentor::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
 {
-    segmentor::mainlog << "Energy Diagrams Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Energy Diagrams Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Apply Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -5229,8 +5197,8 @@ void segmentor::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllC
  */
 void segmentor::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores)
 {
-    segmentor::mainlog << "Distance Diagrams Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Distance Diagrams Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Apply Periodic Boundary Conditions
     vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
@@ -5297,8 +5265,8 @@ void segmentor::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAl
  */
 auto segmentor::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string energyFile,double persistenceThreshold, bool useAllCores)
 {
-    segmentor::mainlog << "Energy Includer Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Energy Includer Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     vtkSmartPointer<vtkGaussianCubeReader2> energyReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
     energyReader->SetFileName(energyFile.data()); //Set the input file
@@ -5404,8 +5372,8 @@ auto segmentor::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string
  */
 void segmentor::energyVsDistance(string inputFile, string distanceDirectory, string energyDirectory)
 {
-    segmentor::mainlog << "Energy vs Distance Module" << "\n";
-    segmentor::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    logger::mainlog << "Energy vs Distance Module" << "\n";
+    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     int state = system("mkdir -p ../Results/GridFiles"); //Create a directory to save the results
     
@@ -5500,7 +5468,7 @@ auto segmentor::persistenceMatchings(bool useAllCores)
         
     else
     {
-        segmentor::mainlog << "Voids Comparative Directories created" << endl;
+        logger::mainlog << "Voids Comparative Directories created" << endl;
     }
 
     system("rm -f diagramsList.txt"); //Delete previous one if existed
@@ -5518,7 +5486,7 @@ auto segmentor::persistenceMatchings(bool useAllCores)
         }
         myFile.close();
     }
-    segmentor::mainlog << files.size() << endl;
+    logger::mainlog << files.size() << endl;
 
 
     #pragma omp parallel for
@@ -5532,7 +5500,7 @@ auto segmentor::persistenceMatchings(bool useAllCores)
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
 
-        segmentor::mainlog << file_without_extension << endl;
+        logger::mainlog << file_without_extension << endl;
 
         ofstream comparativeData; //Stream to write the comparatives of each region
         comparativeData.open("../Results/VoidsComparative/" + file_without_extension + ".csv"); //Opening the writer
@@ -5646,7 +5614,7 @@ auto segmentor::persistenceDiagramsWriter(bool useAllCores)
         
     else
     {
-        segmentor::mainlog << "Directories created" << endl;
+        logger::mainlog << "Directories created" << endl;
     }
 
     system("rm -f diagramsList.txt"); //Delete previous one if existed
@@ -5664,7 +5632,7 @@ auto segmentor::persistenceDiagramsWriter(bool useAllCores)
         }
         myFile.close();
     }
-    segmentor::mainlog << files.size() << endl;
+    logger::mainlog << files.size() << endl;
 
     #pragma omp parallel for
     for (size_t i = 0; i < files.size(); i++)
@@ -5675,7 +5643,7 @@ auto segmentor::persistenceDiagramsWriter(bool useAllCores)
         //Input File name
         std::string file_without_extension = base_filename.substr(0, p);
 
-        segmentor::mainlog << file_without_extension << endl;
+        logger::mainlog << file_without_extension << endl;
 
         ofstream comparativeData; //Stream to write the comparatives of each region
         comparativeData.open("../Results/DiagramsGrids/" + file_without_extension + ".csv"); //Opening the writer
