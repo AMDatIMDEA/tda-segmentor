@@ -37,7 +37,7 @@ public:
     double CellSize = 0;
 
     //Cleaned functions
-    segmentor(std::string inputfilename);
+    segmentor(const parameters &p);
     ~segmentor();
     void superCell(vtkSmartPointer<vtkImageData> grid);
 

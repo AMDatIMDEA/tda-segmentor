@@ -21,12 +21,12 @@ int main(int argc, char ** argv){
     
     parameters param;
     param.parser(argc,argv);
-    logger::openLogfiles(param.inputfilename, param.saveLogFile);
+    logger::openLogfiles(param);
     param.printinvocation(argc, argv);
     param.writetoLogFile();
         
     
-    segmentor * analysis = new segmentor(param.inputfilename);
+    segmentor * analysis = new segmentor(param);
     
 
      auto grid = analysis->reader();

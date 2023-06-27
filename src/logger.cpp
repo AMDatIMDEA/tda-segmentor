@@ -17,22 +17,26 @@ ofstream      logger::mainlog;
 ofstream      logger::errlog;
 
 
-void logger::openLogfiles(std::string inputfileName, bool saveLogFile) {
-    
-    std::string::size_type const p(inputfileName.find_last_of('.'));
-    std::string BaseFileName = inputfileName.substr(0, p);
-    std::string extensionName = inputfileName.substr(p,inputfileName.length());
-    
+void logger::openLogfiles(const parameters &p) {
     
     ostringstream logstrm;
     ostringstream errstrm;
-    logstrm << BaseFileName << ".log";
-    errstrm << BaseFileName << ".err";
+    logstrm << p.basefilename << ".log";
+    errstrm << p.basefilename << ".err";
     string logFilename = logstrm.str();
     string errFilename = errstrm.str();
     mainlog.open(logFilename.c_str());
     errlog.open(errFilename.c_str());
     
+    logger::mainlog << "\n";
+    logger::mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
+    logger::mainlog << "                                                                                      " << "\n";
+    logger::mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
+    logger::mainlog << "                                                                                      " << "\n";
+    logger::mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n\n"<< flush;
+    
+    logger::mainlog << "Base file name  :                         " << p.basefilename << "\n" << flush;
+    logger::mainlog << "Extension       :                         " << p.extensionname << "\n\n" << flush;
     
     if (!mainlog){
         std::cout << "Error opening mainlog file!" << endl;

@@ -30,7 +30,7 @@ public:
     
     
     std::vector <std::string>          moduleNames;
-    std::string                        inputfilename;
+    std::string                        inputfilename, basefilename, extensionname;
     bool                               useSuperCell;
     bool                               useTBB;
     bool                               saveLogFile;

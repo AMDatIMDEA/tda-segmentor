@@ -11,22 +11,11 @@ Authors:                        Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gma
 **********************************************************************/
 
 
-segmentor::segmentor(string inputfileName){
+segmentor::segmentor(const parameters &p){
 
-    fileName = inputfileName;
-    std::string::size_type const p(inputfileName.find_last_of('.'));
-    BaseFileName = inputfileName.substr(0, p);
-    extensionName = inputfileName.substr(p,inputfileName.length());
-
-    logger::mainlog << "\n";
-    logger::mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n";
-    logger::mainlog << "                                                                                      " << "\n";
-    logger::mainlog << "                T   D   A    -    S   E   G   M   E   N   T   O   R                   " << "\n";
-    logger::mainlog << "                                                                                      " << "\n";
-    logger::mainlog << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << "\n\n"<< flush;
-    
-    logger::mainlog << "Base file name  :                         " << BaseFileName << "\n" << flush;
-    logger::mainlog << "Extension       :                         " << extensionName << "\n\n" << flush;
+    fileName = p.inputfilename;
+    BaseFileName = p.basefilename;
+    extensionName = p.extensionname;
 
     // All the results will be saved in cwd/segmentor-BaseFileName.results/
     std::stringstream str;

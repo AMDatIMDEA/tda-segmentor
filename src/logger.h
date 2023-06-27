@@ -15,6 +15,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 
 #include <stdio.h>
 #include "headers.h"
+#include "parameters.h"
 
 
 class logger {
@@ -23,7 +24,7 @@ public:
     static  std::ofstream          mainlog;
     static  std::ofstream          errlog;
 
-    static void                    openLogfiles(std::string inputfileName, bool saveLogFile);
+    static void                    openLogfiles(const parameters &p);
     static void                    closeLogfiles(); 
 };
 

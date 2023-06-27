@@ -50,13 +50,14 @@ void parameters::printinvocation(int nargs, char **args)
 bool parameters::checkinputfile(){
     
     std::string::size_type const p(inputfilename.find_last_of('.'));
-    std::string BaseFileName = inputfilename.substr(0, p);
-    std::string extensionName = inputfilename.substr(p,inputfilename.length());
-        
+    if (p != std::string::npos){
+        basefilename = inputfilename.substr(0, p);
+        extensionname = inputfilename.substr(p,inputfilename.length());
+    }
+
     // More extension names need to be added here for energy and density calculations
-    if (extensionName != ".cube") {
-        std::cout << "Input file check failed - check invocation syntax" << endl;
-        std::cout << "Input file check failed - check invocation syntax" << endl;
+    if (extensionname != ".cube" || extensionname.empty()) {
+        std::cout << "\n\nInput file check failed - check invocation syntax" << endl;
         return false;
     }
         
@@ -140,6 +141,7 @@ void parameters::parser(int nargs, char **args)
         {
             segmentationFlag = true;
         }
+        
     }
     
 }
@@ -153,6 +155,18 @@ void parameters::writetoLogFile() {
     logger::mainlog << "Number of modules: " << moduleNames.size() << endl;
     for (size_t i = 0; i < moduleNames.size(); i++) {
         logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << endl;
+        
+        if (moduleNames[i] != "segmentation"
+            || moduleNames[i] != "accessiblevoidspace"
+            || moduleNames[i] != "voidsegmentation"
+            || moduleNames[i] != "solidsegmentation"
+            || moduleNames[i] != "persistencecurve")
+        {
+            logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
+            logger::errlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
+            printInstructions();
+            exit(0);
+        }
     }
     
     for (size_t i = 0; i < moduleNames.size(); i++) {
@@ -160,6 +174,7 @@ void parameters::writetoLogFile() {
             if (persistenceThreshold == 0.0)
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
+                persistenceThreshold = 0.01;
             } else
             {
                 logger::mainlog << "Persistence Threshold : " << persistenceThreshold << endl;
@@ -170,6 +185,7 @@ void parameters::writetoLogFile() {
             if (persistenceThreshold == 0.0)
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
+                persistenceThreshold = 0.01;
             } else {
                 logger::mainlog << "Persistence Threshold : " << persistenceThreshold << endl;
             }
