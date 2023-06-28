@@ -46,10 +46,14 @@ generate the makefile. Once the makefile is generated, the code is simply compil
 ### Acknowledgements
 Acknowledge funding sources
 
+### References
+Cite preprint
+
 ### Contact Information
 
 For additional questions on the code, contact: 
 
 * Aditya Vasudevan (aditya.vasudevan@imdea.org)
 * Maciej Haranczyk (maciej.haranczyk@imdea.org)
+
 
