@@ -17,9 +17,9 @@ Compiling the tda-segmentor code should be done in two steps :
 * Once Paraview is installed, to install TTK, we must use the developer version 
   of TTK directly from the GitHub repo (https://github.com/topology-tool-kit/ttk) 
   using the following commands :
-  * ** git clone https://github.com/topology-tool-kit/ttk.git **
+  * **git clone https://github.com/topology-tool-kit/ttk.git**
   * Next we checkout to a certain commit :
-     * ** git checkout 6ff3c19c210a38b17e08f265279fa753d3673366 **
+     * **git checkout 6ff3c19c210a38b17e08f265279fa753d3673366**
   * The above code will be the source code for installation. 
 
 #### Compiling the tda-segmentor code: 
