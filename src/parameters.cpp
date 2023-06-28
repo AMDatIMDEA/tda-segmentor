@@ -174,7 +174,7 @@ void parameters::writetoLogFile() {
             if (persistenceThreshold == 0.0)
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
-                persistenceThreshold = 0.01;
+                persistenceThreshold = 0.1;
             } else
             {
                 logger::mainlog << "Persistence Threshold : " << persistenceThreshold << endl;
@@ -185,7 +185,7 @@ void parameters::writetoLogFile() {
             if (persistenceThreshold == 0.0)
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
-                persistenceThreshold = 0.01;
+                persistenceThreshold = 0.1;
             } else {
                 logger::mainlog << "Persistence Threshold : " << persistenceThreshold << endl;
             }

@@ -5,10 +5,10 @@ project(poretda)
 
 
 
-list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk")
-list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk/vtkm")
-list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build")
-list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ttk/ttk_install/lib/cmake/ttkVTK")
+#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk")
+#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk/vtkm")
+#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build")
+#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ttk/ttk_install/lib/cmake/ttkVTK")
 
 
 
