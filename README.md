@@ -39,6 +39,13 @@ generate the makefile. Once the makefile is generated, the code is simply compil
 
 * Optional flags
 
+### Copyright notice
+
+### Licensing
+
+### Acknowledgements
+Acknowledge funding sources
+
 ### Contact Information
 
 For additional questions on the code, contact: 
@@ -46,5 +53,3 @@ For additional questions on the code, contact:
 * Aditya Vasudevan (aditya.vasudevan@imdea.org)
 * Maciej Haranczyk (maciej.haranczyk@imdea.org)
 
-
-  
