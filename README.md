@@ -18,14 +18,19 @@ Compiling the tda-segmentor code should be done in two steps :
   of TTK directly from the GitHub repo (https://github.com/topology-tool-kit/ttk) 
   using the following commands :
   * **git clone https://github.com/topology-tool-kit/ttk.git**
-  * Next we checkout to a certain commit :
-     * **git checkout 6ff3c19c210a38b17e08f265279fa753d3673366**
+  * Next we checkout to a certain commit : **git checkout 6ff3c19c2**
   * The above code will be the source code for installation. 
 
-#### Compiling the tda-segmentor code: 
-* For MAC machine
+#### Compiling the tda-segmentor code:
 
-* For Linux machine
+**cmake** should be used for generating the makefile. Move to the respository directory tda-segmentor/
+and type **ccmake .** and one might have to hit configure *'c'* a few times and finally *'g'* to 
+generate the makefile. Once the makefile is generated, the code is simply compiled using
+*make -j*
+ 
+* Specific instructions for MAC machine
+
+* Specific instructions for Linux machine
 
 ### Usage
 * Invocation syntax
