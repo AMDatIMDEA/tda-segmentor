@@ -73,8 +73,8 @@ that can serve additional functionality as described below and in Docs/
 
 * Some invocation examples: 
 
-    * **poretda -module segmentation -module accessiblevoidspace -presistencethreshold 0.12 -proberadius 1.6 FAU.cube**
-    * **poretda -module segmentation -presistencethreshold 0.12 -usesupercell FAU.cube**
+    * **poretda -module segmentation -module accessiblevoidspace -persistencethreshold 0.12 -proberadius 1.6 FAU.cube**
+    * **poretda -module segmentation -persistencethreshold 0.12 -usesupercell FAU.cube**
     * **poretda -module persistencecurve FAU.cube**
 
 * Output
