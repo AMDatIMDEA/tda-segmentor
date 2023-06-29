@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 
 
-project(poretda)
+project(tda-segmentor)
 
 
 
@@ -41,20 +41,20 @@ message (STATUS "VTK_VERSION: ${VTK_VERSION}")
 if (VTK_VERSION VERSION_LESS "8.90.0")
   # old system
   include(${VTK_USE_FILE})
-  add_executable(poretda MACOSX_BUNDLE main.cpp )
+  add_executable(tda-segmentor MACOSX_BUNDLE main.cpp )
   target_link_libraries(ReadCML PRIVATE ${VTK_LIBRARIES})
 else ()
   # include all components
-  add_executable(poretda MACOSX_BUNDLE src/main.cpp src/instructions.cpp src/parameters.cpp src/logger.cpp)
-  target_link_libraries(poretda PRIVATE ${VTK_LIBRARIES})
+  add_executable(tda-segmentor MACOSX_BUNDLE src/main.cpp src/instructions.cpp src/parameters.cpp src/logger.cpp)
+  target_link_libraries(tda-segmentor PRIVATE ${VTK_LIBRARIES})
   # vtk_module_autoinit is needed
   vtk_module_autoinit(
-    TARGETS poretda
+    TARGETS tda-segmentor
     MODULES ${VTK_LIBRARIES}
     )
 endif ()
 
-target_link_libraries(poretda
+target_link_libraries(tda-segmentor
   PUBLIC
     ttk::vtk::ttkAll
     )
