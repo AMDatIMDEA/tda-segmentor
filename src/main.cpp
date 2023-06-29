@@ -46,7 +46,7 @@ int main(int argc, char ** argv){
             analysis->voidSegmentation(morseSmaleComplex,0);
         else if (param.moduleNames[i] == "persistencecurve")
         {
-            analysis->persistencecurve(periodicGrid, param.useTBB);
+            //analysis->persistencecurve(periodicGrid, param.useTBB);
         } else if (param.moduleNames[i] == "solidsegmentation"){
             // to be completed
         }

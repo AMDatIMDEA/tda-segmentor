@@ -157,10 +157,10 @@ void parameters::writetoLogFile() {
         logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << endl;
         
         if (moduleNames[i] != "segmentation"
-            || moduleNames[i] != "accessiblevoidspace"
-            || moduleNames[i] != "voidsegmentation"
-            || moduleNames[i] != "solidsegmentation"
-            || moduleNames[i] != "persistencecurve")
+            and moduleNames[i] != "accessiblevoidspace"
+            and moduleNames[i] != "voidsegmentation"
+            and moduleNames[i] != "solidsegmentation"
+            and moduleNames[i] != "persistencecurve")
         {
             logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
             logger::errlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
