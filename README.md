@@ -28,10 +28,20 @@ and type **ccmake .** and one might have to hit configure *'c'* a few times and 
 generate the makefile. While generating the makefile, the correct paths for vtk, paraview and ttk need
 to be provided. If the directories are created as recommended by the TTK website, then these paths are: 
 
+**For Mac Machine**
 * **For TTKVTK**: ~/ttk/ttk_install/lib/cmake/ttkVTK 
 * **For Paraview**: ~/ttk/ParaView-v5.9.1/build/
 * **For VTK**: ~/ttk/ParaView-v5.9.1/build/lib/cmake/paraview-5.9/vtk
 * **For VTKm**: ~/ttk/ParaView-v5.9.1/build/lib/cmake/paraview-5.9/vtk/vtkm
+
+**For Linux Machine**
+* **For TTKVTK**: /usr/local/lib64/cmake/ttkVTK
+* **For Paraview**: ~/ttk/ParaView-v5.9.1/build/
+* **For VTK**: ~/ttk/ParaView-v5.9.1/build/lib/cmake/paraview-5.9/vtk
+* **For VTKm**: ~/ttk/ParaView-v5.9.1/build/lib/cmake/paraview-5.9/vtk/vtkm
+
+Note for the linux machine, the path for TTKVTK could be selected directly once 'c' is hit. 
+But, Paraview and VTK might have to be changed from its default paths. 
 
 Once the makefile is generated, the code is simply compiled using
 **make -j**  and the executable should be located in the same directory
