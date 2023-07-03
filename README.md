@@ -66,7 +66,7 @@ that can serve additional functionality as described below and in Docs/
     * **-module segmentation** : This is the segmentation module that segments the 
       structure and voids into many segments. It requires an input parameter persistencethreshold
       and is given as **-persistencethreshold value**. If this module is called without an input
-      parameter, then a default value 0.1 is chosen for value. 
+      parameter, then a default value 10% of maximum persistence is chosen for value. 
     * **-module accessiblevoidspace**: Generates the accessible void space on the segmented voids.
       This module requires the radius of a probe atom and is input as (**-proberadius rad_val**). This
       module implicitly also runs the segmentation module and hence **-persistencethreshold** must also be given.  
@@ -105,5 +105,4 @@ For additional questions on the code, contact:
 
 * Aditya Vasudevan (aditya.vasudevan@imdea.org)
 * Maciej Haranczyk (maciej.haranczyk@imdea.org)
-
 

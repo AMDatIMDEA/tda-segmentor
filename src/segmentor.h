@@ -53,7 +53,7 @@ public:
     auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
     auto inputPrecondition_E(vtkSmartPointer<vtkImageData> grid,bool periodicConditions);
-    auto MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
+    auto MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     auto MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     void voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores);
     void accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores);

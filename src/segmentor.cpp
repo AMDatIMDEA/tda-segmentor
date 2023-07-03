@@ -2494,15 +2494,14 @@ auto  segmentor::getIndex(vector<int> v, int K)
  * attached to the input grid. Besides, it computes the Morse Smale Complex Segmentation. It writes 3 files: 1) Critical points file.
  * 2) Segmentation file. 3) Separatrices file.
  * @param grid  Input grid to analyse
- * @param persistencePercentage Persistence percentage threshold(to the maximum percentage)
- *  for the simplification
+ * @param persistenceThreshold Persistence threshold to discard noisy maxima's and minima's.
  * @param saddlesaddleIncrement Persistence threshold increment(if needed) for the
  *  simplification of the sadde-saddle connectors
  * @param writeOutputs Write MSC results to external files
  * @param useAllCores Use all cores available to speed up computations
  * @return auto Morse Smale Complex complete field information
  */
-auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
+auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
     logger::mainlog << "\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
     
@@ -2523,29 +2522,25 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePerc
     criticalPairs->Update();
     //Persistence DataSet
     auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
-    //Persistence maximum to calculate Thresholds
-    double maximumPersistence = 0;
-    //Find the dataset maximum value
-    for (size_t i = 0; i < persistenceDataSet->GetNumberOfValues(); i++)
-    {
-        double currentValue = persistenceDataSet->GetVariantValue(i).ToDouble();
-        
-        if(currentValue > maximumPersistence)
-        {
-            maximumPersistence=currentValue;
-        }
-    }
-
     
-    //Persistence Threshold for simplification
-    double minimumPersistence = persistencePercentage * maximumPersistence;
-    logger::mainlog << "Maximum persistence = " << maximumPersistence << ", Persistent Percentage (input) = " << persistencePercentage << endl;
-    logger::mainlog << "Persistence threshold = " << minimumPersistence << endl;
+    double* persistenceRange = persistenceDataSet->GetRange();
+    
+    double minimumPersistence = persistenceRange[0];
+    double maximumPersistence = persistenceRange[1];
+    
+    // If persistenceThreshold is not provided as input, then 10% of max is automatically taken.
+    if (persistenceThreshold == 0.0) {
+        persistenceThreshold = 0.1 * maximumPersistence;
+    }
+    
+    logger::mainlog << "Maximum persistence = " << maximumPersistence << endl;
+    logger::mainlog << "Persistence threshold = " << persistenceThreshold << endl;
+    
     //Persistence threshold for future simplifications
     vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
     persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
     persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    persistentPairs->ThresholdBetween(minimumPersistence,9e9);
+    persistentPairs->ThresholdBetween(persistenceThreshold,9e9);
     // persistentPairs->SetLowerThreshold(minimumPersistence);
     
 
