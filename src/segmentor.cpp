@@ -4170,6 +4170,7 @@ void segmentor::persistencecurve(vtkSmartPointer<ttkPeriodicGrid> grid, bool use
     vtkNew<ttkPersistenceCurve> curve{};
     curve->SetInputConnection(grid->GetOutputPort());
     curve->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    curve->Update();
     
     /* Write the persistence curve in VTK format */
     vtkNew<vtkTableWriter> curveWriter{};
