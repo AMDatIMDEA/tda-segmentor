@@ -61,6 +61,7 @@ public:
     auto solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     void eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
     void eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEigenFunctions, bool useAllCores);
+    void persistencecurve(vtkSmartPointer<ttkPeriodicGrid> grid, bool useAllCores);
 
 
 

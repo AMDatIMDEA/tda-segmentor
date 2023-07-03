@@ -53,6 +53,8 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 #include "vtkLogger.h"
 #include "vtkInformation.h"
 #include "vtkPartitionedDataSetCollection.h"
+#include <vtkTableWriter.h>
+#include <vtksys/SystemTools.hxx>
 //-------------------------------------------------------------------------------------------------
 
 
@@ -69,6 +71,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 #include <ttkEigenField.h>
 #include <ttkBottleneckDistance.h>
 #include <ttkPersistenceDiagramClustering.h>
+#include <ttkPersistenceCurve.h>
 //-------------------------------------------------------------------------------------------------
 
 

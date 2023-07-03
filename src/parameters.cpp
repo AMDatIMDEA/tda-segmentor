@@ -49,12 +49,9 @@ void parameters::printinvocation(int nargs, char **args)
 
 bool parameters::checkinputfile(){
     
-    std::string::size_type const p(inputfilename.find_last_of('.'));
-    if (p != std::string::npos){
-        basefilename = inputfilename.substr(0, p);
-        extensionname = inputfilename.substr(p,inputfilename.length());
-    }
-
+    extensionname = vtksys::SystemTools::GetFilenameLastExtension(inputfilename);
+    basefilename = vtksys::SystemTools::GetFilenameWithoutExtension(inputfilename);
+    
     // More extension names need to be added here for energy and density calculations
     if (extensionname != ".cube" || extensionname.empty()) {
         std::cout << "\n\nInput file check failed - check invocation syntax" << endl;

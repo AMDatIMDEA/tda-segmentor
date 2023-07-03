@@ -4158,14 +4158,30 @@ void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfE
     doneFile.close();
     
 
+}
 
+
+
+
+void segmentor::persistencecurve(vtkSmartPointer<ttkPeriodicGrid> grid, bool useAllCores)
+{
+    ttk::Timer percurveTimer;
+    logger::mainlog << "\nSegmentor: Persistence Curve module" << "\n" << flush;
+    vtkNew<ttkPersistenceCurve> curve{};
+    curve->SetInputConnection(grid->GetOutputPort());
+    curve->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
     
-
-
+    /* Write the persistence curve in VTK format */
+    vtkNew<vtkTableWriter> curveWriter{};
+    curveWriter->SetInputConnection(curve->GetOutputPort(0));
+    curveWriter->SetFileName((Directory+"/" + BaseFileName+"_persistencecurve.vtk").c_str());
+    curveWriter->Write();
     
-
+    double timeTakenForPerCurve = percurveTimer.getElapsedTime();
+    logger::mainlog << "Time taken in persistence curve module: " << timeTakenForPerCurve << "(s)" << endl;
 
 }
+
 
 
 /**
