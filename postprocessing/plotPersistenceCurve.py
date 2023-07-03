@@ -10,6 +10,19 @@ Developers:       Aditya Vasudevan
                   
                   IMDEA Materiales Institue,
                   Getafe, Spain
+
+
+
+If tda-segmentor is used with the -module persistencecurve,
+   then a file basefilename_persistencecurve.vtk is created, 
+   that stores as a vtk table, the persistence and the 
+   number of minimum saddle pairs.
+This script, takes this file as an input and plots the 
+   number of minimum saddle pairs vs the persistence value
+
+One must then choose a persistence value that corresponds
+   to the plateau as the persistence threshold for the
+   morse smale complex routine.    
     
 """
 
@@ -55,7 +68,7 @@ plt.rc('text', usetex=True)
 plt.xticks(fontsize=fntsize)
 plt.yticks(fontsize=fntsize)
 plt.xlabel(r'persistence',fontsize=fntsize)
-plt.ylabel(r'number of pairs',fontsize=fntsize)
+plt.ylabel(r'number of minimum-saddle pairs',fontsize=fntsize)
 plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
