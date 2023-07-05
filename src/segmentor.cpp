@@ -57,15 +57,12 @@ segmentor::~segmentor()
  * CAUTION: The results of this computation could have big storage size
  *
  * @param grid Input grid from a reader function of this class
- * @param writeSuperCell  Write the results to an output file
  * @return auto
  */
-void segmentor::superCell(vtkSmartPointer<vtkImageData> grid)
-{
-
-    ttk::Timer timer;
-    logger::mainlog << "segmentor: Super Cell Function  " << "\n";
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+auto segmentor::superCell(vtkSmartPointer<vtkImageData> grid){
+    
+    ttk::Timer superCellTimer;
+    logger::mainlog << "\nSegmentor: Super Cell module:         " << "\n";
     
     //Invert the values of the distance field. Negative values for the void space and
     // positive values for the solid space of the Nanoporous Material
@@ -75,87 +72,54 @@ void segmentor::superCell(vtkSmartPointer<vtkImageData> grid)
         grid->GetPointData()->GetAbstractArray("This is distance grid")->SetVariantValue(i,-1.0*distanceArray->GetVariantValue(i).ToDouble());
     }
 
-
-    //Get Bounds of the Nanoporous Material unit cell
-    double materialBounds[6];
-    grid->GetBounds(materialBounds);
+    vtkSmartPointer<vtkImageAppend> appendX = vtkSmartPointer<vtkImageAppend>::New();
+    appendX->AddInputData(grid);
+    appendX->SetAppendAxis(0);
+    appendX->AddInputData(grid);
+    appendX->Update();
     
-
-    //Axis limits
-    double xlim = materialBounds[1];
-    double ylim = materialBounds[3];
-    double zlim = materialBounds[5];
-
-    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
-
-
-    //Possibilities to check when computing the super cell. 8 possibilities(instead of 24) will be used in order to save up memory
-    vector<double> xVec{ +xlim, 0 };
-    vector<double> yVec{ +ylim, 0 };
-    vector<double> zVec{ +zlim, 0 };
-
-
-
-    //Filter used to merge the new copies of the unit cell into a single supercell
-    vtkSmartPointer<vtkAppendFilter> append = vtkSmartPointer<vtkAppendFilter>::New();
-
-  
-    for(auto x : xVec)
-    {
-        for(auto y : yVec)
-        {
-            for(auto z : zVec)
-            {
-                int xTransform = 0; //Initial Coords
-                int yTransform = 0; //Initial Coords
-                int zTransform = 0; //Initial Coords
-
-                xTransform += x;
-                yTransform += y;
-                zTransform += z;
-
-
-                //VTK functions used to translate the unit cell in the required directions in order
-                //to make the copies
-                vtkSmartPointer<vtkTransform> aTransform = vtkSmartPointer<vtkTransform>::New();
-                aTransform->Translate(xTransform,yTransform,zTransform);
-
-                vtkSmartPointer<vtkTransformFilter> transform = vtkSmartPointer<vtkTransformFilter>::New();
-                transform->SetInputData(grid);
-                transform->SetTransform(aTransform);
-                transform->Update();
-
-                //Append the copy to a group in order to create the super cell
-                append->AddInputConnection(transform->GetOutputPort());
-                append->MergePointsOn();
-                append->SetTolerance(0.0);
-                append->Update();
-
-            }
-        }
-    }
-   
-    double elapsedTime = timer.getElapsedTime();
-    logger::mainlog << "Time taken for creating super cell data : " << elapsedTime << endl;
-    logger::mainlog << "Computing the Super Cell triangulation\n";
-    vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
-    triangulation->SetInputConnection(append->GetOutputPort());
-    triangulation->Update();
-
-    timer.reStart();
-    logger::mainlog << "Printing SuperCell" << "\n";
-    vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
-    segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
-    //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
-    segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Grid.vtk").c_str());
-    segmentationWriter->Write();
-    elapsedTime = timer.getElapsedTime();
-    logger::mainlog << "Time taken to write super cell data : " << elapsedTime << endl;
+    vtkSmartPointer<vtkImageAppend> appendXY = vtkSmartPointer<vtkImageAppend>::New();
+    appendXY->AddInputData(appendX->GetOutput());
+    appendXY->SetAppendAxis(1);
+    appendXY->AddInputData(appendX->GetOutput());
+    appendXY->Update();
     
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-     
+    vtkSmartPointer<vtkImageAppend> appendXYZ = vtkSmartPointer<vtkImageAppend>::New();
+    appendXYZ->AddInputData(appendXY->GetOutput());
+    appendXYZ->SetAppendAxis(2);
+    appendXYZ->AddInputData(appendXY->GetOutput());
+    appendXYZ->Update();
+
+    vtkSmartPointer<vtkImageData> appendedImage = appendXYZ->GetOutput();
+    int cellDimsOriginal[3];
+    grid->GetCellDims(cellDimsOriginal);
+    logger::mainlog << "Number of points in the original grid  : (" << cellDimsOriginal[0]
+                                                                   << " X " << cellDimsOriginal[1]
+                                                                   << " X "<< cellDimsOriginal[2] << ")" << endl;
+    int cellDimsSuperCell[3];
+    appendedImage->GetCellDims(cellDimsSuperCell);
+    logger::mainlog << "Number of points in the super cell grid : (" << cellDimsSuperCell[0]
+                                                                   << " X " << cellDimsSuperCell[1]
+                                                                   << " X "<< cellDimsSuperCell[2] << ")" << endl;
+
+    double superCellCreationTime = superCellTimer.getElapsedTime();
+    superCellTimer.reStart();
+    logger::mainlog << "Time taken for Super Cell creation            : " << superCellCreationTime << endl;
+
+    vtkSmartPointer<vtkXMLImageDataWriter> imageWriter = vtkSmartPointer<vtkXMLImageDataWriter>::New();
+    imageWriter->SetInputData(appendedImage);
+    imageWriter->SetFileName((Directory+"/"+BaseFileName+"_superCellgrid.vti").c_str());
+    imageWriter->Write();
+    
+    double superCellWriteTime = superCellTimer.getElapsedTime();
+    logger::mainlog << "Time taken to write Super Cell creation       : " << superCellWriteTime << endl;
+    
+    
+    double totalTime = superCellCreationTime + superCellWriteTime;
+    logger::mainlog << "Total Time in the supercell module            : " << totalTime << endl;
+
+    return appendedImage;
 }
-
 
 /**
  * @brief Get the volume of the grids in a folder and write it to a file
@@ -899,417 +863,14 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
             logger::mainlog << appendDataSet->GetNumberOfPoints() << endl;
 
             
-            
-            
         }
 
     }
     
-
-
-
 }
 
-auto segmentor::superCellMSC(string inputFile, double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
-{
-
-    //Delete the extension from the filename
-    std::string base_filename = inputFile.substr(inputFile.find_last_of("/\\") + 1);
-    std::string::size_type const p(base_filename.find_last_of('.'));
-    //Input File name
-    std::string file_without_extension = base_filename.substr(0, p);
-    string fileDirectory = "../Results/" + file_without_extension + "/" + file_without_extension;
-
-    string filePath = fileDirectory  + "_Grid.vtk";
-
-    
-    vtkSmartPointer<vtkUnstructuredGridReader> reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
-    reader->SetFileName(filePath.c_str());
-    reader->Update();
-
-    // vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
-    // periodGrid->SetUseAllCores(useAllCores);
-    // periodGrid->SetInputConnection(reader->GetOutputPort());
-    // //periodGrid->SetInputData(grid);
-    // periodGrid->SetPeriodicity(true);
-    // periodGrid->Update();
-    
-    vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
-    persistenceDiagram->SetDebugLevel(3);
-    persistenceDiagram->SetUseAllCores(useAllCores);
-    //persistenceDiagram->SetInputData(grid);
-    persistenceDiagram->SetInputConnection(reader->GetOutputPort());
-    persistenceDiagram->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    
-    //We delete the persistence pairs corresponding to the graph diagonal
-    vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
-    criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
-    criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-0.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
-   
-    criticalPairs->Update();
-    //Persistence DataSet
-    auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
-    //Persistence maximum to calculate Thresholds
-    double maximumPersistence = 0;
-    //vector<double> persistences;
-    for (size_t i = 0; i < persistenceDataSet->GetNumberOfValues(); i++)
-    {
-        double currentValue = persistenceDataSet->GetVariantValue(i).ToDouble();
-        //persistences.push_back(currentValue);
-        if(currentValue > maximumPersistence)
-        {
-            maximumPersistence=currentValue;
-        }
-    }
-    // sort(persistences.begin(), persistences.end(), greater<int>());
-    // maximumPersistence = persistences[1];
-    
-    //Persistence Threshold for simplification
-    double minimumPersistence = persistencePercentage * maximumPersistence;
-    //Persistence threshold for future simplifications
-    vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
-    persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
-    persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    persistentPairs->ThresholdBetween(minimumPersistence,9e9);
-    // persistentPairs->SetLowerThreshold(minimumPersistence);
-    
-
-    //Topological simplification from the persistence results
-    vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
-    topologicalSimplification->SetDebugLevel(3);
-    topologicalSimplification->SetUseAllCores(useAllCores);
-    //topologicalSimplification->SetInputData(grid);
-    topologicalSimplification->SetInputConnection(0,reader->GetOutputPort());
-    //topologicalSimplification->SetInputConnection(0,periodGrid->GetOutputPort());
-
-    topologicalSimplification->SetInputArrayToProcess(0,0,0, 0,"This is distance grid");
-    topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
-    //=============================================================================================
-    //=============================================================================================
-    //3.3 Morse Smale Complex Computation
-    //Morse Smale Complex Computation
-    vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex = vtkSmartPointer<ttkMorseSmaleComplex>::New();
-    morseSmaleComplex->SetDebugLevel(3);
-    morseSmaleComplex->SetUseAllCores(useAllCores);
-    morseSmaleComplex->SetReturnSaddleConnectors(1);
-    morseSmaleComplex->SetSaddleConnectorsPersistenceThreshold(1.0*minimumPersistence);
-    
-    morseSmaleComplex->SetInputConnection(topologicalSimplification->GetOutputPort());
-    morseSmaleComplex->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    morseSmaleComplex->SetComputeSaddleConnectors(false);
-    morseSmaleComplex->SetComputeAscendingSeparatrices1(false);
-    morseSmaleComplex->SetComputeAscendingSeparatrices2(false);
-    morseSmaleComplex->SetComputeDescendingSeparatrices1(false);
-    morseSmaleComplex->SetComputeDescendingSeparatrices2(false);
-    morseSmaleComplex->Update();
-
-    if (writeOutputs)
-    {
-        //Critical points file
-        vtkSmartPointer<vtkPolyDataWriter> criticalPointsWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-        criticalPointsWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
-        criticalPointsWriter->SetFileName((fileDirectory+"_CriticalPoints.vtk").c_str());
-        criticalPointsWriter->Write();
-        auto criticalPointsDataSet = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(0));
-        //Segmentation file
-        vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
-        segmentationWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
-        segmentationWriter->SetFileName((fileDirectory + "_Segmentation.vtk").c_str());
-        segmentationWriter->Write();
-
-        // //Saddle connectors
-        // vtkNew<vtkThreshold> saddleSeparatrices{};
-        // saddleSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // saddleSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // saddleSeparatrices->ThresholdBetween(1,1);
-        
-        
-        // vtkNew<vtkUnstructuredGridWriter> saddleSepWriter{};
-        // saddleSepWriter->SetInputConnection(saddleSeparatrices->GetOutputPort());
-        // //saddleSepWriter->SetFileName("../results/saddleSep.vtk");
-        // saddleSepWriter->SetFileName((directory+"/saddleSep.vtk").c_str());
-        // saddleSepWriter->Write();
-        
-            
-        // //Ascending separatrices of the MSC
-        // vtkSmartPointer<vtkThreshold> ascendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
-        // ascendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // ascendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // ascendingSeparatrices->ThresholdBetween(2,2);
-        
-        // //Ascending separatrices file
-        // vtkSmartPointer<vtkUnstructuredGridWriter> asc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        // asc1Writer->SetInputConnection(ascendingSeparatrices->GetOutputPort());
-        // asc1Writer->SetFileName((Directory+"/" + BaseFileName+"_Asc1Separatrices.vtk").c_str());
-        // asc1Writer->Write();
-
-        // //Descending separatrices of the MSC
-        // vtkSmartPointer<vtkThreshold> descendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
-        // descendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // descendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // descendingSeparatrices->ThresholdBetween(0,0);
-        
-        // //Ascending separatrices file
-        // vtkSmartPointer<vtkUnstructuredGridWriter> desc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        // desc1Writer->SetInputConnection(descendingSeparatrices->GetOutputPort());
-        // desc1Writer->SetFileName((Directory+"/" + BaseFileName+"_Des1Separatrices.vtk").c_str());
-        // desc1Writer->Write();
-    }
-    
-    
-    
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-    
-    string signalFile = "../Results/Done/" + file_without_extension;
-    ofstream signalR(signalFile);
-    signalR << "Checking \n";
-    signalR.close();
-
-    return morseSmaleComplex;
-
-}
-
-auto segmentor::superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persistenceThreshold, double saddlesaddleIncrement, bool useAllCores, bool writeSuperCell, bool writeSegmentation)
-{
-    logger::mainlog << "Super Cell Module 2 " << "\n";
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-    
-    //Invert the values of the distance field. Negative values for the void space and
-    // positive values for the solid space
-    auto distanceArray = grid->GetPointData()->GetAbstractArray("This is distance grid");
-    for (size_t i = 0; i < grid->GetNumberOfPoints(); i++)
-    {
-        grid->GetPointData()->GetAbstractArray("This is distance grid")->SetVariantValue(i,-1.0*distanceArray->GetVariantValue(i).ToDouble());
-    }
-        
-    //Get Bounds of the material cell
-    double materialBounds[6];
-    grid->GetBounds(materialBounds);
-    
-
-    double xlim = materialBounds[1];
-    double ylim = materialBounds[3];
-    double zlim = materialBounds[5];
-
-    logger::mainlog << xlim << "," << ylim << "," << zlim << endl;
 
 
-    //Possibilities to check when computing the super cell
-    vector<double> xVec{ +xlim, 0 };
-    vector<double> yVec{ +ylim, 0 };
-    vector<double> zVec{ +zlim, 0 };
-
-
-    // //Segmentation corresponding to the solid structure
-    // vtkSmartPointer<vtkThreshold> voidStructure = vtkSmartPointer<vtkThreshold>::New();
-    // voidStructure->SetInputData(grid);
-    // voidStructure->SetAllScalars(1);
-    // voidStructure->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    // voidStructure->SetUpperThreshold(0.0);
-    // voidStructure->Update();
-
-    //Filter used to merge the new instances
-    vtkSmartPointer<vtkAppendFilter> append = vtkSmartPointer<vtkAppendFilter>::New();
-
-    // vtkSmartPointer<vtkGroupDataSetsFilter> groupie = vtkSmartPointer<vtkGroupDataSetsFilter>::New();
-    // groupie->Update();
-
-    int counter = 0;
-    for(auto x : xVec)
-    {
-        for(auto y : yVec)
-        {
-            for(auto z : zVec)
-            {
-                int xTransform = 0; //Initial Coords
-                int yTransform = 0; //Initial Coords
-                int zTransform = 0; //Initial Coords
-
-                xTransform += x;
-                yTransform += y;
-                zTransform += z;
-
-                vtkSmartPointer<vtkTransform> aTransform = vtkSmartPointer<vtkTransform>::New();
-                aTransform->Translate(xTransform,yTransform,zTransform);
-
-                vtkSmartPointer<vtkTransformFilter> transform = vtkSmartPointer<vtkTransformFilter>::New();
-                transform->SetInputData(grid);
-                //transform->SetInputConnection(voidStructure->GetOutputPort());
-                transform->SetTransform(aTransform);
-                transform->Update();
-
-                //group->AddInputConnection(transform->GetOutputPort());
-                append->AddInputConnection(transform->GetOutputPort());
-                append->MergePointsOn();
-                append->SetTolerance(0.0);
-                append->Update();
-
-                // groupie->AddInputConnection(transform->GetOutputPort());
-                // groupie->Update();
-
-                counter++;
-                logger::mainlog << counter << endl;
-            }
-        }
-    }
-   
-
-    logger::mainlog << "Computing triangulation\n";
-    vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
-    triangulation->SetInputConnection(append->GetOutputPort());
-    triangulation->Update();
-
-    if(writeSuperCell)
-    {
-       logger::mainlog << "Printing SuperCell" << "\n";
-       vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
-       segmentationWriter->SetInputConnection(triangulation->GetOutputPort());
-       //segmentationWriter->SetInputConnection(append->GetOutputPort(0));
-       segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Grid.vtk").c_str());
-       segmentationWriter->Write();
-        // vtkSmartPointer<vtkUnstructuredGridWriter> writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        // writer->SetInputConnection(triangulation->GetOutputPort());
-        // writer->SetFileName((Directory+"/" + BaseFileName+"_Grid.vtk").c_str());
-        // writer->Write();
-    }
-
-
-
-    vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
-    persistenceDiagram->SetDebugLevel(3);
-    persistenceDiagram->SetUseAllCores(useAllCores);
-    //persistenceDiagram->SetInputData(grid);
-    persistenceDiagram->SetInputConnection(triangulation->GetOutputPort());
-    persistenceDiagram->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    
-    //We delete the persistence pairs corresponding to the graph diagonal
-    vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
-    criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
-    criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-0.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
-    criticalPairs->Update();
-    //Persistence DataSet
-    auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
-    //Persistence maximum to calculate Thresholds
-    double maximumPersistence = 0;
-    //vector<double> persistences;
-    for (size_t i = 0; i < persistenceDataSet->GetNumberOfValues(); i++)
-    {
-        double currentValue = persistenceDataSet->GetVariantValue(i).ToDouble();
-        //persistences.push_back(currentValue);
-        if(currentValue > maximumPersistence)
-        {
-            maximumPersistence=currentValue;
-        }
-    }
-    // sort(persistences.begin(), persistences.end(), greater<int>());
-    // maximumPersistence = persistences[1];
-    
-    //Persistence Threshold for simplification
-    double minimumPersistence = persistenceThreshold * maximumPersistence;
-    //Persistence threshold for future simplifications
-    vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
-    persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
-    persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    persistentPairs->ThresholdBetween(minimumPersistence,9e9);
-    // persistentPairs->SetLowerThreshold(minimumPersistence);
-
-    //Topological simplification from the persistence results
-    vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
-    topologicalSimplification->SetDebugLevel(3);
-    topologicalSimplification->SetUseAllCores(useAllCores);
-    //topologicalSimplification->SetInputData(grid);
-    topologicalSimplification->SetInputConnection(0,triangulation->GetOutputPort());
-    //topologicalSimplification->SetInputConnection(0,periodGrid->GetOutputPort());
-
-    topologicalSimplification->SetInputArrayToProcess(0,0,0, 0,"This is distance grid");
-    topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
-    //=============================================================================================
-    //=============================================================================================
-    //3.3 Morse Smale Complex Computation
-    //Morse Smale Complex Computation
-    vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex = vtkSmartPointer<ttkMorseSmaleComplex>::New();
-    morseSmaleComplex->SetDebugLevel(3);
-    morseSmaleComplex->SetUseAllCores(useAllCores);
-    morseSmaleComplex->SetReturnSaddleConnectors(1);
-    morseSmaleComplex->SetSaddleConnectorsPersistenceThreshold(1.0*minimumPersistence);
-    
-    morseSmaleComplex->SetInputConnection(topologicalSimplification->GetOutputPort());
-    morseSmaleComplex->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    morseSmaleComplex->SetComputeSaddleConnectors(false);
-    morseSmaleComplex->SetComputeAscendingSeparatrices1(false);
-    morseSmaleComplex->SetComputeAscendingSeparatrices2(false);
-    morseSmaleComplex->SetComputeDescendingSeparatrices1(false);
-    morseSmaleComplex->SetComputeDescendingSeparatrices2(false);
-    morseSmaleComplex->Update();
-
-    if (writeSegmentation)
-    {
-        //Critical points file
-        vtkSmartPointer<vtkPolyDataWriter> criticalPointsWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-        criticalPointsWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
-        criticalPointsWriter->SetFileName((Directory+"/" + BaseFileName+"_CriticalPoints.vtk").c_str());
-        criticalPointsWriter->Write();
-        auto criticalPointsDataSet = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(0));
-        //Segmentation file
-        vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
-        segmentationWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
-        segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Segmentation.vtk").c_str());
-
-        segmentationWriter->Write();
-
-        // //Saddle connectors
-        // vtkNew<vtkThreshold> saddleSeparatrices{};
-        // saddleSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // saddleSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // saddleSeparatrices->ThresholdBetween(1,1);
-        
-        
-        // vtkNew<vtkUnstructuredGridWriter> saddleSepWriter{};
-        // saddleSepWriter->SetInputConnection(saddleSeparatrices->GetOutputPort());
-        // //saddleSepWriter->SetFileName("../results/saddleSep.vtk");
-        // saddleSepWriter->SetFileName((directory+"/saddleSep.vtk").c_str());
-        // saddleSepWriter->Write();
-        
-            
-        // //Ascending separatrices of the MSC
-        // vtkSmartPointer<vtkThreshold> ascendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
-        // ascendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // ascendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // ascendingSeparatrices->ThresholdBetween(2,2);
-        
-        // //Ascending separatrices file
-        // vtkSmartPointer<vtkUnstructuredGridWriter> asc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        // asc1Writer->SetInputConnection(ascendingSeparatrices->GetOutputPort());
-        // asc1Writer->SetFileName((Directory+"/" + BaseFileName+"_Asc1Separatrices.vtk").c_str());
-        // asc1Writer->Write();
-
-        // //Descending separatrices of the MSC
-        // vtkSmartPointer<vtkThreshold> descendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
-        // descendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // descendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // descendingSeparatrices->ThresholdBetween(0,0);
-        
-        // //Ascending separatrices file
-        // vtkSmartPointer<vtkUnstructuredGridWriter> desc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        // desc1Writer->SetInputConnection(descendingSeparatrices->GetOutputPort());
-        // desc1Writer->SetFileName((Directory+"/" + BaseFileName+"_Des1Separatrices.vtk").c_str());
-        // desc1Writer->Write();
-    }
-    
-    
-    
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-
-    
-   
-    
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-     
-}
 
 auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, bool writeOutputs,bool useAllCores)
 {
@@ -1535,7 +1096,11 @@ auto segmentor::reader(bool writeGridFile)
  
     //Save the resolution to the class variables in order to be used in other functions
     GridResolution = getGridResolution();
+    int cellDims[3];
+    imageData->GetCellDims(cellDims);
+    
     logger::mainlog << "Grid Resolution :          " << GridResolution << "\n";
+    logger::mainlog << "Number of points in the grid : (" << cellDims[0]+1 << " X " << cellDims[1]+1 << " X "<< cellDims[2]+1 << ")" << endl;
     
     double elapsedTime = readerTime.getElapsedTime();
     logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
@@ -2560,7 +2125,7 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex = vtkSmartPointer<ttkMorseSmaleComplex>::New();
     morseSmaleComplex->SetUseAllCores(useAllCores);
     morseSmaleComplex->SetReturnSaddleConnectors(1);
-    morseSmaleComplex->SetSaddleConnectorsPersistenceThreshold(saddlesaddleIncrement*minimumPersistence);
+    morseSmaleComplex->SetSaddleConnectorsPersistenceThreshold(saddlesaddleIncrement*persistenceThreshold);
     morseSmaleComplex->SetInputConnection(topologicalSimplification->GetOutputPort());
     morseSmaleComplex->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
     morseSmaleComplex->SetComputeSaddleConnectors(false);
@@ -2574,8 +2139,8 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
     MSCTimer.reStart();
     logger::mainlog << "Time taken for MSC creation: " << timeTakenForMSC << "(s)" << endl;
     
-    int numberOfDescendingManifolds = getNumberOfDescendingManifolds(morseSmaleComplex);
-    int numberOfAscendingManifolds = getNumberOfAscendingManifolds(morseSmaleComplex);
+    vtkIdType numberOfDescendingManifolds = getNumberOfDescendingManifolds(morseSmaleComplex);
+    vtkIdType numberOfAscendingManifolds = getNumberOfAscendingManifolds(morseSmaleComplex);
     
     logger::mainlog << "Total number of descending manifolds (typically void segments) : " << numberOfDescendingManifolds << endl;
     logger::mainlog << "Total number of ascending manifolds (typically solid segments) : " << numberOfAscendingManifolds << endl;
@@ -2648,7 +2213,7 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
 
 
 
-int segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
+vtkIdType segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
         
     // Output the number of descending manifolds
     vtkSmartPointer<ttkExtract> descendingManifolds = vtkSmartPointer<ttkExtract>::New();
@@ -2663,7 +2228,7 @@ int segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleCompl
     auto descendingManifoldsDataset = vtkDataSet::SafeDownCast(descendingManifolds->GetOutputDataObject(0));
     auto descendingManifoldsID = descendingManifoldsDataset->GetFieldData()->GetAbstractArray("UniqueDescendingManifold");
 
-    int numberOfDescendingManifolds = descendingManifoldsID->GetNumberOfValues();
+    vtkIdType numberOfDescendingManifolds = descendingManifoldsID->GetNumberOfValues();
     
     return numberOfDescendingManifolds;
     
@@ -2672,7 +2237,7 @@ int segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleCompl
 
 
 
-int segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
+vtkIdType segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
     
     // Output the number of descending manifolds
     vtkSmartPointer<ttkExtract> ascendingManifolds = vtkSmartPointer<ttkExtract>::New();
@@ -2687,7 +2252,7 @@ int segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComple
     auto ascendingManifoldsDataset = vtkDataSet::SafeDownCast(ascendingManifolds->GetOutputDataObject(0));
     auto ascendingManifoldsID = ascendingManifoldsDataset->GetFieldData()->GetAbstractArray("UniqueAscendingManifold");
 
-    int numberOfAscendingManifolds = ascendingManifoldsID->GetNumberOfValues();
+    vtkIdType numberOfAscendingManifolds = ascendingManifoldsID->GetNumberOfValues();
     
     return numberOfAscendingManifolds;
     

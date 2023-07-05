@@ -28,10 +28,18 @@ int main(int argc, char ** argv){
     
     segmentor * analysis = new segmentor(param);
     
+    vtkSmartPointer<vtkImageData> grid;
+    
+    if (param.useSuperCell){
+        auto originalGrid = analysis->reader();
+        grid = analysis->superCell(originalGrid);
+    } else
+    {
+        grid = analysis->reader();
+    }
 
-     auto grid = analysis->reader();
-     auto periodicGrid = analysis->inputPrecondition(grid,true,true,false);
-     
+    auto periodicGrid = analysis->inputPrecondition(grid,true,true,false);
+
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;
     
     if (param.segmentationFlag){

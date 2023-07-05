@@ -54,7 +54,7 @@ bool parameters::checkinputfile(){
     
     // More extension names need to be added here for energy and density calculations
     if (extensionname != ".cube" || extensionname.empty()) {
-        std::cout << "\n\nInput file check failed - check invocation syntax" << endl;
+        std::cout << "Input file check failed - check invocation syntax" << endl;
         return false;
     }
         

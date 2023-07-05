@@ -17,7 +17,7 @@ using namespace std;
 void printInstructions()
 {
     
-    cout << "\n\ntda-segmentor command-line syntax is as follows : " << "\n\n" ;
+    cout << "\ntda-segmentor command-line syntax is as follows : " << "\n\n" ;
     
     cout << "tda-segmentor [-module [name-of-module]]" << "\n";
     cout << "                [-persistencethreshold [persistence-val]]" << "\n";

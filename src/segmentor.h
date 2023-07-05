@@ -39,11 +39,11 @@ public:
     //Cleaned functions
     segmentor(const parameters &p);
     ~segmentor();
-    void superCell(vtkSmartPointer<vtkImageData> grid);
+    auto superCell(vtkSmartPointer<vtkImageData> grid);
 
     void getVolume(string inputFolder, double resolution);
-    int getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-    int getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
+    vtkIdType getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
+    vtkIdType getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
 
     double getGridResolution();
     void getCubeVolume(string inputFolder, double resolution);
@@ -98,13 +98,7 @@ public:
     auto persistenceMatchings(bool useAllCores);
     auto persistenceDiagramsWriter(bool useAllCores);
     auto energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string energyFile,double persistenceThreshold, bool useAllCores);
-    //auto superCell(vtkSmartPointer<vtkImageData> grid,  bool useAllCores, bool writeSuperCell);
     
-
-    auto superCellPlusMSC(vtkSmartPointer<vtkImageData> grid, double persistenceThreshold, double saddlesaddleIncrement, bool useAllCores, bool writeSuperCell, bool writeSegmentation);
-
-
-    auto superCellMSC(string inputFile,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     auto segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
     auto segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
     auto segmentSelection(string inputFile, int numberOfEigenFunctions, bool writeOutputs,bool useAllCores);

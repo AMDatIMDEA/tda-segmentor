@@ -55,6 +55,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 #include "vtkPartitionedDataSetCollection.h"
 #include <vtkTableWriter.h>
 #include <vtksys/SystemTools.hxx>
+#include <vtkImageAppend.h>
 //-------------------------------------------------------------------------------------------------
 
 
