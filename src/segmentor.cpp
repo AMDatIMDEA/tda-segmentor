@@ -91,13 +91,13 @@ auto segmentor::superCell(vtkSmartPointer<vtkImageData> grid){
     appendXYZ->Update();
 
     vtkSmartPointer<vtkImageData> appendedImage = appendXYZ->GetOutput();
-    int cellDimsOriginal[3];
-    grid->GetCellDims(cellDimsOriginal);
+    vtkIdType cellDimsOriginal[3];
+    grid->GetDimensions(cellDimsOriginal);
     logger::mainlog << "Number of points in the original grid  : (" << cellDimsOriginal[0]
                                                                    << " X " << cellDimsOriginal[1]
                                                                    << " X "<< cellDimsOriginal[2] << ")" << endl;
-    int cellDimsSuperCell[3];
-    appendedImage->GetCellDims(cellDimsSuperCell);
+    vtkIdType cellDimsSuperCell[3];
+    appendedImage->GetDimensions(cellDimsSuperCell);
     logger::mainlog << "Number of points in the super cell grid : (" << cellDimsSuperCell[0]
                                                                    << " X " << cellDimsSuperCell[1]
                                                                    << " X "<< cellDimsSuperCell[2] << ")" << endl;
@@ -1096,8 +1096,8 @@ auto segmentor::reader(bool writeGridFile)
  
     //Save the resolution to the class variables in order to be used in other functions
     GridResolution = getGridResolution();
-    int cellDims[3];
-    imageData->GetCellDims(cellDims);
+    vtkIdType cellDims[3];
+    imageData->GetDimensions(cellDims);
     
     logger::mainlog << "Grid Resolution :          " << GridResolution << "\n";
     logger::mainlog << "Number of points in the grid : (" << cellDims[0]+1 << " X " << cellDims[1]+1 << " X "<< cellDims[2]+1 << ")" << endl;
