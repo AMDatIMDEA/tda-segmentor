@@ -20,7 +20,7 @@ parameters::parameters() :
 moduleNames(),
 inputfilename(),
 useSuperCell(false),
-useTBB(false),
+useAllCores(false),
 saveLogFile(false),
 segmentationFlag(false),
 persistenceThreshold(0.0),
@@ -115,9 +115,9 @@ void parameters::parser(int nargs, char **args)
             j++;
         }
         
-        if ( strcmp(args[i] , "-usetbb") == 0 && i < nargs - 1)
+        if ( strcmp(args[i] , "-useallcores") == 0 && i < nargs - 1)
         {
-            useTBB = true;
+            useAllCores = true;
             j++;
         }
         
@@ -200,8 +200,8 @@ void parameters::writetoLogFile() {
     if (useSuperCell) dummy = "True";
     logger::mainlog << "Use Super Cell : " << dummy << endl;
     dummy = "False";
-    if (useTBB) dummy = "True";
-    logger::mainlog << "Use TBB : " << dummy << endl;
+    if (useAllCores) dummy = "True";
+    logger::mainlog << "Use all Cores : " << dummy << endl;
     dummy = "False";
     if (saveLogFile) dummy = "True";
     logger::mainlog << "Save log file : " << dummy << endl;

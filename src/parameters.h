@@ -32,7 +32,7 @@ public:
     std::vector <std::string>          moduleNames;
     std::string                        inputfilename, basefilename, extensionname;
     bool                               useSuperCell;
-    bool                               useTBB;
+    bool                               useAllCores;
     bool                               saveLogFile;
     bool                               segmentationFlag;
     double                             persistenceThreshold, probeRadius;

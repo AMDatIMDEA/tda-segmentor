@@ -84,7 +84,7 @@ Input parameters are given by its keyword followed by its value. For example,
 the module **accessiblevoidspace** needs the radius of the probe atom and 
 is input as keyword followed by its value. (**-proberadius rad_val**)
 
-Some optional flags are provided such as **-usesupercell**, **-usetbb**, **-savelogfile**
+Some optional flags are provided such as **-usesupercell**, **-useallcores**, **-savelogfile**
 that can serve additional functionality as described below and in Docs/ 
 
 * List of all modules: 
@@ -103,7 +103,8 @@ that can serve additional functionality as described below and in Docs/
 
     * **-usesupercell** : For some structures, the neighboring 26 unit cells are also used for segmentation
                           (Beware this consumes a lot of memory!)
-    * **-usetbb**: If ttk is installed correctly with intel threading blocks, then multithreading flag can be enabled for faster computation. (**needs to be tested**)
+    * **-useallcores**: If ttk is installed correctly with OpenMP, MPI, TBB, as explained in (Important notes for multicore advantages) 
+                          then multithreading flag can be enabled for faster computation.
     * **-savelogfile** : saves the log file of the previous run, if runs are being made from the same folder.  (**needs to be implemented**)
 
 * Some invocation examples: 
