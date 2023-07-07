@@ -22,25 +22,28 @@ Compiling the tda-segmentor code should be done in two steps :
   * The above code will be the source code for installation and the installation should proceed as instructed in the website. 
 
 **Important notes for multicore advantages**
+
 While compiling Paraview and TTK, the following modules and flags
 need to be set active so that all the algorithms are compiled 
 with multicore capabilities: 
 
 While compiling Paraview:
 
-* PARAVIEW_USE_MPI                       **ON**
-* VTK_GROUP_ENABLE_MPI                   **YES**
-* VTK_SMP_IMPLEMENTATION_TYPE            **OPENMP**
-* VTKm_ENABLE_OPENMP                     **YES**
-* VTKm_ENABLE_MPI                        **YES**
-* VTKm_ENABLE_TBB                        **YES**
+* PARAVIEW_USE_MPI --------------------- **ON**
+* VTK_GROUP_ENABLE_MPI ----------------- **YES**
+* VTK_SMP_IMPLEMENTATION_TYPE ---------- **OPENMP**
+* VTKm_ENABLE_OPENMP ------------------- **YES**
+* VTKm_ENABLE_MPI ---------------------- **YES**
+* VTKm_ENABLE_TBB ---------------------- **YES**
 
 While compiling TTK:
 
-* TTK_ENABLE_MPI                         **ON**
+* TTK_ENABLE_MPI ----------------------- **ON**
 
-On Fedora machines, MPI and TBB can be installed using the following commands: 
+On Fedora machines, MPI and TBB can be installed using the following commands:
+ 
 **sudo yum install mpich**
+
 **sudo yum install tbb-devel.x86_64** 
 
 #### Compiling the tda-segmentor code:
