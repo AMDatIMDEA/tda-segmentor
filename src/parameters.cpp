@@ -117,7 +117,7 @@ void parameters::parser(int nargs, char **args)
         
         if ( strcmp(args[i] , "-usetbb") == 0 && i < nargs - 1)
         {
-            useSuperCell = true;
+            useTBB = true;
             j++;
         }
         
