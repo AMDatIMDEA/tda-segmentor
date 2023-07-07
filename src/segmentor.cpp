@@ -1100,7 +1100,7 @@ auto segmentor::reader(bool writeGridFile)
     imageData->GetDimensions(cellDims);
     
     logger::mainlog << "Grid Resolution :          " << GridResolution << "\n";
-    logger::mainlog << "Number of points in the grid : (" << cellDims[0]+1 << " X " << cellDims[1]+1 << " X "<< cellDims[2]+1 << ")" << endl;
+    logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
     
     double elapsedTime = readerTime.getElapsedTime();
     logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;

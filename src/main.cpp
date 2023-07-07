@@ -38,18 +38,18 @@ int main(int argc, char ** argv){
         grid = analysis->reader();
     }
 
-    auto periodicGrid = analysis->inputPrecondition(grid,true,true,false);
+    auto periodicGrid = analysis->inputPrecondition(grid,true,true,param.useTBB);
 
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;
     
     if (param.segmentationFlag){
-        morseSmaleComplex = analysis->MSC(periodicGrid,param.persistenceThreshold,1.0,true,false);
+        morseSmaleComplex = analysis->MSC(periodicGrid,param.persistenceThreshold,1.0,true,param.useTBB);
     }
 
     for (size_t i = 0; i < param.moduleNames.size(); i++ )
     {
         if (param.moduleNames[i] == "accessiblevoidspace")
-            analysis->accessibleVoidSpace(morseSmaleComplex,param.probeRadius,false);
+            analysis->accessibleVoidSpace(morseSmaleComplex,param.probeRadius,param.useTBB);
         else if (param.moduleNames[i] == "voidsegmentation")
             analysis->voidSegmentation(morseSmaleComplex,0);
         else if (param.moduleNames[i] == "persistencecurve")
