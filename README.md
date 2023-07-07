@@ -42,9 +42,9 @@ While compiling TTK:
 
 On Fedora machines, MPI and TBB can be installed using the following commands:
  
-**sudo yum install mpich**
+*sudo yum install mpich*
 
-**sudo yum install tbb-devel.x86_64** 
+*sudo yum install tbb-devel.x86_64* 
 
 #### Compiling the tda-segmentor code:
 
