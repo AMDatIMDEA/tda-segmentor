@@ -19,6 +19,50 @@ ofstream      logger::errlog;
 
 void logger::openLogfiles(const parameters &p) {
     
+    DIR *dp;
+    struct dirent *dirp;
+    string curdir = ".";
+    if ( (dp = opendir(curdir.c_str())) == NULL)
+    {
+        cout << "Error(" << errno << ") opening " << curdir << endl;
+    }
+
+    vector<string> files;
+    while ((dirp = readdir(dp)) != NULL)
+    {
+        files.push_back(string(dirp->d_name));
+    }
+    closedir(dp);
+
+
+    // see if there are any iris-save.* files
+    if (p.saveLogFile)
+    {
+        int num = -1;
+        for (unsigned a=0; a<files.size(); a++)
+        {
+            if ( files[a].substr(0,14) == "save-segmentor")
+            {
+                string t = files[a].substr(15, files[a].size());
+                num = std::max<int>(num, stoi(t));
+            }
+        }
+
+        for (unsigned a=0; a<files.size(); a++)
+        {
+            if ( files[a] == p.basefilename + ".log" )
+            {
+                ostringstream strm;
+                strm << "save-segmentor." << num+1;
+                if( std::rename((p.basefilename + ".log").c_str(), strm.str().c_str()) != 0)
+                    cout << "\n Unable to save log file";
+            }
+        }
+    }
+    
+    
+    
+    
     ostringstream logstrm;
     ostringstream errstrm;
     logstrm << p.basefilename << ".log";
