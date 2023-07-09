@@ -4,7 +4,6 @@
 TDA-Segmentor postprocessing scripts: 
     
 Developers:       Aditya Vasudevan
-                  Jorge Zorilla Prieto
                   Maciej Haranzcyk
                   
                   

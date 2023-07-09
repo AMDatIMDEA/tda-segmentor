@@ -97,7 +97,7 @@ that can serve additional functionality as described below and in Docs/
       module implicitly also runs the segmentation module and hence **-persistencethreshold** must also be given.  
     * **-module voidsegmentation** : Segments the void space and dumps results in a .csv file. Requires persistencethreshold parameter. **(explain info on the .csv file in Output section)** 
     * **-module solidsegmentaiton** : Segments the solid space and dumps results in a .csv file. Requires persistencethreshold parameter. **(explain info on the .csv file in Output section)**
-    * **-module persistencecurve** : Save the persistence curve without segmenting the structure. **(to be implemented)**
+    * **-module persistencecurve** : Save the persistence curve without segmenting the structure.
 
 * List of all optional flags: 
 
