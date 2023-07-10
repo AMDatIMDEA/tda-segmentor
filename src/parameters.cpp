@@ -173,7 +173,7 @@ void parameters::writetoLogFile() {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
             } else
             {
-                logger::mainlog << "Persistence Threshold : " << persistenceThreshold << endl;
+                logger::mainlog << "Persistence Threshold for segmentation module: " << persistenceThreshold << endl;
             }
             
         }
@@ -182,7 +182,7 @@ void parameters::writetoLogFile() {
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
             } else {
-                logger::mainlog << "Persistence Threshold : " << persistenceThreshold << endl;
+                logger::mainlog << "Persistence Threshold for accessible void space module: " << persistenceThreshold << endl;
             }
             
             if (probeRadius == 0.0)

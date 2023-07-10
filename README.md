@@ -78,7 +78,7 @@ for a linux machine and in tda-segmentor.app/Contents/MacOS/ on a Mac machine.
 Once compiled correctly, the code is called directly from the command-line. 
 Different functionalities of the code are implemented as modules and are called as: 
 
-**poretda -module *moduleName* INPUT-FILE**
+**tda-segmentor -module *moduleName* INPUT-FILE**
 
 Input parameters are given by its keyword followed by its value. For example, 
 the module **accessiblevoidspace** needs the radius of the probe atom and 
@@ -109,9 +109,9 @@ that can serve additional functionality as described below and in Docs/
 
 * Some invocation examples: 
 
-    * **poretda -module segmentation -module accessiblevoidspace -persistencethreshold 0.12 -proberadius 1.6 FAU.cube**
-    * **poretda -module segmentation -persistencethreshold 0.12 -usesupercell FAU.cube**
-    * **poretda -module persistencecurve FAU.cube**
+    * **tda-segmentor -module segmentation -module accessiblevoidspace -persistencethreshold 0.12 -proberadius 1.6 FAU.cube**
+    * **tda-segmentor -module segmentation -persistencethreshold 0.12 -usesupercell FAU.cube**
+    * **tda-segmentor -module persistencecurve FAU.cube**
 
 * Output
     * Lots of information is written in the basefilename.log and all the results are stored in tda-segmentor.results/ folder. 
