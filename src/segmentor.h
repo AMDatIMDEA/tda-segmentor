@@ -48,7 +48,8 @@ public:
     double getGridResolution();
     void getCubeVolume(string inputFolder, double resolution);
     auto reader(string inputFilePath,int gridResolution, bool writeGridFile);
-    auto reader(bool writeGridFile = false);
+    auto readFromCubeFile(bool writeGridFile = false);
+    auto readFromVTIgrid(bool writeGridFile = false);
     auto readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile);
     auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);

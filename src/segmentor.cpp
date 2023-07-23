@@ -1064,9 +1064,10 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
  * @param writeGridFile Write the results to an output file(OPTIONAL)
  * @return auto Grid from the Gaussian Cube file
  */
-auto segmentor::reader(bool writeGridFile)
+auto segmentor::readFromCubeFile(bool writeGridFile)
 {
     logger::mainlog << "\nSegmentor: Reader Module" << "\n";
+    logger::mainlog << "Reading " << fileName << endl;
     ttk::Timer readerTime;
     
     
@@ -1176,6 +1177,42 @@ double segmentor::getGridResolution() {
 }
 
 
+
+
+
+/**
+ * @brief Read from XMLImageData generated from LAMMPS output.)
+ * @param writeGridFile - write the input file. (default false)
+ * @return auto Grid from the Gaussian Cube file
+ */
+auto segmentor::readFromVTIgrid(bool writeGridFile)
+{
+    logger::mainlog << "\nSegmentor: Reader Module" << "\n";
+    logger::mainlog << "Reading from " << fileName  << endl;
+    ttk::Timer readerTime;
+    
+    vtkSmartPointer<vtkXMLImageDataReader> dataReader = vtkSmartPointer<vtkXMLImageDataReader>::New();
+    dataReader->SetFileName((fileName).c_str());
+    dataReader->Update();
+    
+    vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
+    imageData = dataReader->GetOutput();
+    
+    double gridRes[3];
+    imageData->GetSpacing(gridRes);
+    
+    
+    vtkIdType cellDims[3];
+    imageData->GetDimensions(cellDims);
+    
+    logger::mainlog << "Grid Resolution (x,y,z):           (" << gridRes[0] << ", " << gridRes[1] << ", " << gridRes[2] << "\n";
+    logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
+
+    double elapsedTime = readerTime.getElapsedTime();
+    logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
+    
+    return imageData;
+}
 
 
 

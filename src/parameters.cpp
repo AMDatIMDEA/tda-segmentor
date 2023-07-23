@@ -53,7 +53,7 @@ bool parameters::checkinputfile(){
     basefilename = vtksys::SystemTools::GetFilenameWithoutExtension(inputfilename);
     
     // More extension names need to be added here for energy and density calculations
-    if (extensionname != ".cube" || extensionname.empty()) {
+    if ((extensionname != ".cube" && extensionname != ".vti") || extensionname.empty()) {
         std::cout << "Input file check failed - check invocation syntax" << endl;
         return false;
     }

@@ -30,14 +30,20 @@ int main(int argc, char ** argv){
     
     vtkSmartPointer<vtkImageData> grid;
     
-    if (param.useSuperCell){
-        auto originalGrid = analysis->reader();
-        grid = analysis->superCell(originalGrid);
-    } else
-    {
-        grid = analysis->reader();
+    if (param.extensionname == ".cube"){
+        grid = analysis->readFromCubeFile();
+    } else if (param.extensionname == ".vti") {
+        grid = analysis->readFromVTIgrid();
+    } else {
+        logger::mainlog << "\nExtension name is neither .cube or .vti!!" << endl;
+        exit(0);
     }
+        
 
+    
+    if (param.useSuperCell) grid = analysis->superCell(grid);
+    
+    
     auto periodicGrid = analysis->inputPrecondition(grid,true,true,param.useAllCores);
 
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;

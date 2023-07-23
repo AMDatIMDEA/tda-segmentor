@@ -24,6 +24,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 #include <vtkPointSet.h>
 #include <vtkImageData.h>
 #include <vtkXMLImageDataWriter.h>
+#include <vtkXMLImageDataReader.h>
 #include <vtkPolyDataWriter.h>
 #include <vtkUnstructuredGridWriter.h>
 #include <vtkDataSetWriter.h>
