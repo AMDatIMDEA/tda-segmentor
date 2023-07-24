@@ -62,7 +62,7 @@ int main(int argc, char ** argv){
         {
             analysis->persistencecurve(periodicGrid, param.useAllCores);
         } else if (param.moduleNames[i] == "solidsegmentation"){
-            // to be completed
+            analysis->solidSegmentation(morseSmaleComplex);
         }
         
     }
