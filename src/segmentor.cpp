@@ -330,7 +330,9 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
     voidStructure->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
     voidStructure->SetAllScalars(1);
     voidStructure->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidStructure->ThresholdBetween(-99999999,0.0);
+    voidStructure->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidStructure->SetLowerThreshold(-99999999);
+    voidStructure->SetUpperThreshold(0.0);
     voidStructure->Update();
 
     //Same structure segmentation but with a Field Data added
@@ -360,7 +362,9 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
         // segment->SetLowerThreshold(segmentID);
         // segment->SetUpperThreshold(segmentID);
         // segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        segment->ThresholdBetween(segmentID,segmentID);
+        segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        segment->SetLowerThreshold(segmentID);
+        segment->SetUpperThreshold(segmentID);
         segment->Update();
         //DataSet of the Segment
         auto segmentData = vtkDataSet::SafeDownCast(segment->GetOutputDataObject(0));
@@ -436,10 +440,10 @@ auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleC
                 piece->SetInputConnection(isolatedRegions->GetOutputPort());
                 piece->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"RegionId");
                 piece->SetAllScalars(1);
-                // piece->SetLowerThreshold(j);
-                // piece->SetUpperThreshold(j);
-                // piece->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-                piece->ThresholdBetween(j,j);
+
+                piece->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+                piece->SetLowerThreshold(j);
+                piece->SetUpperThreshold(j);
                 piece->Update();
 
                 auto pieceData = vtkDataSet::SafeDownCast(piece->GetOutputDataObject(0));
@@ -536,8 +540,9 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     voidStructure->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
     voidStructure->SetAllScalars(1);
     voidStructure->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidStructure->ThresholdBetween(-9999999999,0.0);
-    //voidStructure->SetUpperThreshold(0.0);
+    voidStructure->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidStructure->SetLowerThreshold(-9999999999);
+    voidStructure->SetUpperThreshold(0.0);
     voidStructure->Update();
 
     //Same structure segmentation but with a Field Data added
@@ -567,7 +572,9 @@ auto segmentor::segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
         // segment->SetLowerThreshold(segmentID);
         // segment->SetUpperThreshold(segmentID);
         // segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        segment->ThresholdBetween(segmentID,segmentID);
+        segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        segment->SetLowerThreshold(segmentID);
+        segment->SetUpperThreshold(segmentID);
         segment->Update();
         //DataSet of the Segment
         auto segmentData = vtkDataSet::SafeDownCast(segment->GetOutputDataObject(0));
@@ -918,8 +925,9 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
     voidStructure->SetInputConnection(segmentation->GetOutputPort());
     voidStructure->SetAllScalars(1);
     voidStructure->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidStructure->ThresholdBetween(-9e9,0.0);
-    // voidStructure->SetUpperThreshold(0.0);
+    voidStructure->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidStructure->SetLowerThreshold(-9e9);
+    voidStructure->SetUpperThreshold(0.0);
     voidStructure->Update();
 
     auto voidStructureDataSet = vtkDataSet::SafeDownCast(voidStructure->GetOutputDataObject(0));
@@ -936,16 +944,17 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
     vtkSmartPointer<vtkThreshold> minimas = vtkSmartPointer<vtkThreshold>::New();
     minimas->SetInputConnection(criticalPoints->GetOutputPort());
     minimas->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
-    minimas->ThresholdBetween(-9e9,0.0);
-    // minimas->SetUpperThreshold(0.0);
-    
+    minimas->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    minimas->SetLowerThreshold(-9e9);
+    minimas->SetUpperThreshold(0.0);
     minimas->Update();
 
     vtkSmartPointer<vtkThreshold> minimasVoid = vtkSmartPointer<vtkThreshold>::New();
     minimasVoid->SetInputConnection(minimas->GetOutputPort());
     minimasVoid->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    minimasVoid->ThresholdBetween(-9e9,0.0);
-    // minimasVoid->SetUpperThreshold(0.0);
+    minimasVoid->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    minimasVoid->SetLowerThreshold(-9e9);
+    minimasVoid->SetUpperThreshold(0.0);
     minimasVoid->Update();
 
     auto minimasDataSet = vtkDataSet::SafeDownCast(minimasVoid->GetOutputDataObject(0));
@@ -968,10 +977,9 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
             vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
             segment->SetInputConnection(voidStructure->GetOutputPort());
             segment->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
-            // segment->SetUpperThreshold(segmentID);
-            // segment->SetLowerThreshold(segmentID);
-            // segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-            segment->ThresholdBetween(segmentID,segmentID);
+            segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+            segment->SetLowerThreshold(segmentID);
+            segment->SetUpperThreshold(segmentID);
             segment->Update();
 
             // //Find the outer surface of the void space
@@ -1017,8 +1025,9 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
             vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
             criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
             criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-            criticalPairs->ThresholdBetween(-0.1,9e9);
-            // criticalPairs->SetLowerThreshold(-0.1);
+            criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+            criticalPairs->SetLowerThreshold(-0.1);
+            criticalPairs->SetUpperThreshold(9e9);
             criticalPairs->Update();
 
             ofstream comparativeData; //Stream to write the comparatives of each region
@@ -1639,10 +1648,9 @@ auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool peri
         vtkSmartPointer<vtkThreshold> structureData = vtkSmartPointer<vtkThreshold>::New();
         structureData->SetInputConnection(periodGrid->GetOutputPort());
         structureData->SetInputArrayToProcess(0,0,0,0,"potentialEnergyAtom");
-        structureData->ThresholdBetween(-999999999,-0.00000001);
-        // structureData->SetLowerThreshold(0);
-        // structureData->SetUpperThreshold(0);
-        // structureData->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        structureData->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        structureData->SetLowerThreshold(-999999999);
+        structureData->SetUpperThreshold(-0.00000001);
         structureData->Update();
         
         
@@ -1980,8 +1988,9 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
             vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
             criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
             criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-            criticalPairs->ThresholdBetween(-0.1,9e9);
-            // criticalPairs->SetLowerThreshold(-0.1);
+            criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+            criticalPairs->SetLowerThreshold(-0.1);
+            criticalPairs->SetUpperThreshold(9e9);
             criticalPairs->Update();
             //Persistence DataSet
             auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
@@ -2013,7 +2022,9 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
             // persistentPairs->SetLowerThreshold(minimumPersistence);
             // persistentPairs->SetUpperThreshold(9.0e21);
             // persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-            persistentPairs->ThresholdBetween(minimumPersistence,9.0e21);
+            persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+            persistentPairs->SetLowerThreshold(minimumPersistence);
+            persistentPairs->SetUpperThreshold(9.0e21);
 
             //Topological simplification from the persistence results
             vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
@@ -2119,9 +2130,11 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
+    
     //Persistence DataSet
     auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
     
@@ -2142,9 +2155,9 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
     vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
     persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
     persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    persistentPairs->ThresholdBetween(persistenceThreshold,9e9);
-    // persistentPairs->SetLowerThreshold(minimumPersistence);
-    
+    persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    persistentPairs->SetLowerThreshold(persistenceThreshold);
+    persistentPairs->SetUpperThreshold(9e9);
 
     //Topological simplification from the persistence results
     vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
@@ -2202,7 +2215,9 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
         // vtkNew<vtkThreshold> saddleSeparatrices{};
         // saddleSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
         // saddleSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // saddleSeparatrices->ThresholdBetween(1,1);
+        // saddleSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        // saddleSeparatrices->SetLowerThreshold(1);
+        // saddleSeparatrices->SetUpperThreshold(1);
         
         
         // vtkNew<vtkUnstructuredGridWriter> saddleSepWriter{};
@@ -2216,7 +2231,9 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
         // vtkSmartPointer<vtkThreshold> ascendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
         // ascendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
         // ascendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // ascendingSeparatrices->ThresholdBetween(2,2);
+        // ascendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        // ascendingSeparatrices->SetLowerThreshold(2);
+        // ascendingSeparatrices->SetUpperThreshold(2);
         
         // //Ascending separatrices file
         // vtkSmartPointer<vtkUnstructuredGridWriter> asc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
@@ -2228,7 +2245,9 @@ auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThre
         // vtkSmartPointer<vtkThreshold> descendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
         // descendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
         // descendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // descendingSeparatrices->ThresholdBetween(0,0);
+        // descendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        // descendingSeparatrices->SetLowerThreshold(0);
+        // descendingSeparatrices->SetUpperThreshold(0);
         
         // //Ascending separatrices file
         // vtkSmartPointer<vtkUnstructuredGridWriter> desc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
@@ -2341,8 +2360,9 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
 
     //Persistence DataSet
@@ -2372,11 +2392,9 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
     vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
     persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
     persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    // persistentPairs->SetLowerThreshold(minimumPersistence);
-    // persistentPairs->SetUpperThreshold(9.0e21);
-    // persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    persistentPairs->ThresholdBetween(minimumPersistence,9.0e21);
-
+    persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    persistentPairs->SetLowerThreshold(minimumPersistence);
+    persistentPairs->SetUpperThreshold(9.0e21);
 
     //Topological simplification from the persistence results
     vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
@@ -2425,11 +2443,9 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
         vtkNew<vtkThreshold> saddleSeparatrices{};
         saddleSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
         saddleSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // saddleSeparatrices->SetLowerThreshold(1);
-        // saddleSeparatrices->SetUpperThreshold(1);
-        // saddleSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        saddleSeparatrices->ThresholdBetween(1,1);
-        
+        saddleSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        saddleSeparatrices->SetLowerThreshold(1);
+        saddleSeparatrices->SetUpperThreshold(1);
         
         
         vtkNew<vtkUnstructuredGridWriter> saddleSepWriter{};
@@ -2443,7 +2459,9 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
         // vtkSmartPointer<vtkThreshold> ascendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
         // ascendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
         // ascendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // ascendingSeparatrices->ThresholdBetween(2,2);
+        // ascendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        // ascendingSeparatrices->SetLowerThreshold(2);
+        // ascendingSeparatrices->SetUpperThreshold(2);
         
         // //Ascending separatrices file
         // vtkSmartPointer<vtkUnstructuredGridWriter> asc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
@@ -2455,10 +2473,10 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePe
         vtkSmartPointer<vtkThreshold> descendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
         descendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
         descendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // descendingSeparatrices->SetLowerThreshold(0);
-        // descendingSeparatrices->SetUpperThreshold(0);
-        // descendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        descendingSeparatrices->ThresholdBetween(0,0);
+        descendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        descendingSeparatrices->SetLowerThreshold(0);
+        descendingSeparatrices->SetUpperThreshold(0);
+        
         //Ascending separatrices file
         vtkSmartPointer<vtkUnstructuredGridWriter> desc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
         desc1Writer->SetInputConnection(descendingSeparatrices->GetOutputPort());
@@ -2724,8 +2742,9 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     vtkSmartPointer<vtkThreshold> voidSegmentation = vtkSmartPointer<vtkThreshold>::New();
     voidSegmentation->SetInputConnection(triangulation->GetOutputPort());
     voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    // voidSegmentation->SetUpperThreshold(-1.0*moleculeRadius);
-    voidSegmentation->ThresholdBetween(-9e9,-1.0*moleculeRadius);
+    voidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidSegmentation->SetLowerThreshold(-9e9);
+    voidSegmentation->SetUpperThreshold(-1.0*moleculeRadius);
     voidSegmentation->Update();
 
     //Same structure segmentation but with a Field Data added
@@ -2820,10 +2839,9 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
         segment->SetInputConnection(voidSegmentation->GetOutputPort());
         segment->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
-        // segment->SetUpperThreshold(currentRegion);
-        // segment->SetLowerThreshold(currentRegion);
-        // segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        segment->ThresholdBetween(currentRegion,currentRegion);
+        segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        segment->SetLowerThreshold(currentRegion);
+        segment->SetUpperThreshold(currentRegion);
         segment->Update();
 
         //DataSet of the specific region of the Descending Segmentation
@@ -3379,8 +3397,9 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
     voidSegmentation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
     voidSegmentation->SetAllScalars(1);
     voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidSegmentation->ThresholdBetween(-9e9,0.0);
-    // voidSegmentation->SetUpperThreshold(-1e-10);
+    voidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidSegmentation->SetLowerThreshold(-9e9);
+    voidSegmentation->SetUpperThreshold(0.0);
     voidSegmentation->Update();
 
     //Same structure segmentation but with a Field Data added
@@ -3411,10 +3430,9 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
         sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
         sectionID->SetAllScalars(1);
         int segmentID = uniqueDesSegIdDataSet->GetVariantValue(i).ToInt();
-        // sectionID->SetLowerThreshold(segmentID);
-        // sectionID->SetUpperThreshold(segmentID);
-        // sectionID->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        sectionID->ThresholdBetween(segmentID,segmentID);
+        sectionID->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        sectionID->SetLowerThreshold(segmentID);
+        sectionID->SetUpperThreshold(segmentID);
         sectionID->Update();
         regions.push_back(uniqueDesSegIdDataSet->GetVariantValue(i).ToInt());
 
@@ -3440,10 +3458,9 @@ void segmentor::eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleCompl
                 vtkSmartPointer<vtkThreshold> currentIsolatedRegion = vtkSmartPointer<vtkThreshold>::New();
                 currentIsolatedRegion->SetInputConnection(segmentConnectivity->GetOutputPort());
                 currentIsolatedRegion->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"RegionId");
-                // currentIsolatedRegion->SetLowerThreshold(j);
-                // currentIsolatedRegion->SetUpperThreshold(j);
-                // currentIsolatedRegion->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-                currentIsolatedRegion->ThresholdBetween(j,j);
+                currentIsolatedRegion->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+                currentIsolatedRegion->SetLowerThreshold(j);
+                currentIsolatedRegion->SetUpperThreshold(j);
                 currentIsolatedRegion->Update();
                 auto currentIsolatedRegionDataSet = vtkDataSet::SafeDownCast(currentIsolatedRegion->GetOutputDataObject(0));
                 //logger::mainlog << "Current Isolated Number Of Points : " << currentIsolatedRegionDataSet->GetNumberOfPoints() << endl;
@@ -3676,8 +3693,9 @@ void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfE
     voidSegmentation->SetInputData(grid);
     voidSegmentation->SetAllScalars(1);
     voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidSegmentation->ThresholdBetween(0.0,9e9);
-    // voidSegmentation->SetLowerThreshold(0.0);
+    voidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidSegmentation->SetLowerThreshold(0.0);
+    voidSegmentation->SetUpperThreshold(9e9);
     voidSegmentation->Update();
 
     //Find the outer surface of the void space
@@ -3728,8 +3746,9 @@ void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfE
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(0.0,9e9);
-    // criticalPairs->SetLowerThreshold(0.0);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(0.0);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
 
     auto persistenceDiagramDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0));
@@ -3800,17 +3819,17 @@ void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     vtkSmartPointer<vtkThreshold> descendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
     descendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
     descendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-    // descendingSeparatrices->SetLowerThreshold(0);
-    // descendingSeparatrices->SetUpperThreshold(0);
-    // descendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    descendingSeparatrices->ThresholdBetween(0.0,0.0);
+    descendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    descendingSeparatrices->SetLowerThreshold(0.0);
+    descendingSeparatrices->SetUpperThreshold(0.0);
 
     //Descending separatrices of the MSC corresponding to the void space
     vtkSmartPointer<vtkThreshold> voidDescendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
     voidDescendingSeparatrices->SetInputConnection(descendingSeparatrices->GetOutputPort());
     voidDescendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixFunctionMaximum");
-    // voidDescendingSeparatrices->SetUpperThreshold(-1e-9);
-    voidDescendingSeparatrices->ThresholdBetween(-9e9,0.0);
+    voidDescendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidDescendingSeparatrices->SetLowerThreshold(-9e9);
+    voidDescendingSeparatrices->SetUpperThreshold(0.0);
 
 
     auto descendingSepDataSet = vtkDataSet::SafeDownCast(voidDescendingSeparatrices->GetOutputDataObject(0));
@@ -3834,10 +3853,9 @@ void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         currentSeparatrix->SetInputConnection(voidDescendingSeparatrices->GetOutputPort());
         currentSeparatrix->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixId");
         int sepID = separatrixIdDataSet->GetVariantValue(i).ToInt();
-        // currentSeparatrix->SetLowerThreshold(sepID);
-        // currentSeparatrix->SetUpperThreshold(sepID);
-        // currentSeparatrix->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        currentSeparatrix->ThresholdBetween(sepID,sepID);
+        currentSeparatrix->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        currentSeparatrix->SetLowerThreshold(sepID);
+        currentSeparatrix->SetUpperThreshold(sepID);
         currentSeparatrix->Update();
 
         auto currentSeparatrixDataSet = vtkDataSet::SafeDownCast(currentSeparatrix->GetOutputDataObject(0));
@@ -3947,9 +3965,9 @@ auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
     // solidSegmentation->SetInputArrayToProcess(0,0,0,0,"potentialEnergyAtom");
     
     solidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    solidSegmentation->ThresholdBetween(-9.9e9,-1e-9);
-    // solidSegmentation->SetLowerThreshold(1e-9);
- 
+    solidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    solidSegmentation->SetLowerThreshold(-9.9e9);
+    solidSegmentation->SetUpperThreshold(-1e-9);
     solidSegmentation->Update();
 
 
@@ -4004,11 +4022,9 @@ auto segmentor::evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmale
         sectionID->SetInputConnection(solidSegmentation->GetOutputPort());
         sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
         int segID = uniqueAscSegIdDataSet->GetVariantValue(i).ToInt();
-        // sectionID->SetLowerThreshold(segID);
-        // sectionID->SetUpperThreshold(segID);
-        // sectionID->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        sectionID->ThresholdBetween(segID,segID);
-        
+        sectionID->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        sectionID->SetLowerThreshold(segID);
+        sectionID->SetUpperThreshold(segID);
         sectionID->Update();
                 
         //DataSet of the specific region of the Ascending Segmentation
@@ -4646,8 +4662,9 @@ void segmentor::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCo
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-0.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
 
     // //We delete the persistence pairs corresponding to the graph diagonal
@@ -4739,26 +4756,27 @@ void segmentor::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllC
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-0.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
 
     //We capture only the features corresponding to saddles-minimum
     vtkSmartPointer<vtkThreshold> saddlesMin = vtkSmartPointer<vtkThreshold>::New();
     saddlesMin->SetInputConnection(criticalPairs->GetOutputPort());
     saddlesMin->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CriticalType");
-    // saddlesMin->SetLowerThreshold(0);
-    // saddlesMin->SetUpperThreshold(2);
-    // saddlesMin->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    saddlesMin->ThresholdBetween(0,2);
+    saddlesMin->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    saddlesMin->SetLowerThreshold(0);
+    saddlesMin->SetUpperThreshold(2);
     saddlesMin->Update();
 
     //We delete the persistence pairs corresponding to the graph diagonal
     vtkSmartPointer<vtkThreshold> most = vtkSmartPointer<vtkThreshold>::New();
     most->SetInputConnection(saddlesMin->GetOutputPort());
     most->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"Persistence");
-    most->ThresholdBetween(0.01*abs(minimumEnergy),9e21);
-    // most->SetLowerThreshold(0.01*abs(minimumEnergy));
+    most->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    most->SetLowerThreshold(0.01*abs(minimumEnergy));
+    most->SetUpperThreshold(9e21);
     most->Update();
 
     //auto persistenceDiagramDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0));
@@ -4822,8 +4840,9 @@ void segmentor::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAl
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-0.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
     
     
@@ -4930,18 +4949,18 @@ auto segmentor::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
     criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
     criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->ThresholdBetween(-0.1,9e9);
-    // criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
     criticalPairs->Update();
 
     //Persistence threshold for future simplifications
     vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
     persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
     persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    // persistentPairs->SetLowerThreshold(energyPersistence);
-    // persistentPairs->SetUpperThreshold(9.0e21);
-    // persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    persistentPairs->ThresholdBetween(energyPersistence,9.0e21);
+    persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    persistentPairs->SetLowerThreshold(energyPersistence);
+    persistentPairs->SetUpperThreshold(9.0e21);
     
 
     //Topological simplification from the persistence results
@@ -5261,8 +5280,9 @@ auto segmentor::persistenceDiagramsWriter(bool useAllCores)
         vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
         criticalPairs->SetInputConnection(persistenceDiagram1->GetOutputPort());
         criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-        // criticalPairs->SetLowerThreshold(-0.1);
-        criticalPairs->ThresholdBetween(-0.1,9e9);
+        criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        criticalPairs->SetLowerThreshold(-0.1);
+        criticalPairs->SetUpperThreshold(9e9);
         criticalPairs->Update();
 
         auto persistenceDiagramDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0));
