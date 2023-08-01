@@ -54,15 +54,15 @@ public:
     auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
     auto inputPrecondition_E(vtkSmartPointer<vtkImageData> grid,bool periodicConditions);
-    auto MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
-    auto MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
+    auto MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
+    auto MSC_E(vtkSmartPointer<ttkTriangulationManager> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     void voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores);
     void accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores);
     void voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     auto solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     void eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
     void eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEigenFunctions, bool useAllCores);
-    void persistencecurve(vtkSmartPointer<ttkPeriodicGrid> grid, bool useAllCores);
+    void persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
 
 
 

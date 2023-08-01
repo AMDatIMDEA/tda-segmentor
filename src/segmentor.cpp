@@ -3,7 +3,7 @@
 TDA-Segmentor     -     A segmentation tool for porous structures using the topology
                  toolkit (https://topology-tool-kit.github.io/)
 
-Authors:                        Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
+Authors:         Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
                  Aditya Vasudevan (adityavv.iitkgp@gmail.com)
                  Maciek Haranczyk (maciej.haranczyk@imdea.org)
                  IMDEA Materiales Institute
@@ -1634,8 +1634,7 @@ auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool peri
     logger::mainlog << "segmentor: InputPrecondition Function 2" << "\n";
     logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     //Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
-    //vtkNew<ttkPeriodicGrid> periodGrid{};
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();;
     periodGrid->SetDebugLevel(3);
     periodGrid->SetUseAllCores(true);
     periodGrid->SetInputData(grid);
@@ -1749,7 +1748,7 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
     logger::mainlog << "\nSegmentor: InputPrecondition Module" << "\n";
     ttk::Timer periodicTimer;
     //VTK function used to set Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();
     periodGrid->SetUseAllCores(useAllCores);
     periodGrid->SetInputData(grid);
     periodGrid->SetPeriodicity(periodicConditions);
@@ -1800,7 +1799,7 @@ auto segmentor::inputPrecondition_E(vtkSmartPointer<vtkImageData> grid, bool per
     logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
 
     //Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();;
     periodGrid->SetUseAllCores(false);
     periodGrid->SetInputData(grid);
     periodGrid->SetPeriodicity(periodicConditions);
@@ -1952,7 +1951,7 @@ void segmentor::gridFileCreator(string scalarName, string inputFilePath, double 
             imageData = cubeReader->GetGridOutput();
 
             //Periodic Boundary Conditions
-            vtkSmartPointer<ttkPeriodicGrid> period = vtkSmartPointer<ttkPeriodicGrid>::New();
+            vtkSmartPointer<ttkTriangulationManager> period = vtkSmartPointer<ttkTriangulationManager>::New();;
             //period->SetDebugLevel(3);
             period->SetUseAllCores(useAllCores);
             period->SetInputData(imageData);
@@ -2114,7 +2113,7 @@ auto  segmentor::getIndex(vector<int> v, int K)
  * @param useAllCores Use all cores available to speed up computations
  * @return auto Morse Smale Complex complete field information
  */
-auto segmentor::MSC(vtkSmartPointer<ttkPeriodicGrid> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
+auto segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
     logger::mainlog << "\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
     
@@ -2325,7 +2324,7 @@ vtkIdType segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmale
  *  simplification of the sadde-saddle connectors
  * @return auto Morse Smale Complex complete field information
  */
-auto segmentor::MSC_E(vtkSmartPointer<ttkPeriodicGrid> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
+auto segmentor::MSC_E(vtkSmartPointer<ttkTriangulationManager> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
     logger::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
     
@@ -3779,13 +3778,21 @@ void segmentor::eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfE
 
 
 
-void segmentor::persistencecurve(vtkSmartPointer<ttkPeriodicGrid> grid, bool useAllCores)
+void segmentor::persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores)
 {
     ttk::Timer percurveTimer;
     logger::mainlog << "\nSegmentor: Persistence Curve module" << "\n" << flush;
+ 
+    // To create the persistence curve, first the persistence diagram is calculated 
+    // which serves as input to the persistence curve
+    vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
+    //persistenceDiagram->SetDebugLevel(3);
+    persistenceDiagram->SetUseAllCores(useAllCores);
+    persistenceDiagram->SetInputConnection(grid->GetOutputPort());
+    persistenceDiagram->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+
     vtkNew<ttkPersistenceCurve> curve{};
-    curve->SetInputConnection(grid->GetOutputPort());
-    curve->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    curve->SetInputConnection(persistenceDiagram->GetOutputPort());
     curve->Update();
     
     /* Write the persistence curve in VTK format */
@@ -4613,7 +4620,7 @@ void segmentor::energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCo
     logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //VTK Function to apply Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();;
     periodGrid->SetUseAllCores(useAllCores);
     periodGrid->SetInputData(grid);
     periodGrid->SetPeriodicity(true);
@@ -4707,7 +4714,7 @@ void segmentor::energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllC
     logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Apply Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();;
     periodGrid->SetUseAllCores(useAllCores);
     periodGrid->SetInputData(grid);
     periodGrid->SetPeriodicity(true);
@@ -4822,7 +4829,7 @@ void segmentor::distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAl
     logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     
     //Apply Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();;
     periodGrid->SetUseAllCores(useAllCores);
     periodGrid->SetInputData(grid);
     periodGrid->SetPeriodicity(true);
@@ -4899,7 +4906,7 @@ auto segmentor::energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string
     
     
     //Apply Periodic Boundary Conditions
-    vtkSmartPointer<ttkPeriodicGrid> periodGrid = vtkSmartPointer<ttkPeriodicGrid>::New();
+    vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();;
     periodGrid->SetUseAllCores(useAllCores);
     periodGrid->SetInputData(energyGrid);
     periodGrid->SetPeriodicity(true);

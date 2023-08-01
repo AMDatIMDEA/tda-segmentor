@@ -65,7 +65,6 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 //-------------------------------------------------------------------------------------------------
 #include <ttkMorseSmaleComplex.h>
 #include <ttkArrayPreconditioning.h>
-#include <ttkPeriodicGrid.h>
 #include <ttkPersistenceDiagram.h>
 #include <ttkTopologicalSimplification.h>
 #include <ttkExtract.h>
@@ -74,6 +73,7 @@ Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmai
 #include <ttkBottleneckDistance.h>
 #include <ttkPersistenceDiagramClustering.h>
 #include <ttkPersistenceCurve.h>
+#include <ttkTriangulationManager.h>
 //-------------------------------------------------------------------------------------------------
 
 
