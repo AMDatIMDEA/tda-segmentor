@@ -12,9 +12,11 @@ Compiling the tda-segmentor code should be done in two steps :
 * TTK must be installed from the source code and detailed instructions
   can be found here (https://topology-tool-kit.github.io/installation.html)
 * To install TTK from source, first Paraview must be compiled from sources, 
-  and on a linux machine it is recommended to install ParaView-v5.9.1
-  while on a Mac machine it is recommended to install ParaView-v5.10.1
-* Once Paraview is installed, to install TTK, we must use the developer version 
+  and on a linux machine it is recommended to install the latest available
+  software from the website, i.e. Paraview-v5.11.1 and ttk-1.2.0
+
+* For a Mac machine, it is recommended to install ParaView-v5.10.1 and 
+  once Paraview is installed, to install TTK, we must use the developer version 
   of TTK directly from the GitHub repo (https://github.com/topology-tool-kit/ttk) 
   using the following commands :
   * **git clone https://github.com/topology-tool-kit/ttk.git**
@@ -61,9 +63,9 @@ to be provided. If the directories are created as recommended by the TTK website
 
 **For Linux Machine**
 * **For TTKVTK**: /usr/local/lib64/cmake/ttkVTK
-* **For Paraview**: ~/ttk/ParaView-v5.9.1/build/
-* **For VTK**: ~/ttk/ParaView-v5.9.1/build/lib/cmake/paraview-5.9/vtk
-* **For VTKm**: ~/ttk/ParaView-v5.9.1/build/lib/cmake/paraview-5.9/vtk/vtkm
+* **For Paraview**: ~/ttk/ParaView-v5.11.1/build/
+* **For VTK**: ~/ttk/ParaView-v5.11.1/build/lib/cmake/paraview-5.11/vtk
+* **For VTKm**: ~/ttk/ParaView-v5.11.1/build/lib/cmake/paraview-5.11/vtk/vtkm
 
 Note for the linux machine, the path for TTKVTK could be selected directly once 'c' is hit. 
 But, Paraview and VTK might have to be changed from its default paths. 
