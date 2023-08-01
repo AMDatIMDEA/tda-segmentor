@@ -13,15 +13,8 @@ Compiling the tda-segmentor code should be done in two steps :
   can be found here (https://topology-tool-kit.github.io/installation.html)
 * To install TTK from source, first Paraview must be compiled from sources, 
   and on a linux machine it is recommended to install the latest available
-  software from the website, i.e. Paraview-v5.11.1 and ttk-1.2.0
-
-* For a Mac machine, it is recommended to install ParaView-v5.10.1 and 
-  once Paraview is installed, to install TTK, we must use the developer version 
-  of TTK directly from the GitHub repo (https://github.com/topology-tool-kit/ttk) 
-  using the following commands :
-  * **git clone https://github.com/topology-tool-kit/ttk.git**
-  * Next we checkout to a certain commit : **git checkout 6ff3c19c2** (this is necessary for the periodic box module)
-  * The above code will be the source code for installation and the installation should proceed as instructed in the website. 
+  software from the website, i.e. Paraview-v5.11.1 and ttk-1.2.0 while
+  on a Mac machine, Paraview-v5.10.1 and ttk-1.2.0 has been tested. 
 
 **Important notes for multicore advantages**
 
