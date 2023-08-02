@@ -1,11 +1,12 @@
 /*********************************************************************
 
-TDA-Segmentor     -     A segmentation tool for porous structures using the topology
+TDA-Segmentor    A segmentation tool for porous structures using the topology
                  toolkit (https://topology-tool-kit.github.io/)
 
-Authors:         Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
-                 Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+                 Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
                  Maciek Haranczyk (maciej.haranczyk@imdea.org)
+
                  IMDEA Materiales Institute
  
 **********************************************************************/
@@ -16,7 +17,7 @@ segmentor::segmentor(const parameters &p){
     fileName = p.inputfilename;
     BaseFileName = p.basefilename;
     extensionName = p.extensionname;
-
+    arrayName = p.arrayName; 
     // All the results will be saved in cwd/segmentor-BaseFileName.results/
     std::stringstream str;
     str << "segmentor-" << BaseFileName << ".results";

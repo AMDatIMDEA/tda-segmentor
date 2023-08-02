@@ -1,10 +1,10 @@
 /*********************************************************************
 
-TDA-Segmentor     -     A segmentation tool for porous structures using the topology
+TDA-Segmentor    A segmentation tool for porous structures using the topology
                  toolkit (https://topology-tool-kit.github.io/)
 
-Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
-                 Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+                 Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
                  Maciek Haranczyk (maciej.haranczyk@imdea.org)
                  IMDEA Materiales Institute
  
@@ -24,7 +24,8 @@ useAllCores(false),
 saveLogFile(false),
 segmentationFlag(false),
 persistenceThreshold(0.0),
-probeRadius(0.0)
+probeRadius(0.0),
+arrayName()
 {
     
     
@@ -98,6 +99,20 @@ void parameters::parser(int nargs, char **args)
             i++;j++;
         }
         
+        if ( strcmp(args[i] , "-scalar") == 0 && i < nargs - 1)
+        {
+            std::string ch;
+            sscanf(args[i+1], "%s", ch);
+            if (ch == "distance") {
+                arrayName = "This is distance grid"; 
+            } else if (ch == "energy") {
+                arrayName = "Potential Energy"; 
+            } else {
+                arrayName = ch; 
+            }
+            i++;j++;
+        }
+
         if ( strcmp(args[i] , "-persistencethreshold") == 0 && i < nargs - 1)
         {
             sscanf(args[i+1], "%lf", &persistenceThreshold);
@@ -195,6 +210,8 @@ void parameters::writetoLogFile() {
         }
         
     }
+    
+    logger::mainlog << "Scalar array chosen for segmentation is : " << arrayName << endl; 
     
     std::string dummy("False");
     if (useSuperCell) dummy = "True";

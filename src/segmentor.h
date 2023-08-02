@@ -1,12 +1,12 @@
 /*********************************************************************
 
-TDA-Segmentor     -     A segmentation tool for porous structures using the topology
+TDA-Segmentor    A segmentation tool for porous structures using the topology
                  toolkit (https://topology-tool-kit.github.io/)
 
-Authors:                       Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
-                 Aditya Vasudevan (adityavv.iitkgp@gmail.com)
+Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
+                 Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
                  Maciek Haranczyk (maciej.haranczyk@imdea.org)
-                IMDEA Materiales Institute
+                 IMDEA Materiales Institute
  
 **********************************************************************/
 
@@ -27,6 +27,7 @@ private:
 public:
     //Nanoporous Material name
     string BaseFileName, fileName, extensionName;
+    string arrayName; 
     //Directory where the results will be store
     string Directory;
     //Input grid
