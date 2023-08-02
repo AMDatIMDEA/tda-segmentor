@@ -28,18 +28,7 @@ int main(int argc, char ** argv){
     
     segmentor * analysis = new segmentor(param);
     
-    vtkSmartPointer<vtkImageData> grid;
-    
-    if (param.extensionname == ".cube"){
-        grid = analysis->readFromCubeFile();
-    } else if (param.extensionname == ".vti") {
-        grid = analysis->readFromVTIgrid();
-    } else {
-        logger::mainlog << "\nExtension name is neither .cube or .vti!!" << endl;
-        exit(0);
-    }
-        
-
+    vtkSmartPointer<vtkImageData> grid = analysis->readInputFile();
     
     if (param.useSuperCell) grid = analysis->superCell(grid);
     

@@ -101,11 +101,11 @@ void parameters::parser(int nargs, char **args)
         
         if ( strcmp(args[i] , "-scalar") == 0 && i < nargs - 1)
         {
-            std::string ch;
+            char ch[256];
             sscanf(args[i+1], "%s", ch);
-            if (ch == "distance") {
+            if (strcmp(ch,"distance") == 0) {
                 arrayName = "This is distance grid"; 
-            } else if (ch == "energy") {
+            } else if (strcmp(ch,"energy") == 0) {
                 arrayName = "Potential Energy"; 
             } else {
                 arrayName = ch; 

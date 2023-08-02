@@ -1074,27 +1074,39 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
  * @param writeGridFile Write the results to an output file(OPTIONAL)
  * @return auto Grid from the Gaussian Cube file
  */
-auto segmentor::readFromCubeFile(bool writeGridFile)
+auto segmentor::readInputFile(bool writeGridFile)
 {
     logger::mainlog << "\nSegmentor: Reader Module" << "\n";
     logger::mainlog << "Reading " << fileName << endl;
     ttk::Timer readerTime;
     
-    
-    //Read the input files
-    //----------------------------------------------------------------------------------------------
-
-    //VTK function to reader Gaussian Cube files(*.cube)
-    vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
-    //Set the input path
-    cubeReader->SetFileName(fileName.c_str());
-    cubeReader->Update();
-
-    //Image data output(grid) from the Gaussian Cube file
     vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
-    imageData = cubeReader->GetGridOutput();
+    double gridRes[3];
     
-    //If set to true. Write the grid to file
+    if (extensionName == ".cube"){
+        
+        vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
+        cubeReader->SetFileName(fileName.c_str());
+        cubeReader->Update();
+        imageData = cubeReader->GetGridOutput();
+        getGridResolutionFromCubeFile(gridRes);
+        
+        
+    } else if (extensionName == ".vti"){
+        
+        vtkSmartPointer<vtkXMLImageDataReader> dataReader = vtkSmartPointer<vtkXMLImageDataReader>::New();
+        dataReader->SetFileName((fileName).c_str());
+        dataReader->Update();
+        imageData = dataReader->GetOutput();
+        imageData->GetSpacing(gridRes);
+        
+    } else{
+        
+        logger::mainlog << "Extension type of the input file is neither .cube nor .vti" <<endl;
+        logger::errlog << "Extension type of the input file neither .cube nor .vti" <<endl;
+        exit(0);
+    }
+    
     if (writeGridFile == true)
     {
         //VTK tool to write image data files
@@ -1103,14 +1115,11 @@ auto segmentor::readFromCubeFile(bool writeGridFile)
         imageWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vti").c_str());
         imageWriter->Write();
     }
-
  
-    //Save the resolution to the class variables in order to be used in other functions
-    GridResolution = getGridResolution();
     vtkIdType cellDims[3];
     imageData->GetDimensions(cellDims);
     
-    logger::mainlog << "Grid Resolution :          " << GridResolution << "\n";
+    logger::mainlog << "Grid Resolution (x,y,z):           (" << gridRes[0] << ", " << gridRes[1] << ", " << gridRes[2] << ")\n";
     logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
     
     double elapsedTime = readerTime.getElapsedTime();
@@ -1121,107 +1130,63 @@ auto segmentor::readFromCubeFile(bool writeGridFile)
 
 
 
-double segmentor::getGridResolution() {
+void segmentor::getGridResolutionFromCubeFile(double gridRes[3]) {
     
     ifstream inputFile;
     double gridResX[3], gridResY[3], gridResZ[3];
     
-    if (extensionName == ".cube")
+    inputFile.open(fileName);
+        
+    if (inputFile.is_open())
     {
-        
-        inputFile.open(fileName);
-        
-        if (inputFile.is_open())
-        {
             
-            string line;
-            //Number of the line that is being readed
-            int lineNumber = 0;
-            while (getline(inputFile,line))
-            {
-                if (lineNumber == 3)
-                {
-                    stringstream ss(line);
-                    int nx; ss >> nx;
-                    ss >> gridResX[0]; ss >> gridResX[1]; ss >> gridResX[2];
-                }
-                
-                if (lineNumber == 4)
-                {
-                    stringstream ss(line);
-                    int ny; ss >> ny;
-                    ss >> gridResY[0]; ss >> gridResY[1]; ss >> gridResY[2];
-                }
-                
-                if (lineNumber == 5)
-                {
-                    stringstream ss(line);
-                    int nz; ss >> nz;
-                    ss >> gridResZ[0]; ss >> gridResZ[1]; ss >> gridResZ[2];
-                }
-                
-                lineNumber++;
-            }
-                    
-        }
-        
-        inputFile.close();
-        logger::mainlog << "grid Resolution X :   " << gridResX[0] << "    " << gridResX[1] << "    " << gridResX[2] << "\n";
-        logger::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
-        logger::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
-        
-        if ( (gridResX[0] != gridResY[1])  || (gridResY[1] != gridResZ[2]) || (gridResZ[2] != gridResX[0])  )
+        string line;
+        //Number of the line that is being readed
+        int lineNumber = 0;
+        while (getline(inputFile,line))
         {
-            logger::mainlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
-            logger::errlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
+            if (lineNumber == 3)
+            {
+                stringstream ss(line);
+                int nx; ss >> nx;
+                ss >> gridResX[0]; ss >> gridResX[1]; ss >> gridResX[2];
+            }
+                
+            if (lineNumber == 4)
+            {
+                stringstream ss(line);
+                int ny; ss >> ny;
+                ss >> gridResY[0]; ss >> gridResY[1]; ss >> gridResY[2];
+            }
+                
+            if (lineNumber == 5)
+            {
+                stringstream ss(line);
+                int nz; ss >> nz;
+                ss >> gridResZ[0]; ss >> gridResZ[1]; ss >> gridResZ[2];
+            }
+                
+            lineNumber++;
         }
+                    
+    }
         
-    } else {
+    inputFile.close();
+    logger::mainlog << "grid Resolution X :   " << gridResX[0] << "    " << gridResX[1] << "    " << gridResX[2] << "\n";
+    logger::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
+    logger::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
         
-        logger::mainlog << "File is not of .cube type, grid resolution is not set automatically" << endl;
-        logger::errlog  << "File is not of .cube type, grid resolution is not set automatically" << endl;
+    if ( (gridResX[0] != gridResY[1])  || (gridResY[1] != gridResZ[2]) || (gridResZ[2] != gridResX[0])  )
+    {
+        logger::mainlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
+        logger::errlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
         
     }
     
-    return gridResX[0];
-}
-
-
-
-
-
-/**
- * @brief Read from XMLImageData generated from LAMMPS output.)
- * @param writeGridFile - write the input file. (default false)
- * @return auto Grid from the Gaussian Cube file
- */
-auto segmentor::readFromVTIgrid(bool writeGridFile)
-{
-    logger::mainlog << "\nSegmentor: Reader Module" << "\n";
-    logger::mainlog << "Reading from " << fileName  << endl;
-    ttk::Timer readerTime;
+    gridRes[0] = gridResX[0];
+    gridRes[1] = gridResY[1];
+    gridRes[2] = gridResZ[2];
     
-    vtkSmartPointer<vtkXMLImageDataReader> dataReader = vtkSmartPointer<vtkXMLImageDataReader>::New();
-    dataReader->SetFileName((fileName).c_str());
-    dataReader->Update();
-    
-    vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
-    imageData = dataReader->GetOutput();
-    
-    double gridRes[3];
-    imageData->GetSpacing(gridRes);
-    
-    
-    vtkIdType cellDims[3];
-    imageData->GetDimensions(cellDims);
-    
-    logger::mainlog << "Grid Resolution (x,y,z):           (" << gridRes[0] << ", " << gridRes[1] << ", " << gridRes[2] << "\n";
-    logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
-
-    double elapsedTime = readerTime.getElapsedTime();
-    logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
-    
-    return imageData;
 }
 
 
