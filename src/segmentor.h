@@ -47,6 +47,7 @@ public:
     vtkIdType getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
 
     void getGridResolutionFromCubeFile(double gridres[3]);
+    void getArrayNameFromCubeFile(std::string &arrayname);
     void getCubeVolume(string inputFolder, double resolution);
     auto reader(string inputFilePath,int gridResolution, bool writeGridFile);
     auto readInputFile(bool writeGridFile = false);

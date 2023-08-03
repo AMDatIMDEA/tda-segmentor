@@ -1090,7 +1090,8 @@ auto segmentor::readInputFile(bool writeGridFile)
         cubeReader->Update();
         imageData = cubeReader->GetGridOutput();
         getGridResolutionFromCubeFile(gridRes);
-        
+        if (arrayName.empty()) getArrayNameFromCubeFile(arrayName);
+        logger::mainlog << "Array that is going to be used for TDA analysis: " << arrayName << endl;
         
     } else if (extensionName == ".vti"){
         
@@ -1100,6 +1101,12 @@ auto segmentor::readInputFile(bool writeGridFile)
         imageData = dataReader->GetOutput();
         imageData->GetSpacing(gridRes);
         
+        if (arrayName.empty()) {
+            char * name = imageData->GetPointData()->GetAbstractArray(0)->GetName();
+            arrayName = name;
+        }
+        logger::mainlog << "Array that is going to be used for TDA analysis: " << arrayName << endl;
+
     } else{
         
         logger::mainlog << "Extension type of the input file is neither .cube nor .vti" <<endl;
@@ -1190,6 +1197,32 @@ void segmentor::getGridResolutionFromCubeFile(double gridRes[3]) {
 }
 
 
+
+
+void segmentor::getArrayNameFromCubeFile(std::string &nameOfArray){
+    
+    ifstream inputFile;
+    inputFile.open(fileName);
+    
+    if (inputFile.is_open())
+    {
+            
+        string line;
+        //Number of the line that is being readed
+        int lineNumber = 0;
+        while (getline(inputFile,line))
+        {
+            if (lineNumber == 1)
+            {
+                nameOfArray = line;
+            }
+                
+            lineNumber++;
+        }
+                    
+    }
+        
+}
 
 /**
  * @brief Combines the data from two .cube files in order to get the information of the whole structure. Useful when the
