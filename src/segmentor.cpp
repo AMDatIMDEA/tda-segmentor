@@ -64,14 +64,6 @@ auto segmentor::superCell(vtkSmartPointer<vtkImageData> grid){
     
     ttk::Timer superCellTimer;
     logger::mainlog << "\nSegmentor: Super Cell module:         " << "\n";
-    
-    //Invert the values of the distance field. Negative values for the void space and
-    // positive values for the solid space of the Nanoporous Material
-    auto distanceArray = grid->GetPointData()->GetAbstractArray("This is distance grid");
-    for (size_t i = 0; i < grid->GetNumberOfPoints(); i++)
-    {
-        grid->GetPointData()->GetAbstractArray("This is distance grid")->SetVariantValue(i,-1.0*distanceArray->GetVariantValue(i).ToDouble());
-    }
 
     vtkSmartPointer<vtkImageAppend> appendX = vtkSmartPointer<vtkImageAppend>::New();
     appendX->AddInputData(grid);
@@ -1129,6 +1121,10 @@ auto segmentor::readInputFile(bool writeGridFile)
     logger::mainlog << "Grid Resolution (x,y,z):           (" << gridRes[0] << ", " << gridRes[1] << ", " << gridRes[2] << ")\n";
     logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
     
+    if (gridRes[0] == gridRes[1] && gridRes[1] == gridRes[2]){
+        GridResolution = gridRes[0];
+    }
+    
     double elapsedTime = readerTime.getElapsedTime();
     logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
     return imageData;
@@ -1753,30 +1749,6 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
     periodGrid->SetPeriodicity(periodicConditions);
     periodGrid->Update();
 
-    auto periodGridDataSet = vtkDataSet::SafeDownCast(periodGrid->GetOutputDataObject(0));
-
-    //Correct 1 scalar values that appear in the .cube files on the positions (0,0,0) and (0,0,1). They seem to have incorrect value(equal to 1.0) from the Zeo++ tool
-    int pointZero = periodGridDataSet->FindPoint(0,0,0);
-    int pointOne = periodGridDataSet->FindPoint(0,0,1);
-    int point_Two = periodGridDataSet->FindPoint(1,0,0);
-    int point_Three = periodGridDataSet->FindPoint(1,0,1);
-
-    auto scalarArray = periodGridDataSet->GetPointData()->GetAbstractArray("This is distance grid");
-    periodGridDataSet->GetPointData()->GetAbstractArray("This is distance grid")->SetVariantValue(pointZero,scalarArray->GetVariantValue(point_Two).ToDouble());
-    periodGridDataSet->GetPointData()->GetAbstractArray("This is distance grid")->SetVariantValue(pointOne,scalarArray->GetVariantValue(point_Three).ToDouble());
-
-
-
-    if (changeValues)
-    {
-        auto distanceArray = periodGridDataSet->GetPointData()->GetAbstractArray("This is distance grid");
-        for (size_t i = 0; i < periodGridDataSet->GetNumberOfPoints(); i++)
-        {
-            periodGridDataSet->GetPointData()->GetAbstractArray("This is distance grid")->SetVariantValue(i,-1.0*distanceArray->GetVariantValue(i).ToDouble());
-        }
-        
-    }
-    
     double elapsedTime = periodicTimer.getElapsedTime();
     logger::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
 
@@ -2190,8 +2162,8 @@ auto segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     vtkIdType numberOfDescendingManifolds = getNumberOfDescendingManifolds(morseSmaleComplex);
     vtkIdType numberOfAscendingManifolds = getNumberOfAscendingManifolds(morseSmaleComplex);
     
-    logger::mainlog << "Total number of descending manifolds (typically void segments) : " << numberOfDescendingManifolds << endl;
-    logger::mainlog << "Total number of ascending manifolds (typically solid segments) : " << numberOfAscendingManifolds << endl;
+    logger::mainlog << "Total number of descending manifolds (typically solid segments) : " << numberOfDescendingManifolds << endl;
+    logger::mainlog << "Total number of ascending manifolds (typically void segments) : " << numberOfAscendingManifolds << endl;
 
     if (writeOutputs)
     {
@@ -2508,7 +2480,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     ofstream misDatos;
     misDatos.open((Directory + "/" + BaseFileName + "_Void_Segments.csv").c_str());
     assert(misDatos.is_open());
-    misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinimum,isSaddle,numberOfPoints,numberOfConnections,xScaled,yScaled,zScaled" << "\n";
+    misDatos << "regionID,x,y,z,Scalar,RegionMaxValue,isMaximum,isSaddle,numberOfPoints,numberOfConnections,xScaled,yScaled,zScaled" << "\n";
 
     
     //Compute cell dimensions of the input file
@@ -2526,43 +2498,35 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
     voidSegmentation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
     voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidSegmentation->ThresholdBetween(-9e9,0.0);
-    // voidSegmentation->SetUpperThreshold(-1e-10);
+    voidSegmentation->ThresholdBetween(0.0,9e9);
     voidSegmentation->Update();
-
-    //Same structure segmentation but with a Field Data added
-    vtkSmartPointer<ttkExtract> descendingManifoldIDList = vtkSmartPointer<ttkExtract>::New();
-    descendingManifoldIDList->SetUseAllCores(true);
-    descendingManifoldIDList->SetInputConnection(voidSegmentation->GetOutputPort());
-    descendingManifoldIDList->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
-    descendingManifoldIDList->SetExtractionMode(3); //Array Values
-    descendingManifoldIDList->SetExtractUniqueValues(true);
-    descendingManifoldIDList->Update();
-
-    //Datasets of the void structure of the segmentation
-    auto currentVoidDataSet = vtkDataSet::SafeDownCast(descendingManifoldIDList->GetOutputDataObject(0));
-    auto uniqueDesSegIdDataSet = currentVoidDataSet->GetFieldData()->GetAbstractArray("UniqueDescendingManifold");
-
-
-    //Find the 1-saddle critical points
+    
+    auto currentVoidDataSet = vtkDataSet::SafeDownCast(voidSegmentation->GetOutputDataObject(0));
+    // Set of ID list of the manifolds
+    vtkSmartPointer<vtkAbstractArray> ascendingManifoldArray = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold");
+    
+    std::set<int> ascendingManifoldIDList;
+    for (size_t i = 0; i < ascendingManifoldArray->GetNumberOfValues(); i++ ){
+        
+        ascendingManifoldIDList.insert(ascendingManifoldArray->GetVariantValue(i).ToInt());
+        
+    }
+    
+    //Find the 2-saddle critical points
     vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
     saddles->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
-    // saddles->SetLowerThreshold(1);
-    // saddles->SetUpperThreshold(1);
-    
-    saddles->ThresholdBetween(1,1);
+    saddles->ThresholdBetween(2,2);
     saddles->Update();
-    //Find the 1-saddles on the void structure
-    vtkSmartPointer<vtkThresholdPoints> negativeSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
-    negativeSaddles->SetInputConnection(saddles->GetOutputPort(0));
-    negativeSaddles->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    negativeSaddles->ThresholdBetween(-9e9,0.0);
-    // negativeSaddles->SetUpperThreshold(-1e-10);
-    negativeSaddles->Update();
+    //Find the 2-saddles on the void structure
+    vtkSmartPointer<vtkThresholdPoints> positiveSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
+    positiveSaddles->SetInputConnection(saddles->GetOutputPort(0));
+    positiveSaddles->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    positiveSaddles->ThresholdBetween(0.0,9e9);
+    positiveSaddles->Update();
 
-    //DataSet of the saddles of the Descending Segmentation of the void structure
-    auto saddlesDataSet = vtkDataSet::SafeDownCast(negativeSaddles->GetOutputDataObject(0));
+    //DataSet of the saddles of the Ascending Segmentation of the void structure
+    auto saddlesDataSet = vtkDataSet::SafeDownCast(positiveSaddles->GetOutputDataObject(0));
 
     //2d vector to store the saddles id and the regions connected to them
     vector<vector<int>> saddlesConnectivity;
@@ -2586,7 +2550,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
-            auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
+            auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
             //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
@@ -2607,15 +2571,15 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
 
     }
 
-    for (size_t i = 0; i < uniqueDesSegIdDataSet->GetNumberOfValues(); i++) //For each of the void segments
+    for (auto i : ascendingManifoldIDList) //For each of the void segments
     {
-        int currentRegion = uniqueDesSegIdDataSet->GetVariantValue(i).ToInt();
+        int currentRegion = i;
         
-        //Current Region of the Descending Segmentation
+        //Current Region of the Ascending Segmentation
         vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
         sectionID->SetInputConnection(voidSegmentation->GetOutputPort());
-        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
-        sectionID->ThresholdBetween(uniqueDesSegIdDataSet->GetVariantValue(i).ToInt(),uniqueDesSegIdDataSet->GetVariantValue(i).ToInt());
+        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
+        sectionID->ThresholdBetween(currentRegion,currentRegion);
         sectionID->Update();
 
         //DataSet of the specific region of the Descending Segmentation
@@ -2654,20 +2618,19 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         //Array corresponding to the scalar values of the Region
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray("This is distance grid");
 
-        double minimumValue = 10e2;
+        double maximumValue = 0.0;
         
-        int minID; //ID of the minimum point of the region
+        int maxID; //ID of the maximum point of the region
         for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
         {
-            bool isMinimum = false;
             double currentValue = scalarValues->GetVariantValue(j).ToDouble(); //Current scalar value of the point
-            if (currentValue <= minimumValue) //Check if this point distance is smaller than minimum
+            if (currentValue >= maximumValue) //Check if this point distance is greater than maximim
             {
-                minimumValue = currentValue;
-                minID = j;
+                maximumValue = currentValue;
+                maxID = j;
             }
         }
-        bool isMinima;
+        bool isMaxima;
         for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
         {
             bool isSaddle = false;
@@ -2682,16 +2645,16 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
             }
             double pointCoords[3];
             sectionIDDataset->GetPoint(j,pointCoords);
-            if(j == minID)
+            if(j == maxID)
             {
-                isMinima = 1;
+                isMaxima = 1;
             }
             else
             {
-                isMinima = 0;
+                isMaxima = 0;
             }
-            double gridResolution = GridResolution;
-            misDatos << uniqueDesSegIdDataSet->GetVariantValue(i).ToInt() <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< gridResolution*pointCoords[0]<<","<<gridResolution*pointCoords[1]<<","<<gridResolution *pointCoords[2]<<"\n";
+
+            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << maximumValue<<","<< isMaxima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< GridResolution*pointCoords[0]<<","<<GridResolution*pointCoords[1]<<","<<GridResolution *pointCoords[2]<<"\n";
 
         }
         
@@ -2741,35 +2704,34 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     voidSegmentation->SetInputConnection(triangulation->GetOutputPort());
     voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
     voidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    voidSegmentation->SetLowerThreshold(-9e9);
-    voidSegmentation->SetUpperThreshold(-1.0*moleculeRadius);
+    voidSegmentation->SetLowerThreshold(1.0*moleculeRadius);
+    voidSegmentation->SetUpperThreshold(9e9);
     voidSegmentation->Update();
 
     //Same structure segmentation but with a Field Data added
     vtkSmartPointer<ttkExtract> accessibleSpace = vtkSmartPointer<ttkExtract>::New();
-    //accessibleSpace->SetDebugLevel(1);
     accessibleSpace->SetUseAllCores(true);
     accessibleSpace->SetInputConnection(voidSegmentation->GetOutputPort());
-    accessibleSpace->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
+    accessibleSpace->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
     accessibleSpace->SetExtractionMode(3); //Array Values
     accessibleSpace->SetExtractUniqueValues(true);
     accessibleSpace->Update();
 
     auto accessibleSpaceDataSet = vtkDataSet::SafeDownCast(accessibleSpace->GetOutputDataObject(0));
-    auto segmentsID = accessibleSpaceDataSet->GetFieldData()->GetAbstractArray("UniqueDescendingManifold");
+    auto segmentsID = accessibleSpaceDataSet->GetFieldData()->GetAbstractArray("UniqueAscendingManifold");
 
 
-    //Find the 1-saddle critical points
+    //Find the 2-saddle critical points
     vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
     saddles->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
-    saddles->ThresholdBetween(1.0,1.0);
+    saddles->ThresholdBetween(2.0,2.0);
     saddles->Update();
-    //Find the 1-saddles on the void structure
+    //Find the 2-saddles on the void structure
     vtkSmartPointer<vtkThresholdPoints> accessibleSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
     accessibleSaddles->SetInputConnection(saddles->GetOutputPort(0));
     accessibleSaddles->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    accessibleSaddles->ThresholdBetween(-9e9,-1.0*moleculeRadius);
+    accessibleSaddles->ThresholdBetween(1.0*moleculeRadius, 9e9);
     accessibleSaddles->Update();
 
     //DataSet of the accessible saddles to the molecule
@@ -2799,7 +2761,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
-            auto currentClosestRegion = accessibleSpaceDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
+            auto currentClosestRegion = accessibleSpaceDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
             //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
@@ -2836,7 +2798,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
         segment->SetInputConnection(voidSegmentation->GetOutputPort());
-        segment->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
+        segment->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
         segment->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
         segment->SetLowerThreshold(currentRegion);
         segment->SetUpperThreshold(currentRegion);
@@ -3170,14 +3132,14 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
  */
 auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    logger::mainlog << "segmentor: Solid Segmentation Module" << "\n";
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-
+    logger::mainlog << "\nSegmentor: Solid Segmentation Module" << "\n" << flush;
+    
+    ttk::Timer SolidSegmentationTimer;
     //Writer of the .csv results file
     ofstream misDatos;
     misDatos.open((Directory+"/"+ BaseFileName +"_Solid.csv").c_str());
     assert(misDatos.is_open());
-    misDatos << "regionID,x,y,z,Scalar,RegionMaxValue,isMaxima,isSaddle,numberOfPoints,numberOfConnections,xScaled,yScaled,zScaled" << "\n";
+    misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinima,isSaddle,numberOfPoints,numberOfConnections,xScaled,yScaled,zScaled" << "\n";
 
     
     //Compute cell dimensions
@@ -3187,40 +3149,40 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     //Cell size of the current dataset
     double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
     CellSize = cellSize;
-    logger::mainlog << "Cell Size: " << cellSize << "\n";
+    logger::mainlog << "Cell Size: " << cellSize << "\n" << flush;
 
     //Segmentation corresponding to the solid structure
-    vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
-    voidSegmentation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
-    voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    voidSegmentation->ThresholdBetween(1e-10,9e10);
-    voidSegmentation->Update();
+    vtkSmartPointer<vtkThresholdPoints> solidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
+    solidSegmentation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    solidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    solidSegmentation->ThresholdBetween(-9e10,-1e-10);
+    solidSegmentation->Update();
 
-    //Same structure segmentation but with a Field Data added
-    vtkSmartPointer<ttkExtract> descendingManifoldIDList = vtkSmartPointer<ttkExtract>::New();
-    descendingManifoldIDList->SetDebugLevel(1);
-    descendingManifoldIDList->SetUseAllCores(false);
-    descendingManifoldIDList->SetInputConnection(voidSegmentation->GetOutputPort());
-    descendingManifoldIDList->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
-    descendingManifoldIDList->SetExtractionMode(3); //Array Values
-    descendingManifoldIDList->SetExtractUniqueValues(true);
-    descendingManifoldIDList->Update();
-
-    auto currentVoidDataSet = vtkDataSet::SafeDownCast(descendingManifoldIDList->GetOutputDataObject(0));
-    auto uniqueDesSegIdDataSet = currentVoidDataSet->GetFieldData()->GetAbstractArray("UniqueAscendingManifold");
-
+    auto currentSolidDataSet = vtkDataSet::SafeDownCast(solidSegmentation->GetOutputDataObject(0));
+    
+    // Set of ID list of the manifolds
+    vtkSmartPointer<vtkDataSet> solidSegmentationDataSet = vtkDataSet::SafeDownCast(solidSegmentation->GetOutputDataObject(0));
+    vtkSmartPointer<vtkAbstractArray> descendingManifoldArray = solidSegmentationDataSet->GetPointData()->GetAbstractArray("DescendingManifold");
+    
+    std::set<int> descendingManifoldIDList;
+    for (size_t i = 0; i < descendingManifoldArray->GetNumberOfValues(); i++ ){
+        
+        descendingManifoldIDList.insert(descendingManifoldArray->GetVariantValue(i).ToInt());
+        
+    }
+    
 
     //Find the 1-saddle critical points
     vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
     saddles->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
-    saddles->ThresholdBetween(2,2);
+    saddles->ThresholdBetween(1,1);
     saddles->Update();
     //Find the 1-saddles on the void structure
     vtkSmartPointer<vtkThresholdPoints> negativeSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
     negativeSaddles->SetInputConnection(saddles->GetOutputPort(0));
     negativeSaddles->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
-    negativeSaddles->ThresholdBetween(1e-10,9e10);
+    negativeSaddles->ThresholdBetween(-9e10,-1e-10);
     negativeSaddles->Update();
 
     //DataSet of the saddles of the Descending Segmentation of the void structure
@@ -3236,7 +3198,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         
         //Check that this saddle is not noise inside the region
         vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
-        pointLocator->SetDataSet(currentVoidDataSet);
+        pointLocator->SetDataSet(currentSolidDataSet);
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the void structure
         //Find the in the void structure the closest points to the saddle inside a sphere of radius
@@ -3246,7 +3208,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         //logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
-            auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
+            auto currentClosestRegion = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
             //logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
@@ -3267,15 +3229,15 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     }
 
-    for (size_t i = 0; i < uniqueDesSegIdDataSet->GetNumberOfValues(); i++) //For each of the void segments
+    for (auto i : descendingManifoldIDList) //For each of the void segments
     {
-        int currentRegion = uniqueDesSegIdDataSet->GetVariantValue(i).ToInt();
+        int currentRegion = i;
         
         //Current Region of the Descending Segmentation
         vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
-        sectionID->SetInputConnection(voidSegmentation->GetOutputPort());
-        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
-        sectionID->ThresholdBetween(uniqueDesSegIdDataSet->GetVariantValue(i).ToInt(),uniqueDesSegIdDataSet->GetVariantValue(i).ToInt());
+        sectionID->SetInputConnection(solidSegmentation->GetOutputPort());
+        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
+        sectionID->ThresholdBetween(currentRegion,currentRegion);
         sectionID->Update();
 
         //DataSet of the specific region of the Descending Segmentation
@@ -3314,20 +3276,20 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         //Array corresponding to the scalar values of the Region
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray("This is distance grid");
 
-        double maximumValue = 0.0;
+        double minimumValue = 10e2;
         
-        int maxID; //ID of the maximum point of the region
+        int minID; //ID of the maximum point of the region
         for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
         {
-            bool isMinimum = false;
+            bool isMaximum = false;
             double currentValue = scalarValues->GetVariantValue(j).ToDouble(); //Current scalar value of the point
-            if (currentValue >= maximumValue) //Check if this point distance is smaller than minimum
+            if (currentValue <= minimumValue) //Check if this point distance is smaller than minimum
             {
-                maximumValue = currentValue;
-                maxID = j;
+                minimumValue = currentValue;
+                minID = j;
             }
         }
-        bool isMaxima;
+        bool isMinima;
         for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
         {
             bool isSaddle = false;
@@ -3342,16 +3304,16 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
             }
             double pointCoords[3];
             sectionIDDataset->GetPoint(j,pointCoords);
-            if(j == maxID)
+            if(j == minID)
             {
-                isMaxima = 1;
+                isMinima = 1;
             }
             else
             {
-                isMaxima = 0;
+                isMinima = 0;
             }
-            double gridResolution = GridResolution;
-            misDatos << uniqueDesSegIdDataSet->GetVariantValue(i).ToInt() <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << maximumValue<<","<< isMaxima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< gridResolution*pointCoords[0]<<","<<gridResolution*pointCoords[1]<<","<<gridResolution *pointCoords[2]<<"\n";
+
+            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< GridResolution*pointCoords[0]<<","<<GridResolution*pointCoords[1]<<","<<GridResolution *pointCoords[2]<<"\n";
 
         }
         
@@ -3361,8 +3323,8 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
     
     misDatos.close();
     
-    
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
+    double elapsedTime = SolidSegmentationTimer.getElapsedTime();
+    logger::mainlog << "Time elapsed in the solid segmentation module: " << elapsedTime << "(s)\n" << flush;
     
 }
 
