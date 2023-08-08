@@ -163,10 +163,10 @@ void parameters::parser(int nargs, char **args)
 
 void parameters::writetoLogFile() {
     
-    logger::mainlog << "Parsed input :" << endl;
-    logger::mainlog << "Number of modules: " << moduleNames.size() << endl;
+    logger::mainlog << "\n\nParsed input :" << endl;
+    logger::mainlog << "Number of modules                                            : " << moduleNames.size() << endl;
     for (size_t i = 0; i < moduleNames.size(); i++) {
-        logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << endl;
+        logger::mainlog << "Module " << (i+1) << "                                                     : "<< moduleNames[i] << endl;
         
         if (moduleNames[i] != "segmentation"
             and moduleNames[i] != "accessiblevoidspace"
@@ -188,7 +188,7 @@ void parameters::writetoLogFile() {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
             } else
             {
-                logger::mainlog << "Persistence Threshold for segmentation module: " << persistenceThreshold << endl;
+                logger::mainlog << "Persistence Threshold for segmentation module           : " << persistenceThreshold << endl;
             }
             
         }
@@ -197,7 +197,7 @@ void parameters::writetoLogFile() {
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
             } else {
-                logger::mainlog << "Persistence Threshold for accessible void space module: " << persistenceThreshold << endl;
+                logger::mainlog << "Persistence Threshold for accessible void space module       : " << persistenceThreshold << endl;
             }
             
             if (probeRadius == 0.0)
@@ -205,23 +205,22 @@ void parameters::writetoLogFile() {
                 logger::mainlog << "Radius of the probe atom is not given, and is chosen to be zero!" << endl;
             } else
             {
-                logger::mainlog << "Probe radius          :  " << probeRadius << endl;
+                logger::mainlog << "Probe radius                                                 : " << probeRadius << endl;
             }
         }
         
     }
     
-    logger::mainlog << "Scalar array chosen for segmentation is : " << arrayName << endl; 
+    logger::mainlog << "Scalar array give for segmentation                           : " << arrayName << endl;
     
     std::string dummy("False");
     if (useSuperCell) dummy = "True";
-    logger::mainlog << "Use Super Cell : " << dummy << endl;
+    logger::mainlog << "Use Super Cell                                               : " << dummy << endl;
     dummy = "False";
     if (useAllCores) dummy = "True";
-    logger::mainlog << "Use all Cores : " << dummy << endl;
+    logger::mainlog << "Use all Cores                                                : " << dummy << endl;
     dummy = "False";
     if (saveLogFile) dummy = "True";
-    logger::mainlog << "Save log file : " << dummy << endl;
-    
+    logger::mainlog << "Save log file                                                : " << dummy << endl;
     
 }

@@ -50,6 +50,6 @@ void printInstructions()
 
 
     cout << "\n Example of typical invocation: " << "\n";
-    cout << " poretda -module segmentation -persistencethreshold 0.12 -module accessiblevoidspace -proberadius 1.6 FAU.cube" << "\n";
+    cout << " tda-segmentor -module segmentation -persistencethreshold 0.12 -module accessiblevoidspace -proberadius 1.6 FAU.cube" << "\n";
     
 }
