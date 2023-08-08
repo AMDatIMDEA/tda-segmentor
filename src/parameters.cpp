@@ -188,7 +188,7 @@ void parameters::writetoLogFile() {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
             } else
             {
-                logger::mainlog << "Persistence Threshold for segmentation module           : " << persistenceThreshold << endl;
+                logger::mainlog << "Persistence Threshold for segmentation module                : " << persistenceThreshold << endl;
             }
             
         }
