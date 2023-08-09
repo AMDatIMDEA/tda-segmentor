@@ -63,7 +63,7 @@ segmentor::~segmentor()
 auto segmentor::superCell(vtkSmartPointer<vtkImageData> grid){
     
     ttk::Timer superCellTimer;
-    logger::mainlog << "\nSegmentor: Super Cell module:         " << "\n";
+    logger::mainlog << "\n\nSegmentor: Super Cell module:         " << "\n";
 
     vtkSmartPointer<vtkImageAppend> appendX = vtkSmartPointer<vtkImageAppend>::New();
     appendX->AddInputData(grid);
@@ -1068,7 +1068,7 @@ auto segmentor::segmentSelection(string inputFile, int numberOfEigenFunctions, b
  */
 auto segmentor::readInputFile(bool writeGridFile)
 {
-    logger::mainlog << "\nSegmentor: Reader Module" << "\n";
+    logger::mainlog << "\n\nSegmentor: Reader Module" << "\n";
     logger::mainlog << "Reading " << fileName << endl;
     ttk::Timer readerTime;
     
@@ -1082,6 +1082,7 @@ auto segmentor::readInputFile(bool writeGridFile)
         cubeReader->Update();
         imageData = cubeReader->GetGridOutput();
         getGridResolutionFromCubeFile(gridRes);
+        imageData->SetSpacing(gridRes);
         if (arrayName.empty()) getArrayNameFromCubeFile(arrayName);
         logger::mainlog << "Array that is going to be used for TDA analysis: " << arrayName << endl;
         
@@ -1740,7 +1741,7 @@ auto segmentor::inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool chang
 {
     
     
-    logger::mainlog << "\nSegmentor: InputPrecondition Module" << "\n";
+    logger::mainlog << "\n\nSegmentor: InputPrecondition Module" << "\n";
     ttk::Timer periodicTimer;
     //VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();
@@ -2086,7 +2087,7 @@ auto  segmentor::getIndex(vector<int> v, int K)
  */
 auto segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
-    logger::mainlog << "\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
+    logger::mainlog << "\n\nSegmentor: Morse Smale Complex Module" << "\n" << flush;
     
     ttk::Timer MSCTimer;
     //Persistence Diagram of the data
@@ -2473,7 +2474,7 @@ auto segmentor::MSC_E(vtkSmartPointer<ttkTriangulationManager> grid,double persi
  */
 void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores)
 {
-    logger::mainlog << "\nSegmentor: Void Segmentation Module" << "\n" << flush;
+    logger::mainlog << "\n\nSegmentor: Void Segmentation Module" << "\n" << flush;
     
     ttk::Timer VoidSegmentationTimer;
     //Writer of the .csv results file
@@ -2527,7 +2528,8 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
 
     //DataSet of the saddles of the Ascending Segmentation of the void structure
     auto saddlesDataSet = vtkDataSet::SafeDownCast(positiveSaddles->GetOutputDataObject(0));
-
+    logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
+    
     //2d vector to store the saddles id and the regions connected to them
     vector<vector<int>> saddlesConnectivity;
     //Set default values to -1.0
@@ -2544,7 +2546,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the void structure
         //Find the in the void structure the closest points to the saddle inside a sphere of radius equal to the cell size
-        pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
+        pointLocator->FindPointsWithinRadius(sqrt(2.0) * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
         //logger::mainlog << "Current Saddle ID: " << k << endl;
@@ -2570,7 +2572,20 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         }
 
     }
-
+    
+    if (DEBUG)
+    {
+        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
+            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
+            for (size_t j = 0; j < 4; j++){
+                if (saddlesConnectivity[i][j] != -1){
+                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
+                }
+            }
+            logger::mainlog << "\n" << flush;
+        }
+    }
+    
     for (auto i : ascendingManifoldIDList) //For each of the void segments
     {
         int currentRegion = i;
@@ -2588,6 +2603,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
         //---------------------------------------------------------------------------
         int numberOfConnections = 0; //Number of connections of the current region
         vector<int> regionsSaddlesID; //ID of the points that work as Saddle in the region
+        std::set <int> connectedSegments;
         if(sectionIDDataset->GetNumberOfPoints() > 0) //If not an empty region
         {
         
@@ -2605,6 +2621,10 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
                     regionsSaddlesID.push_back(closestRegionPoint);
 
                     ++numberOfConnections;
+                    for (size_t c = 0; c < 4; c++){
+                        if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
+                            connectedSegments.insert(saddlesConnectivity[k][c]);
+                    }
 
                 }
 
@@ -2658,6 +2678,16 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
 
         }
         
+        if (DEBUG)
+        {
+            logger::mainlog << "Segment " << currentRegion << " is connected to " << numberOfConnections << " segments.";
+            
+            if (numberOfConnections > 0 ){
+                logger::mainlog << " These are ";
+                for (auto in : connectedSegments ){logger::mainlog << in << ", "; }
+            }
+            logger::mainlog << "\n";
+        }
 
         
     }
@@ -2681,7 +2711,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
  */
 void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores)
 {
-    logger::mainlog << "\nSegmentor: Accessible Void Space Module" << "\n" << flush;
+    logger::mainlog << "\n\nSegmentor: Accessible Void Space Module" << "\n" << flush;
 
     ttk::Timer VoidSpaceTimer;
     //Writer of the .csv results file
@@ -2689,6 +2719,16 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
     segmentResults.open((Directory + "/" + BaseFileName + "-accessible-void-space-mRad-" + to_string(moleculeRadius) + ".csv").c_str());
     assert(segmentResults.is_open());
     segmentResults << "regionID,Scalar,Volume,NumberOfConexions" << "\n";
+
+    //Compute cell dimensions of the input file
+    //---------------------------------------------------------------------------------------------
+    auto provisionalData = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(3));
+    double cellDimensions[6];
+    provisionalData->GetCellBounds(0,cellDimensions);
+    //Cell size of the current dataset
+    double cellSize = cellDimensions[1] - cellDimensions[0];
+    CellSize = cellSize;
+    //---------------------------------------------------------------------------------------------
 
     //Volume of each tetrahedron. As we know the volume of an unit cubic cell and each
     //cubic cell is made of 6 tetrahedrons. We set their volume to be a sixth part of the total
@@ -2736,7 +2776,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
     //DataSet of the accessible saddles to the molecule
     auto saddlesDataSet = vtkDataSet::SafeDownCast(accessibleSaddles->GetOutputDataObject(0));
-    //logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
+    logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
@@ -2753,7 +2793,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
         //Find  in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(sqrt(2.0),currentSaddleCoords,closestPoints);
+        pointLocator->FindPointsWithinRadius(sqrt(2.0)*CellSize,currentSaddleCoords,closestPoints);
 
        
         //Find the closest segments to each of the saddles that work as connectors between segments
@@ -2789,6 +2829,20 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         
 
     }
+    
+    // Print the saddleconnectivity for debugging
+    if (DEBUG)
+    {
+        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
+            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
+            for (size_t j = 0; j < 4; j++){
+                if (saddlesConnectivity[i][j] != -1){
+                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
+                }
+            }
+            logger::mainlog << "\n" << flush;
+        }
+    }
 
     for (size_t i = 0; i < segmentsID->GetNumberOfValues(); i++) //For each of the void segments
     {
@@ -2812,6 +2866,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         //logger::mainlog << segmentNumberOfCells << endl;
         //---------------------------------------------------------------------------
         int numberOfConnections = 0; //Number of connections of the current region
+        std::set <int> connectedSegments;
         if(segmentDataset->GetNumberOfPoints() > 0) //If not an empty region
         {
         
@@ -2824,6 +2879,10 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
                 if (it != saddlesConnectivity[k].end())
                 {
                     ++numberOfConnections;
+                    for (size_t c = 0; c < 4; c++){
+                        if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
+                            connectedSegments.insert(saddlesConnectivity[k][c]);
+                    }
                 }
 
             }
@@ -2837,6 +2896,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
             if (found)
             {
                 ++numberOfConnections;
+                connectedSegments.insert(currentRegion);
             }
             
         }
@@ -2856,7 +2916,17 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
         }
         
-
+        // Print the segment connectivity for debugging
+        if (DEBUG)
+        {
+            logger::mainlog << "Segment " << currentRegion << " is connected to " << numberOfConnections << " segments.";
+            
+            if (numberOfConnections > 0 ){
+                logger::mainlog << " These are ";
+                for (auto in : connectedSegments ){logger::mainlog << in << ", "; }
+            }
+            logger::mainlog << "\n";
+        }
         
     }
     
@@ -3132,7 +3202,7 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
  */
 auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex)
 {
-    logger::mainlog << "\nSegmentor: Solid Segmentation Module" << "\n" << flush;
+    logger::mainlog << "\n\nSegmentor: Solid Segmentation Module" << "\n" << flush;
     
     ttk::Timer SolidSegmentationTimer;
     //Writer of the .csv results file
@@ -3187,6 +3257,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     //DataSet of the saddles of the Descending Segmentation of the void structure
     auto saddlesDataSet = vtkDataSet::SafeDownCast(negativeSaddles->GetOutputDataObject(0));
+    logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
@@ -3202,7 +3273,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the void structure
         //Find the in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(1.0 * CellSize,currentSaddleCoords,closestPoints);
+        pointLocator->FindPointsWithinRadius(sqrt(2.0) * CellSize,currentSaddleCoords,closestPoints);
 
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
         //logger::mainlog << "Current Saddle ID: " << k << endl;
@@ -3228,6 +3299,23 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         }
 
     }
+    
+    
+    if (DEBUG)
+    {
+        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
+            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
+            for (size_t j = 0; j < 4; j++){
+                if (saddlesConnectivity[i][j] != -1){
+                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
+                }
+            }
+            logger::mainlog << "\n" << flush;
+        }
+    }
+    
+
+    
 
     for (auto i : descendingManifoldIDList) //For each of the void segments
     {
@@ -3246,6 +3334,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
         //---------------------------------------------------------------------------
         int numberOfConnections = 0; //Number of connections of the current region
         vector<int> regionsSaddlesID; //ID of the points that work as Saddle in the region
+        std::set <int> connectedSegments;
         if(sectionIDDataset->GetNumberOfPoints() > 0) //If not an empty region
         {
         
@@ -3263,6 +3352,10 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
                     regionsSaddlesID.push_back(closestRegionPoint);
 
                     ++numberOfConnections;
+                    for (size_t c = 0; c < 4; c++){
+                        if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
+                            connectedSegments.insert(saddlesConnectivity[k][c]);
+                    }
 
                 }
 
@@ -3317,6 +3410,16 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
         }
         
+        if (DEBUG)
+        {
+            logger::mainlog << "Segment " << currentRegion << " is connected to " << numberOfConnections << " segments.";
+            
+            if (numberOfConnections > 0 ){
+                logger::mainlog << " These are ";
+                for (auto in : connectedSegments ){logger::mainlog << in << ", "; }
+            }
+            logger::mainlog << "\n";
+        }
 
         
     }

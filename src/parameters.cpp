@@ -211,7 +211,13 @@ void parameters::writetoLogFile() {
         
     }
     
-    logger::mainlog << "Scalar array give for segmentation                           : " << arrayName << endl;
+    std::string givenArrayName;
+    if (arrayName.empty()) {
+        givenArrayName = "Chosen Automatically";
+    } else {
+        givenArrayName = arrayName;
+    }
+    logger::mainlog << "Scalar array given for segmentation                          : " << givenArrayName << endl;
     
     std::string dummy("False");
     if (useSuperCell) dummy = "True";

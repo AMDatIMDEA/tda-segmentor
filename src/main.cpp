@@ -59,7 +59,7 @@ int main(int argc, char ** argv){
 
     //Computations' finish time(TDA)
     double elapsedTime = programTimer.getElapsedTime();
-    logger::mainlog << "\nTotal Time taken for all the files: " << elapsedTime << " seconds" <<endl;
+    logger::mainlog << "\nTotal Time taken for all the modules: " << elapsedTime << " seconds" <<endl;
 
     delete analysis;
     logger::closeLogfiles();
