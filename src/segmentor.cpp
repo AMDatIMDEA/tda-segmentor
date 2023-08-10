@@ -3860,10 +3860,26 @@ void segmentor::persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, 
     curve->Update();
     
     /* Write the persistence curve in VTK format */
-    vtkNew<vtkTableWriter> curveWriter{};
-    curveWriter->SetInputConnection(curve->GetOutputPort(0));
-    curveWriter->SetFileName((Directory+"/" + BaseFileName+"_persistencecurve.vtk").c_str());
-    curveWriter->Write();
+    vtkNew<vtkTableWriter> curveWriter0{};
+    curveWriter0->SetInputConnection(curve->GetOutputPort(0));
+    curveWriter0->SetFileName((Directory+"/" + BaseFileName+"_minSaddlePairs.vtk").c_str());
+    curveWriter0->Write();
+    
+    vtkNew<vtkTableWriter> curveWriter1{};
+    curveWriter1->SetInputConnection(curve->GetOutputPort(1));
+    curveWriter1->SetFileName((Directory+"/" + BaseFileName+"_saddleSaddlePairs.vtk").c_str());
+    curveWriter1->Write();
+    
+    vtkNew<vtkTableWriter> curveWriter2{};
+    curveWriter2->SetInputConnection(curve->GetOutputPort(2));
+    curveWriter2->SetFileName((Directory+"/" + BaseFileName+"_SaddleMaxPairs.vtk").c_str());
+    curveWriter2->Write();
+    
+    vtkNew<vtkTableWriter> curveWriter3{};
+    curveWriter3->SetInputConnection(curve->GetOutputPort(3));
+    curveWriter3->SetFileName((Directory+"/" + BaseFileName+"_allPairs.vtk").c_str());
+    curveWriter3->Write();
+    
     
     double timeTakenForPerCurve = percurveTimer.getElapsedTime();
     logger::mainlog << "Time taken in persistence curve module: " << timeTakenForPerCurve << "(s)" << endl;

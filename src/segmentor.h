@@ -17,7 +17,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
 #include "headers.h"
 #include "logger.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 class segmentor
 {
