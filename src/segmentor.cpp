@@ -1073,7 +1073,6 @@ auto segmentor::readInputFile(bool writeGridFile)
     ttk::Timer readerTime;
     
     vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
-    double gridRes[3];
     
     if (extensionName == ".cube"){
         
@@ -1081,8 +1080,8 @@ auto segmentor::readInputFile(bool writeGridFile)
         cubeReader->SetFileName(fileName.c_str());
         cubeReader->Update();
         imageData = cubeReader->GetGridOutput();
-        getGridResolutionFromCubeFile(gridRes);
-        imageData->SetSpacing(gridRes);
+        getGridResolutionFromCubeFile(GridResolution);
+        imageData->SetSpacing(GridResolution);
         if (arrayName.empty()) getArrayNameFromCubeFile(arrayName);
         logger::mainlog << "Array that is going to be used for TDA analysis: " << arrayName << endl;
         
@@ -1092,7 +1091,7 @@ auto segmentor::readInputFile(bool writeGridFile)
         dataReader->SetFileName((fileName).c_str());
         dataReader->Update();
         imageData = dataReader->GetOutput();
-        imageData->GetSpacing(gridRes);
+        imageData->GetSpacing(GridResolution);
         
         if (arrayName.empty()) {
             char * name = imageData->GetPointData()->GetAbstractArray(0)->GetName();
@@ -1119,12 +1118,9 @@ auto segmentor::readInputFile(bool writeGridFile)
     vtkIdType cellDims[3];
     imageData->GetDimensions(cellDims);
     
-    logger::mainlog << "Grid Resolution (x,y,z):           (" << gridRes[0] << ", " << gridRes[1] << ", " << gridRes[2] << ")\n";
+    logger::mainlog << "Grid Resolution (x,y,z):           (" << GridResolution[0] << ", " << GridResolution[1] << ", " << GridResolution[2] << ")\n";
     logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
     
-    if (gridRes[0] == gridRes[1] && gridRes[1] == gridRes[2]){
-        GridResolution = gridRes[0];
-    }
     
     double elapsedTime = readerTime.getElapsedTime();
     logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
@@ -1180,13 +1176,6 @@ void segmentor::getGridResolutionFromCubeFile(double gridRes[3]) {
     logger::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
     logger::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
         
-    if ( (gridResX[0] != gridResY[1])  || (gridResY[1] != gridResZ[2]) || (gridResZ[2] != gridResX[0])  )
-    {
-        logger::mainlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
-        logger::errlog << "WARNING: Grid resolution is not the same in all the three directions!" << "\n" << flush;
-        
-    }
-    
     gridRes[0] = gridResX[0];
     gridRes[1] = gridResY[1];
     gridRes[2] = gridResZ[2];
@@ -1299,7 +1288,6 @@ auto segmentor::readerCombined(string inputFilePath1,string inputFilePath2,doubl
         imageWriter->SetFileName((directory+"/"+file_without_extension+"grid.vti").c_str());
         imageWriter->Write();
     }
-    GridResolution = gridResolution;
 
     logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
     return imageData;
@@ -2534,6 +2522,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     vector<vector<int>> saddlesConnectivity;
     //Set default values to -1.0
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
                 
@@ -2570,6 +2559,11 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
             }
             
         }
+        
+        if (closestRegionsToSaddle.size() == 1)
+        {
+            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
+        }
 
     }
     
@@ -2581,6 +2575,11 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
+            }
+            
+            // if saddle is totally inside a particular segment, output that region
+            for (auto ip : regionsWithSaddleInside){
+                if (ip.first == i) logger::mainlog << ip.second;
             }
             logger::mainlog << "\n" << flush;
         }
@@ -2629,9 +2628,22 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
                 }
 
             }
-
                 
-                
+        }
+        
+        //Check the number of Connections of each segment
+        if (numberOfConnections == 0)
+        {
+            bool found = false;
+            for (auto it : regionsWithSaddleInside){
+                if (it.second == currentRegion) found = true;
+            }
+            if (found)
+            {
+                ++numberOfConnections;
+                connectedSegments.insert(currentRegion);
+            }
+            
         }
             
 
@@ -2674,17 +2686,21 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
                 isMaxima = 0;
             }
 
-            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << maximumValue<<","<< isMaxima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< GridResolution*pointCoords[0]<<","<<GridResolution*pointCoords[1]<<","<<GridResolution *pointCoords[2]<<"\n";
+            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << maximumValue<<","<< isMaxima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< pointCoords[0]<<","<<pointCoords[1]<<","<< pointCoords[2]<<"\n";
 
         }
         
         if (DEBUG)
         {
-            logger::mainlog << "Segment " << currentRegion << " is connected to " << numberOfConnections << " segments.";
+            logger::mainlog << "Number of connections for segment " << currentRegion << " is " << numberOfConnections  << " and number neighbor segments identified : " << connectedSegments.size();
             
             if (numberOfConnections > 0 ){
                 logger::mainlog << " These are ";
                 for (auto in : connectedSegments ){logger::mainlog << in << ", "; }
+            }
+            
+            if (numberOfConnections != connectedSegments.size()){
+                logger::mainlog << " It is possible that the two segments are connected more than once. ";
             }
             logger::mainlog << "\n";
         }
@@ -2732,7 +2748,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
     //Volume of each tetrahedron. As we know the volume of an unit cubic cell and each
     //cubic cell is made of 6 tetrahedrons. We set their volume to be a sixth part of the total
-    double unitCellVolume = (pow(GridResolution,3))/6.0;
+    double unitCellVolume = (pow(GridResolution[0],3))/6.0;
 
     //Triangulate the segmentation to improve precision
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
@@ -2780,7 +2796,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
     vector<vector<int>> saddlesConnectivity;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
-    vector<int> regionsWithSaddleInside;
+    std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
         //logger::mainlog << "Current Saddle ID:" << endl;
@@ -2824,7 +2840,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         }
         if (closestRegionsToSaddle.size() == 1)
         {
-            regionsWithSaddleInside.push_back(closestRegionsToSaddle[0]);
+            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
         }
         
 
@@ -2839,6 +2855,10 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
+            }
+            // if saddle is totally inside a particular segment, output that region
+            for (auto ip : regionsWithSaddleInside){
+                if (ip.first == i) logger::mainlog << ip.second;
             }
             logger::mainlog << "\n" << flush;
         }
@@ -2892,7 +2912,10 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         //Check the number of Connections of each segment
         if (numberOfConnections == 0)
         {
-            bool found = (std::find(regionsWithSaddleInside.begin(), regionsWithSaddleInside.end(), currentRegion) != regionsWithSaddleInside.end());
+            bool found = false;
+            for (auto it : regionsWithSaddleInside){
+                if (it.second == currentRegion) found = true;
+            }
             if (found)
             {
                 ++numberOfConnections;
@@ -2910,7 +2933,6 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         //Write the output file
         for (size_t j = 0; j < segmentDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
         {
-            double gridResolution = GridResolution;
             double segmentsVolume = segmentNumberOfCells * unitCellVolume;
             segmentResults << currentRegion<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << segmentsVolume << "," << numberOfConnections <<"\n";
 
@@ -2919,11 +2941,15 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         // Print the segment connectivity for debugging
         if (DEBUG)
         {
-            logger::mainlog << "Segment " << currentRegion << " is connected to " << numberOfConnections << " segments.";
+            logger::mainlog << "Number of connections for segment " << currentRegion << " is " << numberOfConnections  << " and number neighbor segments identified : " << connectedSegments.size();
             
             if (numberOfConnections > 0 ){
                 logger::mainlog << " These are ";
                 for (auto in : connectedSegments ){logger::mainlog << in << ", "; }
+            }
+            
+            if (numberOfConnections != connectedSegments.size()){
+                logger::mainlog << "- It is possible that they are connected at multiple points ";
             }
             logger::mainlog << "\n";
         }
@@ -3174,8 +3200,7 @@ void segmentor::voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSm
             {
                 isMinima = 0;
             }
-            double gridResolution = GridResolution;
-            misDatos << uniqueDesSegIdDataSet->GetVariantValue(i).ToInt() <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< gridResolution*pointCoords[0]<<","<<gridResolution*pointCoords[1]<<","<<gridResolution *pointCoords[2]<<"\n";
+            misDatos << uniqueDesSegIdDataSet->GetVariantValue(i).ToInt() <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< pointCoords[0]<<","<< pointCoords[1]<<","<< pointCoords[2]<<"\n";
 
         }
 
@@ -3261,6 +3286,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     vector<vector<int>> saddlesConnectivity;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
                 
@@ -3297,8 +3323,15 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
             }
             
         }
+        
+        if (closestRegionsToSaddle.size() == 1)
+        {
+            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
+        }
+        
 
     }
+
     
     
     if (DEBUG)
@@ -3309,6 +3342,11 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
+            }
+            
+            // if saddle is totally inside a particular segment, output that region
+            for (auto ip : regionsWithSaddleInside){
+                if (ip.first == i) logger::mainlog << ip.second;
             }
             logger::mainlog << "\n" << flush;
         }
@@ -3364,7 +3402,21 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
                 
                 
         }
+        
+        //Check the number of Connections of each segment
+        if (numberOfConnections == 0)
+        {
+            bool found = false;
+            for (auto it : regionsWithSaddleInside){
+                if (it.second == currentRegion) found = true;
+            }
+            if (found)
+            {
+                ++numberOfConnections;
+                connectedSegments.insert(currentRegion);
+            }
             
+        }
 
         //Array corresponding to the scalar values of the Region
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray("This is distance grid");
@@ -3406,17 +3458,21 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
                 isMinima = 0;
             }
 
-            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< GridResolution*pointCoords[0]<<","<<GridResolution*pointCoords[1]<<","<<GridResolution *pointCoords[2]<<"\n";
+            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< pointCoords[0]<<","<< pointCoords[1]<<","<< pointCoords[2]<<"\n";
 
         }
         
         if (DEBUG)
         {
-            logger::mainlog << "Segment " << currentRegion << " is connected to " << numberOfConnections << " segments.";
+            logger::mainlog << "Number of connections for segment " << currentRegion << " is " << numberOfConnections  << " and number neighbor segments identified : " << connectedSegments.size();
             
             if (numberOfConnections > 0 ){
                 logger::mainlog << " These are ";
                 for (auto in : connectedSegments ){logger::mainlog << in << ", "; }
+            }
+            
+            if (numberOfConnections != connectedSegments.size()){
+                logger::mainlog << " It is possible that the two segments are connected more than once. ";
             }
             logger::mainlog << "\n";
         }
@@ -3973,8 +4029,7 @@ void segmentor::voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
             {
                 isSaddle = true;
             }
-            double gridResolution = 0.2;
-            sepFile << pointCoordinates[0] << "," << pointCoordinates[1] << "," << pointCoordinates[2] << "," << pointCellId << "," << separatrixID << "," << sourceID << "," << destinationID << "," << separatrixFunctionMinimum << "," << isMinima << "," << isSaddle << "," << pointCoordinates[0]*gridResolution << "," << pointCoordinates[1]*gridResolution << "," <<  pointCoordinates[2]*gridResolution  << "\n";
+            sepFile << pointCoordinates[0] << "," << pointCoordinates[1] << "," << pointCoordinates[2] << "," << pointCellId << "," << separatrixID << "," << sourceID << "," << destinationID << "," << separatrixFunctionMinimum << "," << isMinima << "," << isSaddle << "," << pointCoordinates[0] << "," << pointCoordinates[1] << "," <<  pointCoordinates[2]  << "\n";
             
         }
 

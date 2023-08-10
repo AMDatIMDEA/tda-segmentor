@@ -17,7 +17,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
 #include "headers.h"
 #include "logger.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 class segmentor
 {
@@ -35,7 +35,7 @@ public:
     //Input grid
     vtkImageData * Grid = vtkImageData::New();
     //Input grid resolution
-    double GridResolution;
+    double GridResolution[3];
     //Cell Size(default to zero)
     double CellSize = 0;
 
