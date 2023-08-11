@@ -38,19 +38,18 @@ public:
     double GridResolution[3];
     //Cell Size(default to zero)
     double CellSize = 0;
-
+    
+    double volume;
     //Cleaned functions
     segmentor(const parameters &p);
     ~segmentor();
     auto superCell(vtkSmartPointer<vtkImageData> grid);
 
-    void getVolume(string inputFolder, double resolution);
     vtkIdType getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     vtkIdType getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
 
     void getGridResolutionFromCubeFile(double gridres[3]);
     void getArrayNameFromCubeFile(std::string &arrayname);
-    void getCubeVolume(string inputFolder, double resolution);
     auto reader(string inputFilePath,int gridResolution, bool writeGridFile);
     auto readInputFile(bool writeGridFile = false);
     auto readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile);

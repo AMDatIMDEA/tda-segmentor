@@ -114,192 +114,6 @@ auto segmentor::superCell(vtkSmartPointer<vtkImageData> grid){
     return appendedImage;
 }
 
-/**
- * @brief Get the volume of the grids in a folder and write it to a file
- *
- * @param inputFolder Input directory where the grids are stored
- * @param resolution Grids resolution
- */
-void segmentor::getVolume(string inputFolder,double resolution)
-{
-    
-    //Volume of a unit cubic cell
-    double unitCellVolume = pow(resolution,3);
-    
-    //Find the grids in the folder using Linux functions
-    //---------------------------------------------------------------------------------------------
-    system("rm -f fileList.txt"); //Delete previous one if existed
-    string mission = "ls " + inputFolder + " >> fileList.txt";
-    //string mission = "ls ../Results_Whole_Super_Res_0_15_Pers_0_15March/MaterialsRegionsWhole >> fileList.txt";
-    int findFolder = system(mission.c_str());
-
-   
-    vector<string> files;
-    if (!findFolder)
-    {
-        string line;
-        ifstream myFile("fileList.txt");
-        
-        if (myFile.is_open())
-        {
-            while ( getline (myFile,line) )
-            {
-                files.push_back(line);
-            }
-            myFile.close();
-        }
-        logger::mainlog << files.size() << endl;
-    }
-    else
-    {
-        logger::mainlog << "Folder not found" << endl;
-        
-    }
-
-    //---------------------------------------------------------------------------------------------
-
-    // Write the materials/segments name and their volume to a output file
-    string outputFile =  "../Results/segmentsVolume.csv";
-    ofstream output;
-    output.open(outputFile);
-    output << "Segment,Volume" << "\n";
-
-    int counter = 0;
-
-    for (size_t i = 0; i < files.size(); i++)
-    {
-        string currentFile = inputFolder  + files[i];
-
-        std::string base_filename = currentFile.substr(currentFile.find_last_of("/\\") + 1);
-        std::string::size_type const p(base_filename.find_last_of('.'));
-        //Input File name
-        std::string file_without_extension = base_filename.substr(0, p);
-        logger::mainlog << file_without_extension << endl;
-        
-        //logger::mainlog << currentFile << endl;
-
-        vtkSmartPointer<vtkUnstructuredGridReader> reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
-        reader->SetFileName(currentFile.c_str());
-        reader->Update();
-
-        auto data = vtkDataSet::SafeDownCast(reader->GetOutputDataObject(0));
-
-        int numberOfCells = data->GetNumberOfCells();
-
-        double volume = numberOfCells * unitCellVolume;
-
-        logger::mainlog << numberOfCells << "     " << volume << endl;
-
-        output << files[i] << "," << volume << endl;
-
-        
-        counter++;
-        logger::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
-        
-
-    }
-    output.close();
-
-    
-
-    
-    
-}
-
-/**
- * @brief Get the volume of the cubic cells(.cube files) of the materials. Based
- * on the resolution, it computes the unit cell volume and the it gets the number of cells
- * of each material to calculate the total volume
- *
- * @param inputFolder Input folder where the files are stored
- * @param resolution Resolution of the grids
- */
-void segmentor::getCubeVolume(string inputFolder,double resolution)
-{
-    
-    double unitCellVolume = pow(resolution,3);
-    
-    system("rm -f fileList.txt"); //Delete previous one if existed
-    string mission = "ls " + inputFolder + " >> fileList.txt";
-    int findFolder = system(mission.c_str());
-
-    if (!findFolder)
-    {
-        logger::mainlog << "Folder found\n";
-    }
-    
-    
-
-    vector<string> files;
-    if (!findFolder)
-    {
-        string line;
-        ifstream myFile("fileList.txt");
-        
-        if (myFile.is_open())
-        {
-            while ( getline (myFile,line) )
-            {
-                files.push_back(line);
-            }
-            myFile.close();
-        }
-        logger::mainlog << files.size() << endl;
-    }
-    else
-    {
-        logger::mainlog << "Folder not found" << endl;
-        
-    }
-    
-    string outputFile =  "../Results/materialsVolume.csv";
-    ofstream output;
-    output.open(outputFile);
-    output << "Material,Volume" << "\n";
-
-    int counter = 0;
-
-    for (size_t i = 0; i < files.size(); i++)
-    {
-        string currentFile = inputFolder  + files[i];
-
-        std::string base_filename = currentFile.substr(currentFile.find_last_of("/\\") + 1);
-        std::string::size_type const p(base_filename.find_last_of('.'));
-        //Input File name
-        std::string file_without_extension = base_filename.substr(0, p);
-        logger::mainlog << file_without_extension << endl;
-        
-        //logger::mainlog << currentFile << endl;
-        vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
-        cubeReader->SetFileName(currentFile.data()); //Set the input file
-        cubeReader->Update();
-        //Image data output from the Gaussian Cube file
-        vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
-        imageData = cubeReader->GetGridOutput();
-        
-
-        int numberOfCells = imageData->GetNumberOfCells();
-
-        double volume = numberOfCells * unitCellVolume;
-
-        logger::mainlog << numberOfCells << "     " << volume << endl;
-
-        output << file_without_extension << "," << volume << endl;
-
-        
-        counter++;
-        logger::mainlog << "Computed " <<  counter << "/" << files.size() << endl;
-        
-
-    }
-    output.close();
-
-    
-
-    
-    
-}
-
 
 auto segmentor::segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores)
 {
@@ -1118,8 +932,13 @@ auto segmentor::readInputFile(bool writeGridFile)
     vtkIdType cellDims[3];
     imageData->GetDimensions(cellDims);
     
-    logger::mainlog << "Grid Resolution (x,y,z):           (" << GridResolution[0] << ", " << GridResolution[1] << ", " << GridResolution[2] << ")\n";
-    logger::mainlog << "Number of points in the grid : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
+    vtkIdType numberOfCells = imageData->GetNumberOfCells();
+    double unitCellVolume = GridResolution[0] * GridResolution[1] * GridResolution[2];
+    volume = unitCellVolume * numberOfCells;
+    
+    logger::mainlog << "Grid Resolution (x,y,z)             : (" << GridResolution[0] << ", " << GridResolution[1] << ", " << GridResolution[2] << ")\n";
+    logger::mainlog << "Number of points in the grid        : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
+    logger::mainlog << "Volume of the unit cell             : "  << volume << " (A^o)^3" << endl; 
     
     
     double elapsedTime = readerTime.getElapsedTime();
