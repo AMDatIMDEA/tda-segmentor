@@ -50,9 +50,7 @@ public:
 
     void getGridResolutionFromCubeFile(double gridres[3]);
     void getArrayNameFromCubeFile(std::string &arrayname);
-    auto reader(string inputFilePath,int gridResolution, bool writeGridFile);
     auto readInputFile(bool writeGridFile = false);
-    auto readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile);
     auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
     auto MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
@@ -68,7 +66,6 @@ public:
 
     //-------------------------------------------------------------------------------
 
-   
     void gridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores);
     
 
