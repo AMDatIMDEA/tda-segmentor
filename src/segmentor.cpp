@@ -1032,8 +1032,8 @@ void segmentor::getArrayNameFromCubeFile(std::string &nameOfArray){
 
 /**
  * @brief Set periodic conditions for the input grid and compute a distance field for the points
- * based on their Potential Energy Atom. Set positive distance values for the solid structure and negative
- * values for the pore structure
+ * based on their Potential Energy Atom. Set positive distance values for the pore structure and negative
+ * values for the solid structure
  * @param grid Input grid
  * @param periodicConditions  Set Periodic Boundary Conditions to true or false
  * @param computeDistanceField  Compute a distance field of the grid if need
@@ -1110,11 +1110,11 @@ auto segmentor::inputPrecondition2(vtkSmartPointer<vtkImageData> grid, bool peri
          
             if (grid->GetPointData()->GetArray("potentialEnergyAtom")->GetVariantValue(i).ToDouble() >= 0)
             {
-                distanceArray->InsertValue(i,-gridDistance);
+                distanceArray->InsertValue(i,gridDistance);
             }
             else
             {
-                distanceArray->InsertValue(i,gridDistance);
+                distanceArray->InsertValue(i,-gridDistance);
 
             }
             
@@ -1675,186 +1675,6 @@ vtkIdType segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmale
     return numberOfAscendingManifolds;
     
 }
-
-/**
- * @brief (ENERGY GRIDS)Computes a topological simplification based on the persistence of the scalar field
- * attached to the input grid. Besides, it computes the Morse Smale Complex Segmentation. It writes 3 files: 1) Critical points file.
- * 2) Segmentation file. 3) Separatrices file.
- * @param grid  Input grid to analyse
- * @param persistencePercentage Persistence percentage threshold(to the maximum percentage)
- *  for the simplification
- * @param saddlesaddleIncrement Persistence threshold increment(if needed) for the
- *  simplification of the sadde-saddle connectors
- * @return auto Morse Smale Complex complete field information
- */
-auto segmentor::MSC_E(vtkSmartPointer<ttkTriangulationManager> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
-{
-    logger::mainlog << "Morse Smale Complex Module (Energy)" << "\n";
-    
-    //Given that in this analysis we are going to focus to the negative energy space of the material we have to take care
-    //because in the points closer to the atoms te energy values are huge and following the process used in the energy grids
-    //we would get too "simplified" segmentations. To avoid that, we are going to find the minimum negative value
-    //in the material and the maximum persistence to that value.
-    
-    //Given grid dataSet
-    auto inputGridDataSet = vtkDataSet::SafeDownCast(grid->GetOutputDataObject(0));
-    //Potential Energy DataSet of the input grid
-    auto energyDataSet = inputGridDataSet->GetPointData()->GetAbstractArray("Potential Energy");
-
-    double minimumEnergy = 0.0; //Minimum energy value of the material
-    for (size_t i = 0; i < energyDataSet->GetNumberOfValues(); i++) //For each of the points in the energy DataSet
-    {
-        double currentEnergy = energyDataSet->GetVariantValue(i).ToDouble(); //Current energy value tested
-        if (currentEnergy < minimumEnergy)
-        {
-            minimumEnergy = currentEnergy;
-        }
-    }
-    logger::mainlog << "Minimum Energy Value of the material: " <<  minimumEnergy << endl;
-    
-    //Persistence Diagram of the data
-    vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
-    persistenceDiagram->SetUseAllCores(useAllCores);
-    persistenceDiagram->SetInputConnection(grid->GetOutputPort());
-    persistenceDiagram->SetInputArrayToProcess(0,0,0,0,"Potential Energy");
-    
-    //We delete the persistence pairs corresponding to the graph diagonal
-    vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
-    criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
-    criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    criticalPairs->SetLowerThreshold(-0.1);
-    criticalPairs->SetUpperThreshold(9e9);
-    criticalPairs->Update();
-
-    //Persistence DataSet
-    auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
-    //Persistence maximum to calculate Thresholds
-    double maximumPersistence = 0.0;
-    for (size_t i = 0; i < persistenceDataSet->GetNumberOfValues(); i++)
-    {
-        double currentPersistenceValue = persistenceDataSet->GetVariantValue(i).ToDouble();
-
-        if (currentPersistenceValue <= abs(minimumEnergy)) //Check that the current persistence value is less or equal than the minimum energy
-        {
-            if(currentPersistenceValue > maximumPersistence)
-            {
-                maximumPersistence = currentPersistenceValue;
-            }
-        }
-        
-        
-    }
-
-    logger::mainlog << "Maximum Persistence of the negative values: " << maximumPersistence << endl;
-    
-    //Persistence Threshold for simplification
-    double minimumPersistence = persistencePercentage * maximumPersistence;
-    //Persistence threshold for future simplifications
-    vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
-    persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
-    persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    persistentPairs->SetLowerThreshold(minimumPersistence);
-    persistentPairs->SetUpperThreshold(9.0e21);
-
-    //Topological simplification from the persistence results
-    vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
-    //topologicalSimplification->SetDebugLevel(4);
-    topologicalSimplification->SetUseAllCores(useAllCores);
-    //topologicalSimplification->SetInputData(grid);
-    topologicalSimplification->SetInputConnection(0,grid->GetOutputPort());
-    topologicalSimplification->SetInputArrayToProcess(0,0,0, 0,"Potential Energy");
-    topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
-    //=============================================================================================
-    //=============================================================================================
-    //3.3 Morse Smale Complex Computation
-    //Morse Smale Complex Computation
-    vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex = vtkSmartPointer<ttkMorseSmaleComplex>::New();
-    //morseSmaleComplex->SetDebugLevel(3);
-    morseSmaleComplex->SetUseAllCores(useAllCores);
-    morseSmaleComplex->SetReturnSaddleConnectors(1);
-    morseSmaleComplex->SetSaddleConnectorsPersistenceThreshold(saddlesaddleIncrement*minimumPersistence);
-    
-    morseSmaleComplex->SetInputConnection(topologicalSimplification->GetOutputPort());
-    morseSmaleComplex->SetInputArrayToProcess(0,0,0,0,"Potential Energy");
-    morseSmaleComplex->SetComputeSaddleConnectors(true);
-    morseSmaleComplex->SetComputeAscendingSeparatrices1(false);
-    morseSmaleComplex->SetComputeAscendingSeparatrices2(false);
-    morseSmaleComplex->SetComputeDescendingSeparatrices1(true);
-    morseSmaleComplex->SetComputeDescendingSeparatrices2(false);
-    morseSmaleComplex->Update();
-
-    if (writeOutputs)
-    {
-        //Critical points file
-        vtkSmartPointer<vtkPolyDataWriter> criticalPointsWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-        criticalPointsWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
-        criticalPointsWriter->SetFileName((Directory+"/criticalPoints.vtk").c_str());
-        criticalPointsWriter->SetFileName((Directory+"/" + BaseFileName+"_CriticalPoints.vtk").c_str());
-        criticalPointsWriter->Write();
-        auto criticalPointsDataSet = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(0));
-        //Segmentation file
-        vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
-        //segmentationWriter->SetInputDataObject(Segmentation);
-        segmentationWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
-        segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Segmentation.vtk").c_str());
-        segmentationWriter->Write();
-
-        //Saddle connectors
-        vtkNew<vtkThreshold> saddleSeparatrices{};
-        saddleSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        saddleSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        saddleSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        saddleSeparatrices->SetLowerThreshold(1);
-        saddleSeparatrices->SetUpperThreshold(1);
-        
-        
-        vtkNew<vtkUnstructuredGridWriter> saddleSepWriter{};
-        saddleSepWriter->SetInputConnection(saddleSeparatrices->GetOutputPort());
-        saddleSepWriter->SetFileName((Directory+"/" + BaseFileName+"_SaddleSeparatrices.vtk").c_str());
-        //saddleSepWriter->SetFileName("../results/saddleSep.vtk");
-        saddleSepWriter->Write();
-        
-            
-        // //Ascending separatrices of the MSC
-        // vtkSmartPointer<vtkThreshold> ascendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
-        // ascendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        // ascendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        // ascendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        // ascendingSeparatrices->SetLowerThreshold(2);
-        // ascendingSeparatrices->SetUpperThreshold(2);
-        
-        // //Ascending separatrices file
-        // vtkSmartPointer<vtkUnstructuredGridWriter> asc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        // asc1Writer->SetInputConnection(ascendingSeparatrices->GetOutputPort());
-        // asc1Writer->SetFileName((Directory+"/" + BaseFileName+"_Asc1Separatrices.vtk").c_str());
-        // asc1Writer->Write();
-
-        //Descending separatrices of the MSC
-        vtkSmartPointer<vtkThreshold> descendingSeparatrices = vtkSmartPointer<vtkThreshold>::New();
-        descendingSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));
-        descendingSeparatrices->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"SeparatrixType");
-        descendingSeparatrices->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-        descendingSeparatrices->SetLowerThreshold(0);
-        descendingSeparatrices->SetUpperThreshold(0);
-        
-        //Ascending separatrices file
-        vtkSmartPointer<vtkUnstructuredGridWriter> desc1Writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-        desc1Writer->SetInputConnection(descendingSeparatrices->GetOutputPort());
-        desc1Writer->SetFileName((Directory+"/" + BaseFileName+"_Des1Separatrices.vtk").c_str());
-        desc1Writer->Write();
-    }
-    
-    
-    
-    logger::mainlog << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << "\n";
-    
-    return morseSmaleComplex;
-    
-}
-
-
 
 /**
  * @brief Get the void space of the Morse Smale Complex Segmentation computed in the MSC function
