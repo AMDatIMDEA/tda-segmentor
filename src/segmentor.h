@@ -17,7 +17,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
 #include "headers.h"
 #include "logger.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 class segmentor
 {
@@ -56,12 +56,10 @@ public:
     auto readerCombined(string inputFilePath1,string inputFilePath2,double gridResolution,bool writeGridFile);
     auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
-    auto inputPrecondition_E(vtkSmartPointer<vtkImageData> grid,bool periodicConditions);
     auto MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     auto MSC_E(vtkSmartPointer<ttkTriangulationManager> grid,double persistencePercentage, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     void voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores);
     void accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores);
-    void voidSegmentation_E(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     auto solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     void eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
     void eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEigenFunctions, bool useAllCores);
