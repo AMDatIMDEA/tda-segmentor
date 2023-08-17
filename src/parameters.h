@@ -36,6 +36,7 @@ public:
     bool                               useAllCores;
     bool                               saveLogFile;
     bool                               segmentationFlag;
+    bool                               ftmTreeFlag;
     double                             persistenceThreshold, probeRadius;
     
 private:

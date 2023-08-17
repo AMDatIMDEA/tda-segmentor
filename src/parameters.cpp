@@ -23,6 +23,7 @@ useSuperCell(false),
 useAllCores(false),
 saveLogFile(false),
 segmentationFlag(false),
+ftmTreeFlag(false),
 persistenceThreshold(0.0),
 probeRadius(0.0),
 arrayName()
@@ -153,6 +154,12 @@ void parameters::parser(int nargs, char **args)
         {
             segmentationFlag = true;
         }
+
+        if (moduleNames[i] == "graph" || 
+            moduleNames[i] == "accessiblegraph")
+        {
+            ftmTreeFlag = true;
+        }
         
     }
     
@@ -172,7 +179,9 @@ void parameters::writetoLogFile() {
             and moduleNames[i] != "accessiblevoidspace"
             and moduleNames[i] != "voidsegmentation"
             and moduleNames[i] != "solidsegmentation"
-            and moduleNames[i] != "persistencecurve")
+            and moduleNames[i] != "persistencecurve"
+            and moduleNames[i] != "graph"
+            and moduleNames[i] != "accessiblegraph")
         {
             logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
             logger::errlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
@@ -192,7 +201,7 @@ void parameters::writetoLogFile() {
             }
             
         }
-        if (moduleNames[i] == "accessiblevoidspace"){
+        if (moduleNames[i] == "accessiblevoidspace" || moduleNames[i] == "accessiblegraph"){
             if (persistenceThreshold == 0.0)
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;

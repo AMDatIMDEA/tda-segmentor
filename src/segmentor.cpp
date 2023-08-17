@@ -1631,6 +1631,127 @@ auto segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
 
 
 
+auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores)
+{
+    
+    logger::mainlog << "\n\nSegmentor: Graph representation module" << "\n" << flush;
+    
+    ttk::Timer graphTimer;
+    //Persistence Diagram of the data
+    vtkSmartPointer<ttkPersistenceDiagram> persistenceDiagram = vtkSmartPointer<ttkPersistenceDiagram>::New();
+    //persistenceDiagram->SetDebugLevel(3);
+    persistenceDiagram->SetUseAllCores(useAllCores);
+    persistenceDiagram->SetInputConnection(grid->GetOutputPort());
+    persistenceDiagram->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    
+    //We delete the persistence pairs corresponding to the graph diagonal
+    vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
+    criticalPairs->SetInputConnection(persistenceDiagram->GetOutputPort());
+    criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
+    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    criticalPairs->SetLowerThreshold(-0.1);
+    criticalPairs->SetUpperThreshold(9e9);
+    criticalPairs->Update();
+    
+    //Persistence DataSet
+    auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
+    
+    double* persistenceRange = persistenceDataSet->GetRange();
+    
+    double minimumPersistence = persistenceRange[0];
+    double maximumPersistence = persistenceRange[1];
+    
+    // If persistenceThreshold is not provided as input, then 10% of max is automatically taken.
+    if (persistenceThreshold == 0.0) {
+        persistenceThreshold = 0.1 * maximumPersistence;
+    }
+    
+    logger::mainlog << "Maximum persistence = " << maximumPersistence << endl;
+    logger::mainlog << "Persistence threshold = " << persistenceThreshold << endl;
+    
+    //Persistence threshold for future simplifications
+    vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
+    persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
+    persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
+    persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    persistentPairs->SetLowerThreshold(persistenceThreshold);
+    persistentPairs->SetUpperThreshold(9e21);
+
+    //Topological simplification from the persistence results
+    vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
+    //topologicalSimplification->SetDebugLevel(4);
+    topologicalSimplification->SetUseAllCores(useAllCores);
+    //topologicalSimplification->SetInputData(grid);
+    topologicalSimplification->SetInputConnection(0,grid->GetOutputPort());
+    topologicalSimplification->SetInputArrayToProcess(0,0,0, 0,arrayName.c_str());
+    topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
+
+    // TTK contour tree calculation
+
+    vtkSmartPointer<ttkFTMTree> ftmTree = vtkSmartPointer<ttkFTMTree>::New();
+    ftmTree->SetDebugLevel(3);
+    ftmTree->SetUseAllCores(useAllCores);
+    ftmTree->SetInputConnection(topologicalSimplification->GetOutputPort());
+    ftmTree->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    ftmTree->SetTreeType(1);
+    ftmTree->SetWithSegmentation(true);
+    ftmTree->Update();
+
+    logger::mainlog << "FTM Tree computed" << endl;
+
+
+    //Critical points file
+    vtkSmartPointer<vtkUnstructuredGridWriter> nodesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    nodesWriter->SetInputConnection(ftmTree->GetOutputPort(0));
+    nodesWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_nodes.vtk").c_str());
+    nodesWriter->Write();
+    //arcs file
+    vtkSmartPointer<vtkUnstructuredGridWriter> narcsWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    narcsWriter->SetInputConnection(ftmTree->GetOutputPort(1));
+    narcsWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs.vtk").c_str());
+    narcsWriter->Write();
+
+    return ftmTree;
+
+}
+
+
+
+void segmentor::accessiblegraph(vtkSmartPointer <ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores){
+    
+    logger::mainlog << "\n\nSegmentor: Accessible graph module" << "\n" << flush;
+
+    if  (arrayName != "This is distance grid"){
+        logger::mainlog << "This module is to be used only with the distance function!" << endl;
+        logger::errlog << "This module is to be used only with the distance function!" << endl;
+        std::cout << "This module is to be used only with the distance function!" << endl;
+        exit(1);
+    }
+
+    logger::mainlog << "Molecule Radius : " << moleculeRadius << endl << flush; 
+    
+    // Get the nodes of the tree that belongs to the accessible space
+    vtkSmartPointer<vtkThreshold> accessibleNodes = vtkSmartPointer<vtkThreshold>::New();
+    accessibleNodes->SetInputConnection(ftmTree->GetOutputPort(0));
+    accessibleNodes->SetInputArrayToProcess(0,0,0,0,"Scalar");
+    accessibleNodes->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    accessibleNodes->SetLowerThreshold(1.0*moleculeRadius);
+    accessibleNodes->SetUpperThreshold(9e9);
+    accessibleNodes->Update();
+
+    
+    // Write the accessible nodes and edges
+    vtkSmartPointer<vtkUnstructuredGridWriter> nodesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    nodesWriter->SetInputConnection(accessibleNodes->GetOutputPort());
+    nodesWriter->SetFileName((Directory+"/" + BaseFileName+"_accessible_FTM_nodes.vtk").c_str());
+    nodesWriter->Write();
+
+    // save the graph in .nt2 format
+
+}
+
+
+
 vtkIdType segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
         
     // Output the number of descending manifolds
@@ -2028,6 +2149,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
         logger::mainlog << "This module is to be used only with the distance function!" << endl;
         logger::errlog << "This module is to be used only with the distance function!" << endl;
         std::cout << "This module is to be used only with the distance function!" << endl;
+        exit(1);
     }
     
     ttk::Timer VoidSpaceTimer;

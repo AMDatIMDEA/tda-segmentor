@@ -36,9 +36,12 @@ int main(int argc, char ** argv){
     auto periodicGrid = analysis->inputPrecondition(grid,true,true,param.useAllCores);
 
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;
-    
+    vtkSmartPointer<ttkFTMTree> ftmTree;
     if (param.segmentationFlag){
         morseSmaleComplex = analysis->MSC(periodicGrid,param.persistenceThreshold,1.0,true,param.useAllCores);
+    }
+    if (param.ftmTreeFlag){
+        ftmTree = analysis->ftmtree(periodicGrid, param.persistenceThreshold, param.useAllCores); 
     }
 
     for (size_t i = 0; i < param.moduleNames.size(); i++ )
@@ -52,6 +55,8 @@ int main(int argc, char ** argv){
             analysis->persistencecurve(periodicGrid, param.useAllCores);
         } else if (param.moduleNames[i] == "solidsegmentation"){
             analysis->solidSegmentation(morseSmaleComplex);
+        } else if (param.moduleNames[i] == "accessiblegraph"){
+            analysis->accessiblegraph(ftmTree, param.probeRadius, param.useAllCores); 
         }
         
     }

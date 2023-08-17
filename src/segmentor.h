@@ -57,8 +57,8 @@ public:
     void accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores);
     auto solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     void persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
-
-
+    auto ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores);
+    void accessiblegraph(vtkSmartPointer<ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores);
 
     //-------------------------------------------------------------------------------
 
