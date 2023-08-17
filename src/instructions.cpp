@@ -31,11 +31,15 @@ void printInstructions()
     
     
     cout << "\nImplemented module names : " << "\n";
-    cout << "                             -module segmentation" << "\n";
-    cout << "                             -module accessiblevoidspace" << "\n";
-    cout << "                             -module voidsegmentation" << "\n";
-    cout << "                             -module solidsegmentation" << "\n";
-    cout << "                             -module persistencecurve" << "\n";
+    cout << "                             -module segmentation           " << "\n";
+    cout << "                             -module accessiblevoidspace    " << "\n";
+    cout << "                             -module voidsegmentation       " << "\n";
+    cout << "                             -module solidsegmentation      " << "\n";
+    cout << "                             -module persistencecurve       " << "\n";
+    cout << "                             -module graph                  " << "\n";
+    cout << "                             -module accessiblevoidgraph    " << "\n";
+    cout << "                             -module accessiblesolidgraph   " << "\n";
+
     
     cout << "\nPossible options for scalar input are : " << "\n";
     cout << "                             -scalar distance" << "\n";
