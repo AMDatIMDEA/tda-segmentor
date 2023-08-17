@@ -1687,13 +1687,18 @@ auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double pe
     topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
 
     // TTK contour tree calculation
-
+    int treetype = 0;
+    if (arrayName == "This is distance grid"){
+        treetype = 1;
+    } else if (arrayName == "Potential Energy"){
+        treetype = 0;
+    }
     vtkSmartPointer<ttkFTMTree> ftmTree = vtkSmartPointer<ttkFTMTree>::New();
-    ftmTree->SetDebugLevel(3);
+    //ftmTree->SetDebugLevel(3);
     ftmTree->SetUseAllCores(useAllCores);
     ftmTree->SetInputConnection(topologicalSimplification->GetOutputPort());
     ftmTree->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
-    ftmTree->SetTreeType(1);
+    ftmTree->SetTreeType(treetype);
     ftmTree->SetWithSegmentation(true);
     ftmTree->Update();
 
@@ -1717,37 +1722,107 @@ auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double pe
 
 
 
-void segmentor::accessiblegraph(vtkSmartPointer <ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores){
+void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores){
     
-    logger::mainlog << "\n\nSegmentor: Accessible graph module" << "\n" << flush;
+    logger::mainlog << "\n\nSegmentor: Accessible Void graph module" << "\n" << flush;
+    logger::mainlog << "Molecule Radius : " << moleculeRadius << endl << flush;
+    
+    double lowerThreshold = 0.0, upperThreshold = 0.0;
+    std::string fileNameNodes = ""; std::string fileNameEdges = "";
+    if (arrayName == "This is distance grid"){
+        lowerThreshold = 1.0*moleculeRadius;
+        upperThreshold = 9e9;
+        fileNameNodes = Directory+"/" + BaseFileName+"_accessibleVoid_rad_" + to_string(moleculeRadius) + "_FTM_nodes.vtk";
+        fileNameEdges = Directory+"/" + BaseFileName+"_accessibleVoid_rad_" + to_string(moleculeRadius) + "_FTM_edges.vtk";
+    } else if (arrayName == "Potential Energy"){
+        upperThreshold = 0.0;
+        lowerThreshold = -9e9;
+        fileNameNodes = Directory+"/" + BaseFileName+"_accessibleVoid_FTM_nodes.vtk";
+        fileNameEdges = Directory+"/" + BaseFileName+"_accessibleVoid_FTM_edges.vtk";
+    }
+    
+    // Get the nodes of the tree that belongs to the accessible space
+    vtkSmartPointer<vtkThresholdPoints> accessibleNodes = vtkSmartPointer<vtkThresholdPoints>::New();
+    accessibleNodes->SetInputConnection(ftmTree->GetOutputPort(0));
+    accessibleNodes->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleNodes->ThresholdBetween(lowerThreshold,upperThreshold);
+    accessibleNodes->Update();
 
-    if  (arrayName != "This is distance grid"){
+    vtkSmartPointer<vtkThreshold> accessibleEdges = vtkSmartPointer<vtkThreshold>::New();
+    accessibleEdges->SetInputConnection(ftmTree->GetOutputPort(1));
+    accessibleEdges->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleEdges->ThresholdBetween(lowerThreshold,upperThreshold);
+    accessibleEdges->Update();
+
+    
+    // Write the accessible nodes and edges
+    vtkSmartPointer<vtkPolyDataWriter> nodesWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
+    nodesWriter->SetInputConnection(accessibleNodes->GetOutputPort(0));
+    nodesWriter->SetFileName((fileNameNodes).c_str());
+    nodesWriter->Write();
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> edgesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    edgesWriter->SetInputConnection(accessibleEdges->GetOutputPort(0));
+    edgesWriter->SetFileName((fileNameEdges).c_str());
+    edgesWriter->Write();
+
+    // save the graph in .nt2 format
+
+}
+
+
+
+void segmentor::accessibleSolidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, bool useAllCores){
+    
+    logger::mainlog << "\n\nSegmentor: Accessible Solid graph module" << "\n" << flush;
+    
+    double lowerThreshold = 0.0, upperThreshold = 0.0;
+    std::string fileNameNodes = ""; std::string fileNameEdges = "";
+    if (arrayName == "This is distance grid"){
+        lowerThreshold = -9e9;
+        upperThreshold = 0.0;
+        fileNameNodes = Directory+"/" + BaseFileName+"_accessibleSolid" + "_FTM_nodes.vtk";
+        fileNameEdges = Directory+"/" + BaseFileName+"_accessibleSolid" + "_FTM_edges.vtk";
+        
+    } else {
         logger::mainlog << "This module is to be used only with the distance function!" << endl;
         logger::errlog << "This module is to be used only with the distance function!" << endl;
         std::cout << "This module is to be used only with the distance function!" << endl;
         exit(1);
     }
-
-    logger::mainlog << "Molecule Radius : " << moleculeRadius << endl << flush; 
+    
+    // updating tree type to get leaves of minima-saddle tree as this corresponds
+    // to the solid in the israeli structures.
+    ftmTree->SetTreeType(0);
+    ftmTree->Update();
     
     // Get the nodes of the tree that belongs to the accessible space
-    vtkSmartPointer<vtkThreshold> accessibleNodes = vtkSmartPointer<vtkThreshold>::New();
+    vtkSmartPointer<vtkThresholdPoints> accessibleNodes = vtkSmartPointer<vtkThresholdPoints>::New();
     accessibleNodes->SetInputConnection(ftmTree->GetOutputPort(0));
-    accessibleNodes->SetInputArrayToProcess(0,0,0,0,"Scalar");
-    accessibleNodes->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    accessibleNodes->SetLowerThreshold(1.0*moleculeRadius);
-    accessibleNodes->SetUpperThreshold(9e9);
+    accessibleNodes->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleNodes->ThresholdBetween(lowerThreshold,upperThreshold);
     accessibleNodes->Update();
+
+    vtkSmartPointer<vtkThreshold> accessibleEdges = vtkSmartPointer<vtkThreshold>::New();
+    accessibleEdges->SetInputConnection(ftmTree->GetOutputPort(1));
+    accessibleEdges->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleEdges->ThresholdBetween(lowerThreshold,upperThreshold);
+    accessibleEdges->Update();
 
     
     // Write the accessible nodes and edges
-    vtkSmartPointer<vtkUnstructuredGridWriter> nodesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    nodesWriter->SetInputConnection(accessibleNodes->GetOutputPort());
-    nodesWriter->SetFileName((Directory+"/" + BaseFileName+"_accessible_FTM_nodes.vtk").c_str());
+    vtkSmartPointer<vtkPolyDataWriter> nodesWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
+    nodesWriter->SetInputConnection(accessibleNodes->GetOutputPort(0));
+    nodesWriter->SetFileName((fileNameNodes).c_str());
     nodesWriter->Write();
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> edgesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    edgesWriter->SetInputConnection(accessibleEdges->GetOutputPort(0));
+    edgesWriter->SetFileName((fileNameEdges).c_str());
+    edgesWriter->Write();
 
     // save the graph in .nt2 format
-
+    
 }
 
 

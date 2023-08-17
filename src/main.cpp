@@ -55,8 +55,10 @@ int main(int argc, char ** argv){
             analysis->persistencecurve(periodicGrid, param.useAllCores);
         } else if (param.moduleNames[i] == "solidsegmentation"){
             analysis->solidSegmentation(morseSmaleComplex);
-        } else if (param.moduleNames[i] == "accessiblegraph"){
-            analysis->accessiblegraph(ftmTree, param.probeRadius, param.useAllCores); 
+        } else if (param.moduleNames[i] == "accessiblevoidgraph"){
+            analysis->accessibleVoidGraph(ftmTree, param.probeRadius, param.useAllCores);
+        } else if (param.moduleNames[i] == "accessiblesolidgraph") {
+            analysis->accessibleSolidGraph(ftmTree, param.useAllCores); 
         }
         
     }

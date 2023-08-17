@@ -50,7 +50,7 @@ public:
 
     void getGridResolutionFromCubeFile(double gridres[3]);
     void getArrayNameFromCubeFile(std::string &arrayname);
-    auto readInputFile(bool writeGridFile = false);
+    auto readInputFile(bool writeGridFile = true);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
     auto MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     void voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores);
@@ -58,7 +58,9 @@ public:
     auto solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     void persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
     auto ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores);
-    void accessiblegraph(vtkSmartPointer<ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores);
+    void accessibleVoidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores);
+    void accessibleSolidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, bool useAllCores);
+
 
     //-------------------------------------------------------------------------------
 

@@ -156,7 +156,8 @@ void parameters::parser(int nargs, char **args)
         }
 
         if (moduleNames[i] == "graph" || 
-            moduleNames[i] == "accessiblegraph")
+            moduleNames[i] == "accessiblevoidgraph" ||
+            moduleNames[i] == "accessiblesolidgraph")
         {
             ftmTreeFlag = true;
         }
@@ -181,7 +182,8 @@ void parameters::writetoLogFile() {
             and moduleNames[i] != "solidsegmentation"
             and moduleNames[i] != "persistencecurve"
             and moduleNames[i] != "graph"
-            and moduleNames[i] != "accessiblegraph")
+            and moduleNames[i] != "accessiblevoidgraph"
+            and moduleNames[i] != "accessiblesolidgraph")
         {
             logger::mainlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
             logger::errlog << "Module " << (i+1) << ": "<< moduleNames[i] << " is not implemented!!" << endl;
@@ -201,7 +203,7 @@ void parameters::writetoLogFile() {
             }
             
         }
-        if (moduleNames[i] == "accessiblevoidspace" || moduleNames[i] == "accessiblegraph"){
+        if (moduleNames[i] == "accessiblevoidspace" || moduleNames[i] == "accessiblevoidgraph"){
             if (persistenceThreshold == 0.0)
             {
                 logger::mainlog << "Persistence Threshold is not given and will be chosen automatically!" << endl;
