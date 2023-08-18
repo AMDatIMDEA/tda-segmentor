@@ -20,6 +20,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <vtkFieldData.h>
 #include <vtkPointData.h>
 #include <vtkCellData.h>
+#include <vtkCellIterator.h>
 #include <vtkThreshold.h>
 #include <vtkPointSet.h>
 #include <vtkImageData.h>

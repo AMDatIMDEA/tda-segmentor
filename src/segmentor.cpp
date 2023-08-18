@@ -940,7 +940,7 @@ auto segmentor::readInputFile(bool writeGridFile)
     logger::mainlog << "Number of points in the grid        : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
     logger::mainlog << "Volume of the unit cell             : "  << volume << " (A^o)^3" << endl;
     
-    
+    Grid = imageData;
     double elapsedTime = readerTime.getElapsedTime();
     logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
     return imageData;
@@ -1634,7 +1634,7 @@ auto segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
 auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores)
 {
     
-    logger::mainlog << "\n\nSegmentor: Graph representation module" << "\n" << flush;
+    logger::mainlog << "\n\nSegmentor: FTM tree module" << "\n" << flush;
     
     ttk::Timer graphTimer;
     //Persistence Diagram of the data
@@ -1715,7 +1715,10 @@ auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double pe
     narcsWriter->SetInputConnection(ftmTree->GetOutputPort(1));
     narcsWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs.vtk").c_str());
     narcsWriter->Write();
-
+    
+    double totalTime =  graphTimer.getElapsedTime();
+    logger::mainlog << "Total time elapsed in the ftm tree module : " << totalTime << "(s)" << endl;
+    
     return ftmTree;
 
 }
@@ -1726,6 +1729,8 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
     
     logger::mainlog << "\n\nSegmentor: Accessible Void graph module" << "\n" << flush;
     logger::mainlog << "Molecule Radius : " << moleculeRadius << endl << flush;
+    
+    ttk::Timer accessibleGraphTimer;
     
     double lowerThreshold = 0.0, upperThreshold = 0.0;
     std::string fileNameNodes = ""; std::string fileNameEdges = "";
@@ -1741,33 +1746,89 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
         fileNameEdges = Directory+"/" + BaseFileName+"_accessibleVoid_FTM_edges.vtk";
     }
     
-    // Get the nodes of the tree that belongs to the accessible space
-    vtkSmartPointer<vtkThresholdPoints> accessibleNodes = vtkSmartPointer<vtkThresholdPoints>::New();
-    accessibleNodes->SetInputConnection(ftmTree->GetOutputPort(0));
-    accessibleNodes->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleNodes->ThresholdBetween(lowerThreshold,upperThreshold);
-    accessibleNodes->Update();
+    vtkSmartPointer<vtkThreshold> accessibleGraph = vtkSmartPointer<vtkThreshold>::New();
+    accessibleGraph->SetInputConnection(ftmTree->GetOutputPort(1));
+    accessibleGraph->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleGraph->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    accessibleGraph->SetLowerThreshold(lowerThreshold);
+    accessibleGraph->SetUpperThreshold(upperThreshold);
+    accessibleGraph->Update();
 
-    vtkSmartPointer<vtkThreshold> accessibleEdges = vtkSmartPointer<vtkThreshold>::New();
-    accessibleEdges->SetInputConnection(ftmTree->GetOutputPort(1));
-    accessibleEdges->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleEdges->ThresholdBetween(lowerThreshold,upperThreshold);
-    accessibleEdges->Update();
+    vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    graphWriter->SetInputConnection(accessibleGraph->GetOutputPort(0));
+    graphWriter->SetFileName((fileNameEdges).c_str());
+    graphWriter->Write();
 
     
-    // Write the accessible nodes and edges
-    vtkSmartPointer<vtkPolyDataWriter> nodesWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    nodesWriter->SetInputConnection(accessibleNodes->GetOutputPort(0));
-    nodesWriter->SetFileName((fileNameNodes).c_str());
-    nodesWriter->Write();
-    
-    vtkSmartPointer<vtkUnstructuredGridWriter> edgesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    edgesWriter->SetInputConnection(accessibleEdges->GetOutputPort(0));
-    edgesWriter->SetFileName((fileNameEdges).c_str());
-    edgesWriter->Write();
-
     // save the graph in .nt2 format
+    ofstream graphFile;
+    std::string graphFileName = Directory + "/" + BaseFileName + "-voidGraph" + ".nt2";
+    graphFile.open((graphFileName).c_str());
+    assert(graphFile.is_open());
+    
+    // Dataset for the graph
+    vtkSmartPointer<vtkUnstructuredGrid> ugrid = accessibleGraph->GetOutput();
+    // We store all the vertices
+    graphFile << "Nodes: " << "\n";
+    for (size_t i = 0; i < ugrid->GetNumberOfPoints(); i++){
+        
+        double coords[3];
+        ugrid->GetPoint(i,coords);
+        graphFile << i << " " << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
+    }
+    
+    
+    vtkIdType cellDims[3];
+    Grid->GetDimensions(cellDims);
+    double boxLength[3];
+    for (size_t i = 0; i < 3; i++){
+        boxLength[i] = GridResolution[i] * (cellDims[i]-1);
+    }
 
+    
+    // Next we store all the edges
+    graphFile << "Edges: " << "\n";
+    vtkCellIterator *it = ugrid->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             ugrid->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             int periodicity[3] = {0,0,0};
+             double dp[3];
+             dp[0] = p2[0] - p1[0];
+             dp[1] = p2[1] - p1[0];
+             dp[2] = p2[2] - p1[2];
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
+                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    graphFile.close();
+    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
+    double totalTime =  accessibleGraphTimer.getElapsedTime();
+    logger::mainlog << "Total time elapsed in the accessible graph module : " << totalTime << "(s)" << endl;
+    
 }
 
 
@@ -1775,6 +1836,7 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
 void segmentor::accessibleSolidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, bool useAllCores){
     
     logger::mainlog << "\n\nSegmentor: Accessible Solid graph module" << "\n" << flush;
+    ttk::Timer accessibleGraphTimer;
     
     double lowerThreshold = 0.0, upperThreshold = 0.0;
     std::string fileNameNodes = ""; std::string fileNameEdges = "";
@@ -1796,32 +1858,88 @@ void segmentor::accessibleSolidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, bool 
     ftmTree->SetTreeType(0);
     ftmTree->Update();
     
-    // Get the nodes of the tree that belongs to the accessible space
-    vtkSmartPointer<vtkThresholdPoints> accessibleNodes = vtkSmartPointer<vtkThresholdPoints>::New();
-    accessibleNodes->SetInputConnection(ftmTree->GetOutputPort(0));
-    accessibleNodes->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleNodes->ThresholdBetween(lowerThreshold,upperThreshold);
-    accessibleNodes->Update();
-
-    vtkSmartPointer<vtkThreshold> accessibleEdges = vtkSmartPointer<vtkThreshold>::New();
-    accessibleEdges->SetInputConnection(ftmTree->GetOutputPort(1));
-    accessibleEdges->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleEdges->ThresholdBetween(lowerThreshold,upperThreshold);
-    accessibleEdges->Update();
+    vtkSmartPointer<vtkThreshold> accessibleGraph = vtkSmartPointer<vtkThreshold>::New();
+    accessibleGraph->SetInputConnection(ftmTree->GetOutputPort(1));
+    accessibleGraph->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleGraph->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    accessibleGraph->SetLowerThreshold(lowerThreshold);
+    accessibleGraph->SetUpperThreshold(upperThreshold);
+    accessibleGraph->Update();
 
     
-    // Write the accessible nodes and edges
-    vtkSmartPointer<vtkPolyDataWriter> nodesWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-    nodesWriter->SetInputConnection(accessibleNodes->GetOutputPort(0));
-    nodesWriter->SetFileName((fileNameNodes).c_str());
-    nodesWriter->Write();
+    vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    graphWriter->SetInputConnection(accessibleGraph->GetOutputPort(0));
+    graphWriter->SetFileName((fileNameEdges).c_str());
+    graphWriter->Write();
     
-    vtkSmartPointer<vtkUnstructuredGridWriter> edgesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    edgesWriter->SetInputConnection(accessibleEdges->GetOutputPort(0));
-    edgesWriter->SetFileName((fileNameEdges).c_str());
-    edgesWriter->Write();
-
     // save the graph in .nt2 format
+    ofstream graphFile;
+    std::string graphFileName = Directory + "/" + BaseFileName + "-voidGraph" + ".nt2";
+    graphFile.open((graphFileName).c_str());
+    assert(graphFile.is_open());
+    
+    // Dataset for the graph
+    vtkSmartPointer<vtkUnstructuredGrid> ugrid = accessibleGraph->GetOutput();
+    // We store all the vertices
+    graphFile << "Nodes: " << "\n";
+    for (size_t i = 0; i < ugrid->GetNumberOfPoints(); i++){
+        
+        double coords[3];
+        ugrid->GetPoint(i,coords);
+        graphFile << i << " " << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
+    }
+    
+    
+    vtkIdType cellDims[3];
+    Grid->GetDimensions(cellDims);
+    double boxLength[3];
+    for (size_t i = 0; i < 3; i++){
+        boxLength[i] = GridResolution[i] * (cellDims[i]-1);
+    }
+
+    
+    // Next we store all the edges
+    graphFile << "Edges: " << "\n";
+    vtkCellIterator *it = ugrid->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             ugrid->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             int periodicity[3] = {0,0,0};
+             double dp[3];
+             dp[0] = p2[0] - p1[0];
+             dp[1] = p2[1] - p1[0];
+             dp[2] = p2[2] - p1[2];
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
+                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    graphFile.close();
+    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
+    double totalTime =  accessibleGraphTimer.getElapsedTime();
+    logger::mainlog << "Total time elapsed in the accessible graph module : " << totalTime << "(s)" << endl;
     
 }
 
