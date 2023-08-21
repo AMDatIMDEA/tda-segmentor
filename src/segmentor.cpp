@@ -1800,10 +1800,9 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
              ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
              
              int periodicity[3] = {0,0,0};
-             double dp[3];
-             dp[0] = p2[0] - p1[0];
-             dp[1] = p2[1] - p1[0];
-             dp[2] = p2[2] - p1[2];
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = p2[i] - p1[i];
+             }
              
              for (size_t i = 0; i < 3 ; i++){
                  if ( abs(dp[i]) > 0.5 * boxLength[i] )
