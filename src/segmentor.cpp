@@ -38,6 +38,14 @@ segmentor::segmentor(const parameters &p){
         if( system( com.str().c_str() ) != 0)
             std::cout << "\n Unable to remove directory";
     }
+    
+    for (size_t i = 0; i < 3; i++){
+        for (size_t j = 0; j < 3; j++){
+            GridResolution[i][j] = 0.0;
+            ucVectors[i][j] = 0.0;
+            invUCVectors[i][j] = 0.0;
+        }
+    }
 
 }
 
@@ -894,8 +902,10 @@ auto segmentor::readInputFile(bool writeGridFile)
         cubeReader->SetFileName(fileName.c_str());
         cubeReader->Update();
         imageData = cubeReader->GetGridOutput();
-        getGridResolutionFromCubeFile(GridResolution);
-        imageData->SetSpacing(GridResolution);
+        getGridResolutionFromCubeFile();
+        vtkIdType cellDims[3];
+        imageData->GetDimensions(cellDims);
+        imageData->SetSpacing(1.0/(cellDims[0]-1), 1.0/(cellDims[1]-1), 1.0/(cellDims[2]-1));
         if (arrayName.empty()) getArrayNameFromCubeFile(arrayName);
         logger::mainlog << "Array that is going to be used for TDA analysis: " << arrayName << endl;
         
@@ -905,8 +915,11 @@ auto segmentor::readInputFile(bool writeGridFile)
         dataReader->SetFileName((fileName).c_str());
         dataReader->Update();
         imageData = dataReader->GetOutput();
-        imageData->GetSpacing(GridResolution);
-        
+        double imageGridRes[3];
+        imageData->GetSpacing(imageGridRes);
+        GridResolution[0][0] = imageGridRes[0];
+        GridResolution[1][1] = imageGridRes[1];
+        GridResolution[2][2] = imageGridRes[2];
         if (arrayName.empty()) {
             char * name = imageData->GetPointData()->GetAbstractArray(0)->GetName();
             arrayName = name;
@@ -920,26 +933,64 @@ auto segmentor::readInputFile(bool writeGridFile)
         exit(0);
     }
     
-    if (writeGridFile == true)
-    {
-        //VTK tool to write image data files
-        vtkSmartPointer<vtkXMLImageDataWriter> imageWriter = vtkSmartPointer<vtkXMLImageDataWriter>::New();
-        imageWriter->SetInputData(imageData);
-        imageWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vti").c_str());
-        imageWriter->Write();
-    }
- 
     vtkIdType cellDims[3];
     imageData->GetDimensions(cellDims);
+    nx = cellDims[0]; ny = cellDims[1]; nz = cellDims[2];
+    
+    defineUnitCellVectors();
     
     vtkIdType numberOfCells = imageData->GetNumberOfCells();
-    double unitCellVolume = GridResolution[0] * GridResolution[1] * GridResolution[2];
+    double unitCellVolume = determinant(GridResolution);
     volume = unitCellVolume * numberOfCells;
     
-    logger::mainlog << "Grid Resolution (x,y,z)             : (" << GridResolution[0] << ", " << GridResolution[1] << ", " << GridResolution[2] << ")\n";
+    logger::mainlog << "Grid Vector (X)             : (" << GridResolution[0][0] << ", " << GridResolution[1][0] << ", " << GridResolution[2][0] << ")\n";
+    logger::mainlog << "Grid Vector (Y)             : (" << GridResolution[0][1] << ", " << GridResolution[1][1] << ", " << GridResolution[2][1] << ")\n";
+    logger::mainlog << "Grid Vector (Z)             : (" << GridResolution[0][2] << ", " << GridResolution[1][2] << ", " << GridResolution[2][2] << ")\n";
     logger::mainlog << "Number of points in the grid        : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
     logger::mainlog << "Volume of the unit cell             : "  << volume << " (A^o)^3" << endl;
+    logger::mainlog << "Unit Cell Vector a :   " << ucVectors[0][0] << "    " << ucVectors[1][0] << "    " << ucVectors[2][0] << "\n";
+    logger::mainlog << "Unit Cell Vector b :   " << ucVectors[0][1] << "    " << ucVectors[1][1] << "    " << ucVectors[2][1] << "\n";
+    logger::mainlog << "Unit Cell Vector c :   " << ucVectors[0][2] << "    " << ucVectors[1][2] << "    " << ucVectors[2][2] << "\n";
+
     
+    // Store all the locations of the grid points for a general triclinic lattice.
+    double x = 0.0, y = 0.0, z = 0.0;
+    for (unsigned int k = 0; k < cellDims[2]; k++){
+        for (unsigned int j = 0; j < cellDims[1]; j++){
+            for (unsigned int i = 0; i < cellDims[0]; i++){
+                
+              x = GridResolution[0][0]*i + GridResolution[0][1]*j + GridResolution[0][2] * k;
+              y = GridResolution[1][0]*i + GridResolution[1][1]*j + GridResolution[1][2] * k;
+              z = GridResolution[2][0]*i + GridResolution[2][1]*j + GridResolution[2][2] * k;
+              gridPointsXYZ->InsertNextPoint(x, y, z);
+          }
+        }
+      }
+
+    
+    if (writeGridFile == true)
+    {
+        vtkNew<vtkDoubleArray> pointValues;
+        pointValues->SetNumberOfComponents(1);
+        pointValues->SetNumberOfTuples(nx*ny*nz);
+        
+        for (size_t i = 0; i < (nx*ny*nz); ++i)
+        {
+          pointValues->SetValue(i, imageData->GetPointData()->GetArray(arrayName.c_str())->GetVariantValue(i).ToDouble());
+        }
+        vtkNew<vtkStructuredGrid> structuredGrid;
+        structuredGrid->SetDimensions(static_cast<int>(nx), static_cast<int>(ny),
+                                      static_cast<int>(nz));
+        structuredGrid->SetPoints(gridPointsXYZ);
+        structuredGrid->GetPointData()->SetScalars(pointValues);
+
+       vtkNew<vtkStructuredGridWriter> strucGridWriter;
+       strucGridWriter->SetInputData(structuredGrid);
+       strucGridWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vtk").c_str());
+       strucGridWriter->Write();
+        
+    }
+ 
     Grid = imageData;
     double elapsedTime = readerTime.getElapsedTime();
     logger::mainlog << "Time elapsed in the reader module: " << elapsedTime << "(s)" << endl;
@@ -949,13 +1000,12 @@ auto segmentor::readInputFile(bool writeGridFile)
 
 
 
-void segmentor::getGridResolutionFromCubeFile(double gridRes[3]) {
+void segmentor::getGridResolutionFromCubeFile() {
     
     ifstream inputFile;
-    double gridResX[3], gridResY[3], gridResZ[3];
     
     inputFile.open(fileName);
-        
+    int nx, ny, nz;
     if (inputFile.is_open())
     {
             
@@ -967,22 +1017,22 @@ void segmentor::getGridResolutionFromCubeFile(double gridRes[3]) {
             if (lineNumber == 3)
             {
                 stringstream ss(line);
-                int nx; ss >> nx;
-                ss >> gridResX[0]; ss >> gridResX[1]; ss >> gridResX[2];
+                ss >> nx;
+                ss >> GridResolution[0][0]; ss >> GridResolution[1][0]; ss >> GridResolution[2][0];
             }
                 
             if (lineNumber == 4)
             {
                 stringstream ss(line);
-                int ny; ss >> ny;
-                ss >> gridResY[0]; ss >> gridResY[1]; ss >> gridResY[2];
+                ss >> ny;
+                ss >> GridResolution[0][1]; ss >> GridResolution[1][1]; ss >> GridResolution[2][1];
             }
                 
             if (lineNumber == 5)
             {
                 stringstream ss(line);
-                int nz; ss >> nz;
-                ss >> gridResZ[0]; ss >> gridResZ[1]; ss >> gridResZ[2];
+                ss >> nz;
+                ss >> GridResolution[0][2]; ss >> GridResolution[1][2]; ss >> GridResolution[2][2];
             }
                 
             lineNumber++;
@@ -991,18 +1041,51 @@ void segmentor::getGridResolutionFromCubeFile(double gridRes[3]) {
     }
         
     inputFile.close();
-    logger::mainlog << "grid Resolution X :   " << gridResX[0] << "    " << gridResX[1] << "    " << gridResX[2] << "\n";
-    logger::mainlog << "grid Resolution Y :   " << gridResY[0] << "    " << gridResY[1] << "    " << gridResY[2] << "\n";
-    logger::mainlog << "grid Resolution Z :   " << gridResZ[0] << "    " << gridResZ[1] << "    " << gridResZ[2] << "\n";
-        
-    gridRes[0] = gridResX[0];
-    gridRes[1] = gridResY[1];
-    gridRes[2] = gridResZ[2];
     
 }
 
 
 
+
+void segmentor::defineUnitCellVectors(){
+    
+    // Unit vector matrix of the unit cell
+    ucVectors[0][0] = GridResolution[0][0]*(nx-1); ucVectors[1][0] = GridResolution[1][0]*(nx-1); ucVectors[2][0] = GridResolution[2][0]*(nx-1);
+    ucVectors[0][1] = GridResolution[0][1]*(ny-1); ucVectors[1][1] = GridResolution[1][1]*(ny-1);; ucVectors[2][1] = GridResolution[2][1]*(ny-1);
+    ucVectors[0][2] = GridResolution[0][2]*(nz-1); ucVectors[1][2] = GridResolution[1][2]*(nz-1); ucVectors[2][2] = GridResolution[2][2]*(nz-1);
+    
+
+    double D =  determinant(ucVectors);
+    
+    if (abs(D) < 1e-10){
+        logger::mainlog << "Value of determinant is really small!" << endl;
+        logger::errlog << "Value of determinant is really small!" << endl;
+    }
+    
+    double invDet = 1/D;
+    // Inverse unit cell matrix from abc to xyz
+    invUCVectors[0][0] = invDet*   (ucVectors[2][2]*ucVectors[1][1]-ucVectors[2][1]*ucVectors[1][2]);
+    invUCVectors[0][1] = invDet*-1*(ucVectors[2][2]*ucVectors[0][1]-ucVectors[2][1]*ucVectors[0][2]);
+    invUCVectors[0][2] = invDet*   (ucVectors[1][2]*ucVectors[0][1]-ucVectors[1][1]*ucVectors[0][2]);
+    invUCVectors[1][0] = invDet*-1*(ucVectors[2][2]*ucVectors[1][0]-ucVectors[2][0]*ucVectors[1][2]);
+    invUCVectors[1][1] = invDet*   (ucVectors[2][2]*ucVectors[0][0]-ucVectors[2][0]*ucVectors[0][2]);
+    invUCVectors[1][2] = invDet*-1*(ucVectors[1][2]*ucVectors[0][0]-ucVectors[1][0]*ucVectors[0][2]);
+    invUCVectors[2][0] = invDet*   (ucVectors[2][1]*ucVectors[1][0]-ucVectors[2][0]*ucVectors[1][1]);
+    invUCVectors[2][1] = invDet*-1*(ucVectors[2][1]*ucVectors[0][0]-ucVectors[2][0]*ucVectors[0][1]);
+    invUCVectors[2][2] = invDet*   (ucVectors[1][1]*ucVectors[0][0]-ucVectors[1][0]*ucVectors[0][1]);
+    
+    
+}
+
+double segmentor::determinant(double matrix[3][3]){
+    
+    double determinant =  matrix[0][0]*(matrix[2][2]*matrix[1][1] - matrix[2][1]*matrix[1][2])
+                        - matrix[1][0]*(matrix[2][2]*matrix[0][1] - matrix[2][1]*matrix[0][2])
+                        + matrix[2][0]*(matrix[1][2]*matrix[0][1] - matrix[1][1]*matrix[0][2]);
+    
+    return determinant;
+    
+}
 
 void segmentor::getArrayNameFromCubeFile(std::string &nameOfArray){
     
@@ -1559,19 +1642,70 @@ auto segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
 
     if (writeOutputs)
     {
-        //Critical points file
-        vtkSmartPointer<vtkPolyDataWriter> criticalPointsWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-        criticalPointsWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
-        criticalPointsWriter->SetFileName((Directory+"/criticalPoints.vtk").c_str());
-        criticalPointsWriter->SetFileName((Directory+"/" + BaseFileName+"_CriticalPoints.vtk").c_str());
-        criticalPointsWriter->Write();
-        auto criticalPointsDataSet = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(0));
-        //Segmentation file
-        vtkSmartPointer<vtkDataSetWriter> segmentationWriter = vtkSmartPointer<vtkDataSetWriter>::New();
-        //segmentationWriter->SetInputDataObject(Segmentation);
-        segmentationWriter->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
-        segmentationWriter->SetFileName((Directory+"/" + BaseFileName+"_Segmentation.vtk").c_str());
+        // We write the critical points for a triclinic lattice:
+        auto segmentationDataSet = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(3));
+        size_t numberOfArrays = segmentationDataSet->GetPointData()->GetNumberOfArrays();
+        segmentation->SetDimensions((int) nx, (int) ny,(int) nz);
+        segmentation->SetPoints(gridPointsXYZ);
+        
+        for (size_t i = 0; i < numberOfArrays; i++){
+            vtkNew<vtkDoubleArray> pointValues;
+            char * name = segmentationDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
+            pointValues->SetName(name);
+            pointValues->SetNumberOfComponents(1);
+            pointValues->SetNumberOfTuples(nx*ny*nz);
+            vtkIdType numberOfPoints = segmentationDataSet->GetNumberOfPoints();
+            for (size_t j = 0; j < segmentationDataSet->GetNumberOfPoints(); j++){
+                
+                pointValues->SetValue(j, segmentationDataSet->GetPointData()->GetArray(name)->GetVariantValue(j).ToDouble());
+                
+            }
+            
+            segmentation->GetPointData()->AddArray(pointValues);
+        }
+        
+        vtkNew<vtkStructuredGridWriter> segmentationWriter;
+        segmentationWriter->SetInputData(segmentation);
+        segmentationWriter->SetFileName((Directory+"/"+BaseFileName+"_Segmentation.vtk").c_str());
         segmentationWriter->Write();
+        
+        auto criticalPointsDataSet = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(0));
+        numberOfArrays = criticalPointsDataSet->GetPointData()->GetNumberOfArrays();
+        
+        vtkNew<vtkPoints> cPoints;
+        for (size_t i = 0; i < criticalPointsDataSet->GetNumberOfPoints(); i++){
+            double coordABC[3];
+            criticalPointsDataSet->GetPoint(i,coordABC);
+            double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
+            double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
+            double zt = coordABC[2]*ucVectors[2][2];
+            
+            cPoints->InsertNextPoint(xt, yt, zt);
+            
+        }
+        
+        criticalPoints->SetPoints(cPoints);
+        
+        for (size_t i = 0; i < numberOfArrays; i++){
+            vtkNew<vtkDoubleArray> pointValues;
+            char * name = criticalPointsDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
+            pointValues->SetName(name);
+            pointValues->SetNumberOfComponents(1);
+            vtkIdType numberOfPoints = criticalPointsDataSet->GetNumberOfPoints();
+            pointValues->SetNumberOfTuples(numberOfPoints);
+            for (size_t j = 0; j < criticalPointsDataSet->GetNumberOfPoints(); j++){
+                
+                pointValues->SetValue(j, criticalPointsDataSet->GetPointData()->GetArray(name)->GetVariantValue(j).ToDouble());
+                
+            }
+            
+            criticalPoints->GetPointData()->AddArray(pointValues);
+        }
+        
+        vtkSmartPointer<vtkPolyDataWriter> critPointWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
+        critPointWriter->SetInputData(criticalPoints);
+        critPointWriter->SetFileName((Directory+"/" + BaseFileName+"_CriticalPoints.vtk").c_str());
+        critPointWriter->Write();
 
         // //Saddle connectors
         // vtkNew<vtkThreshold> saddleSeparatrices{};
@@ -1706,15 +1840,126 @@ auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double pe
 
 
     //Critical points file
-    vtkSmartPointer<vtkUnstructuredGridWriter> nodesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    nodesWriter->SetInputConnection(ftmTree->GetOutputPort(0));
-    nodesWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_nodes.vtk").c_str());
-    nodesWriter->Write();
+    auto nodesDataSet = vtkDataSet::SafeDownCast(ftmTree->GetOutputDataObject(0));
+    size_t numberOfArrays = nodesDataSet->GetPointData()->GetNumberOfArrays();
+    
+    vtkNew<vtkPoints> cPoints;
+    for (size_t i = 0; i < nodesDataSet->GetNumberOfPoints(); i++){
+        double coordABC[3];
+        nodesDataSet->GetPoint(i,coordABC);
+        double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
+        double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
+        double zt = coordABC[2]*ucVectors[2][2];
+        
+        cPoints->InsertNextPoint(xt, yt, zt);
+        
+    }
+    
+    ftmTreeNodes->SetPoints(cPoints);
+    
+    for (size_t i = 0; i < numberOfArrays; i++){
+        vtkNew<vtkDoubleArray> pointValues;
+        char * name = nodesDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
+        pointValues->SetName(name);
+        pointValues->SetNumberOfComponents(1);
+        vtkIdType numberOfPoints = nodesDataSet->GetNumberOfPoints();
+        pointValues->SetNumberOfTuples(numberOfPoints);
+        for (size_t j = 0; j < nodesDataSet->GetNumberOfPoints(); j++){
+            
+            pointValues->SetValue(j, nodesDataSet->GetPointData()->GetArray(name)->GetVariantValue(j).ToDouble());
+            
+        }
+        
+        ftmTreeNodes->GetPointData()->AddArray(pointValues);
+    }
+    
+    vtkSmartPointer<vtkPolyDataWriter> nodesWriterPoly = vtkSmartPointer<vtkPolyDataWriter>::New();
+    nodesWriterPoly->SetInputData(ftmTreeNodes);
+    nodesWriterPoly->SetFileName((Directory+"/" + BaseFileName+"_FTM_nodes_poly.vtk").c_str());
+    nodesWriterPoly->Write();
+
     //arcs file
+    auto arcsDataSet = vtkDataSet::SafeDownCast(ftmTree->GetOutputDataObject(1));
+    vtkNew<vtkPoints> edgeNodes;
+    for (size_t i = 0; i < arcsDataSet->GetNumberOfPoints(); i++){
+        double coordABC[3];
+        arcsDataSet->GetPoint(i,coordABC);
+        double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
+        double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
+        double zt = coordABC[2]*ucVectors[2][2];
+        
+        edgeNodes->InsertNextPoint(xt, yt, zt);
+        
+    }
+    
+    ftmTreeEdges->SetPoints(edgeNodes);
+    
+    vtkCellIterator *it = arcsDataSet->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+             line->GetPointIds()->SetId(0,pointIds->GetId(0));
+             line->GetPointIds()->SetId(1,pointIds->GetId(1));
+             
+             ftmTreeEdges->InsertNextCell(line->GetCellType(), line->GetPointIds());
+         }
+         
+     }
+    it->Delete();
+    
+    numberOfArrays = arcsDataSet->GetPointData()->GetNumberOfArrays();
+    logger::mainlog << "Number of point arrays: " << numberOfArrays << endl;
+    for (size_t i = 0; i < numberOfArrays; i++){
+        vtkNew<vtkDoubleArray> pointValues;
+        char * name = arcsDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
+        pointValues->SetName(name);
+        pointValues->SetNumberOfComponents(1);
+        vtkIdType numberOfPoints = arcsDataSet->GetNumberOfPoints();
+        pointValues->SetNumberOfTuples(numberOfPoints);
+        for (size_t j = 0; j < arcsDataSet->GetNumberOfPoints(); j++){
+            
+            pointValues->SetValue(j, arcsDataSet->GetPointData()->GetArray(name)->GetVariantValue(j).ToDouble());
+            
+        }
+        
+        ftmTreeEdges->GetPointData()->AddArray(pointValues);
+    }
+    
+    size_t numberOfCellScalars = arcsDataSet->GetCellData()->GetNumberOfArrays();
+    logger::mainlog << "Number of Cell scalars: " << numberOfCellScalars << endl;
+    
+    for (size_t i = 0; i < numberOfCellScalars; i++){
+        vtkNew<vtkDoubleArray> pointValues;
+        char * name = arcsDataSet->GetCellData()->GetAbstractArray((int)i)->GetName();
+        pointValues->SetName(name);
+        pointValues->SetNumberOfComponents(1);
+        vtkIdType numberOfCells = arcsDataSet->GetNumberOfCells();
+        pointValues->SetNumberOfTuples(numberOfCells);
+        for (size_t j = 0; j < arcsDataSet->GetNumberOfCells(); j++){
+            
+            pointValues->SetValue(j, arcsDataSet->GetCellData()->GetArray(name)->GetVariantValue(j).ToDouble());
+            
+        }
+        
+        ftmTreeEdges->GetCellData()->AddArray(pointValues);
+    }
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> ftmtreeEdgesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    ftmtreeEdgesWriter->SetInputData(ftmTreeEdges);
+    ftmtreeEdgesWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs_ugrid.vtk").c_str());
+    ftmtreeEdgesWriter->Write();
+    
+    
+    
     vtkSmartPointer<vtkUnstructuredGridWriter> narcsWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
     narcsWriter->SetInputConnection(ftmTree->GetOutputPort(1));
     narcsWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs.vtk").c_str());
     narcsWriter->Write();
+    
+    
     
     double totalTime =  graphTimer.getElapsedTime();
     logger::mainlog << "Total time elapsed in the ftm tree module : " << totalTime << "(s)" << endl;
@@ -1746,16 +1991,24 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
         fileNameEdges = Directory+"/" + BaseFileName+"_accessibleVoid_FTM_edges.vtk";
     }
     
-    vtkSmartPointer<vtkThreshold> accessibleGraph = vtkSmartPointer<vtkThreshold>::New();
-    accessibleGraph->SetInputConnection(ftmTree->GetOutputPort(1));
-    accessibleGraph->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleGraph->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    accessibleGraph->SetLowerThreshold(lowerThreshold);
-    accessibleGraph->SetUpperThreshold(upperThreshold);
-    accessibleGraph->Update();
+    vtkSmartPointer<vtkThreshold> accessibleGraphABC = vtkSmartPointer<vtkThreshold>::New();
+    accessibleGraphABC->SetInputConnection(ftmTree->GetOutputPort(1));
+    accessibleGraphABC->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleGraphABC->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    accessibleGraphABC->SetLowerThreshold(lowerThreshold);
+    accessibleGraphABC->SetUpperThreshold(upperThreshold);
+    accessibleGraphABC->Update();
 
+    vtkSmartPointer<vtkThreshold> accessibleGraphXYZ = vtkSmartPointer<vtkThreshold>::New();
+    accessibleGraphXYZ->SetInputData(ftmTreeEdges);
+    accessibleGraphXYZ->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
+    accessibleGraphXYZ->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    accessibleGraphXYZ->SetLowerThreshold(lowerThreshold);
+    accessibleGraphXYZ->SetUpperThreshold(upperThreshold);
+    accessibleGraphXYZ->Update();
+    
     vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    graphWriter->SetInputConnection(accessibleGraph->GetOutputPort(0));
+    graphWriter->SetInputConnection(accessibleGraphXYZ->GetOutputPort(0));
     graphWriter->SetFileName((fileNameEdges).c_str());
     graphWriter->Write();
 
@@ -1767,22 +2020,28 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
     assert(graphFile.is_open());
     
     // Dataset for the graph
-    vtkSmartPointer<vtkUnstructuredGrid> ugrid = accessibleGraph->GetOutput();
+    vtkSmartPointer<vtkUnstructuredGrid> ugrid = accessibleGraphABC->GetOutput();
     // We store all the vertices
     graphFile << "Nodes: " << "\n";
     for (size_t i = 0; i < ugrid->GetNumberOfPoints(); i++){
         
-        double coords[3];
-        ugrid->GetPoint(i,coords);
-        graphFile << i << " " << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
+        double coordABC[3];
+        ugrid->GetPoint(i,coordABC);
+        double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
+        double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
+        double zt = coordABC[2]*ucVectors[2][2];
+        
+        graphFile << i << " " << xt << " " << yt << " " << zt << "\n";
     }
     
     
     vtkIdType cellDims[3];
+    double spacing[3];
     Grid->GetDimensions(cellDims);
+    Grid->GetSpacing(spacing);
     double boxLength[3];
     for (size_t i = 0; i < 3; i++){
-        boxLength[i] = GridResolution[i] * (cellDims[i]-1);
+        boxLength[i] = spacing[i] * (cellDims[i]-1);
     }
 
     
@@ -1890,10 +2149,12 @@ void segmentor::accessibleSolidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, bool 
     
     
     vtkIdType cellDims[3];
+    double spacing[3];
     Grid->GetDimensions(cellDims);
+    Grid->GetSpacing(spacing);
     double boxLength[3];
     for (size_t i = 0; i < 3; i++){
-        boxLength[i] = GridResolution[i] * (cellDims[i]-1);
+        boxLength[i] = spacing[i] * (cellDims[i]-1);
     }
 
     
@@ -2024,7 +2285,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     {
         //Find the minimum critical points
         vtkSmartPointer<vtkThresholdPoints> minima = vtkSmartPointer<vtkThresholdPoints>::New();
-        minima->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
+        minima->SetInputData(criticalPoints);
         minima->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
         minima->ThresholdBetween(0,0);
         minima->Update();
@@ -2057,9 +2318,8 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     }
     //Compute cell dimensions of the input file
     //---------------------------------------------------------------------------------------------
-    auto provisionalData = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(3));
     double cellDimensions[6];
-    provisionalData->GetCellBounds(0,cellDimensions);
+    segmentation->GetCellBounds(0,cellDimensions);
     //Cell size of the current dataset
     double cellSize = cellDimensions[1] - cellDimensions[0];
     CellSize = cellSize;
@@ -2068,7 +2328,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
 
     //Segmentation corresponding to the void structure
     vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
-    voidSegmentation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    voidSegmentation->SetInputData(segmentation);
     voidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
     if (arrayName == "This is distance grid"){
         voidSegmentation->ThresholdBetween(0.0,9e9);
@@ -2096,7 +2356,7 @@ void segmentor::voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmal
     
     //Find the 2-saddle critical points
     vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
-    saddles->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
+    saddles->SetInputData(criticalPoints);
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
     
     if (arrayName == "This is distance grid"){
@@ -2353,21 +2613,22 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
     //Compute cell dimensions of the input file
     //---------------------------------------------------------------------------------------------
-    auto provisionalData = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(3));
     double cellDimensions[6];
-    provisionalData->GetCellBounds(0,cellDimensions);
+    segmentation->GetCellBounds(0,cellDimensions);
     //Cell size of the current dataset
     double cellSize = cellDimensions[1] - cellDimensions[0];
     CellSize = cellSize;
+    logger::mainlog << "CellSize = " << CellSize << endl;
     //---------------------------------------------------------------------------------------------
 
     //Volume of each tetrahedron. As we know the volume of an unit cubic cell and each
     //cubic cell is made of 6 tetrahedrons. We set their volume to be a sixth part of the total
-    double unitCellVolume = (pow(GridResolution[0],3))/6.0;
+    
+    double unitCellVolume = determinant(GridResolution)/6.0;
 
     //Triangulate the segmentation to improve precision
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
-    triangulation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    triangulation->SetInputData(segmentation);
     triangulation->Update();
 
     //Segmentation corresponding to the void structure accessible to the void space
@@ -2394,7 +2655,7 @@ void segmentor::accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseS
 
     //Find the 2-saddle critical points
     vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
-    saddles->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
+    saddles->SetInputData(criticalPoints);
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
     saddles->ThresholdBetween(2.0,2.0);
     saddles->Update();
@@ -2597,9 +2858,8 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     
     //Compute cell dimensions
-    auto provisionalData = vtkDataSet::SafeDownCast(morseSmaleComplex->GetOutputDataObject(3));
     double dimensionesCelda[6];
-    provisionalData->GetCellBounds(0,dimensionesCelda);
+    segmentation->GetCellBounds(0,dimensionesCelda);
     //Cell size of the current dataset
     double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
     CellSize = cellSize;
@@ -2607,7 +2867,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     //Segmentation corresponding to the solid structure
     vtkSmartPointer<vtkThresholdPoints> solidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
-    solidSegmentation->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    solidSegmentation->SetInputData(segmentation);
     solidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
     solidSegmentation->ThresholdBetween(-9e10,-1e-10);
     solidSegmentation->Update();
@@ -2628,7 +2888,7 @@ auto segmentor::solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSma
 
     //Find the 1-saddle critical points
     vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
-    saddles->SetInputConnection(morseSmaleComplex->GetOutputPort(0));
+    saddles->SetInputData(criticalPoints);
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
     saddles->ThresholdBetween(1,1);
     saddles->Update();

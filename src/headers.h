@@ -58,6 +58,11 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <vtkTableWriter.h>
 #include <vtksys/SystemTools.hxx>
 #include <vtkImageAppend.h>
+#include <vtkStructuredGrid.h>
+#include <vtkStructuredGridWriter.h>
+#include <vtkLine.h>
+
+
 //-------------------------------------------------------------------------------------------------
 
 

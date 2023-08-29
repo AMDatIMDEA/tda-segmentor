@@ -35,7 +35,16 @@ public:
     //Input grid
     vtkImageData * Grid = vtkImageData::New();
     //Input grid resolution
-    double GridResolution[3];
+    double GridResolution[3][3];
+    double ucVectors[3][3];
+    double invUCVectors[3][3];
+    size_t nx, ny, nz;
+    vtkNew<vtkPoints> gridPointsXYZ;
+    vtkNew<vtkPolyData> criticalPoints;
+    vtkNew<vtkStructuredGrid> segmentation;
+    
+    vtkNew<vtkPolyData> ftmTreeNodes;
+    vtkNew<vtkUnstructuredGrid> ftmTreeEdges;
     //Cell Size(default to zero)
     double CellSize = 0;
     
@@ -47,8 +56,10 @@ public:
 
     vtkIdType getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     vtkIdType getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
+    double    determinant(double matrix[3][3]);
 
-    void getGridResolutionFromCubeFile(double gridres[3]);
+    void getGridResolutionFromCubeFile();
+    void defineUnitCellVectors();
     void getArrayNameFromCubeFile(std::string &arrayname);
     auto readInputFile(bool writeGridFile = true);
     auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
