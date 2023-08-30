@@ -106,7 +106,25 @@ auto segmentor::superCell(vtkSmartPointer<vtkImageData> grid){
     double superCellCreationTime = superCellTimer.getElapsedTime();
     superCellTimer.reStart();
     logger::mainlog << "Time taken for Super Cell creation            : " << superCellCreationTime << endl;
+    
+    // We reinitialize the grid points, nz, ny, nz that now belongs to the super cell
+    nx = cellDimsSuperCell[0]; ny = cellDimsSuperCell[1]; nz = cellDimsSuperCell[2];
+    gridPointsXYZ->Initialize();
+    // Store all the locations of the grid points for a general triclinic lattice.
+    double x = 0.0, y = 0.0, z = 0.0;
+    for (unsigned int k = 0; k < cellDimsSuperCell[2]; k++){
+        for (unsigned int j = 0; j < cellDimsSuperCell[1]; j++){
+            for (unsigned int i = 0; i < cellDimsSuperCell[0]; i++){
+                
+              x = GridResolution[0][0]*i + GridResolution[0][1]*j + GridResolution[0][2] * k;
+              y = GridResolution[1][0]*i + GridResolution[1][1]*j + GridResolution[1][2] * k;
+              z = GridResolution[2][0]*i + GridResolution[2][1]*j + GridResolution[2][2] * k;
+              gridPointsXYZ->InsertNextPoint(x, y, z);
+          }
+        }
+      }
 
+    
     vtkSmartPointer<vtkXMLImageDataWriter> imageWriter = vtkSmartPointer<vtkXMLImageDataWriter>::New();
     imageWriter->SetInputData(appendedImage);
     imageWriter->SetFileName((Directory+"/"+BaseFileName+"_superCellgrid.vti").c_str());
@@ -1113,6 +1131,16 @@ void segmentor::getArrayNameFromCubeFile(std::string &nameOfArray){
 }
 
 
+
+
+void segmentor::abcToxyz (double coordABC[3], double coordXYZ[3]){
+    
+    coordXYZ[0] = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
+    coordXYZ[1] = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
+    coordXYZ[2] = coordABC[2]*ucVectors[2][2];
+    
+    
+}
 /**
  * @brief Set periodic conditions for the input grid and compute a distance field for the points
  * based on their Potential Energy Atom. Set positive distance values for the pore structure and negative
@@ -1911,7 +1939,6 @@ auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double pe
     it->Delete();
     
     numberOfArrays = arcsDataSet->GetPointData()->GetNumberOfArrays();
-    logger::mainlog << "Number of point arrays: " << numberOfArrays << endl;
     for (size_t i = 0; i < numberOfArrays; i++){
         vtkNew<vtkDoubleArray> pointValues;
         char * name = arcsDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
@@ -1929,7 +1956,6 @@ auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double pe
     }
     
     size_t numberOfCellScalars = arcsDataSet->GetCellData()->GetNumberOfArrays();
-    logger::mainlog << "Number of Cell scalars: " << numberOfCellScalars << endl;
     
     for (size_t i = 0; i < numberOfCellScalars; i++){
         vtkNew<vtkDoubleArray> pointValues;
@@ -2086,6 +2112,94 @@ void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double
     logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
     double totalTime =  accessibleGraphTimer.getElapsedTime();
     logger::mainlog << "Total time elapsed in the accessible graph module : " << totalTime << "(s)" << endl;
+    
+    //Create a new graph just for visualization, this shows the nodes outside the periodic box.
+    vtkSmartPointer<vtkUnstructuredGrid> vizGraph = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkNew<vtkPoints> allNodes;
+    vizGraph->SetPoints(allNodes);
+    it = ugrid->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             ugrid->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pxyz1[3], pxyz2[3];
+             abcToxyz(p1, pxyz1);
+             abcToxyz(p2, pxyz2);
+             
+             vtkIdType id1 = allNodes->InsertNextPoint(pxyz1);
+             vtkIdType id2 = allNodes->InsertNextPoint(pxyz2);
+             
+             
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = p2[i] - p1[i];
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             bool periodicityFlag = false;
+             if (periodicity[0] != 0 || periodicity[1] != 0 || periodicity[2] != 0) periodicityFlag = true;
+             
+             double periodicNode1[3], periodicNode2[3];
+             if (periodicityFlag){
+                 
+                 for(size_t i = 0; i < 3; i++){
+                     
+                     periodicNode2[i] = p2[i] + periodicity[i];
+                     periodicNode1[i] = p1[i] - periodicity[i];
+                 }
+                 
+                 double periodicNodeXYZ1[3], periodicNodeXYZ2[3];
+                 abcToxyz(periodicNode1, periodicNodeXYZ1);
+                 abcToxyz(periodicNode2, periodicNodeXYZ2);
+                 vtkIdType id3 = allNodes->InsertNextPoint(periodicNodeXYZ1);
+                 vtkIdType id4 = allNodes->InsertNextPoint(periodicNodeXYZ2);
+                 vtkSmartPointer<vtkLine> imageLine1 = vtkSmartPointer<vtkLine>::New();
+                 imageLine1->GetPointIds()->SetId(0,id1);
+                 imageLine1->GetPointIds()->SetId(1,id4);
+                 vtkSmartPointer<vtkLine> imageLine2 = vtkSmartPointer<vtkLine>::New();
+                 imageLine2->GetPointIds()->SetId(0,id2);
+                 imageLine2->GetPointIds()->SetId(1,id3);
+                 
+                 vizGraph->InsertNextCell(imageLine1->GetCellType(), imageLine1->GetPointIds());
+                 vizGraph->InsertNextCell(imageLine2->GetCellType(), imageLine2->GetPointIds());
+                 
+             } else {
+                 
+                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                 line->GetPointIds()->SetId(0,id1);
+                 line->GetPointIds()->SetId(1,id2);
+                 
+                 vizGraph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+             }
+             
+             
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> vizGraphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    vizGraphWriter->SetInputData(vizGraph);
+    vizGraphWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs_ugrid_viz_graph.vtk").c_str());
+    vizGraphWriter->Write();
+    
     
 }
 

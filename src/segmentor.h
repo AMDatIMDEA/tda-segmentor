@@ -17,7 +17,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
 #include "headers.h"
 #include "logger.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 class segmentor
 {
@@ -57,6 +57,7 @@ public:
     vtkIdType getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     vtkIdType getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
     double    determinant(double matrix[3][3]);
+    void      abcToxyz (double abc[3], double xyz[3]);
 
     void getGridResolutionFromCubeFile();
     void defineUnitCellVectors();
