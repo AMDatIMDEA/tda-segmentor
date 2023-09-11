@@ -71,6 +71,10 @@ MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
 
 persistenceRange = persistenceData.GetRange();
 
+xlimMax = persistenceRange[1];
+if (xlimMax > 100.0) : 
+    xlimMax = 100.0
+
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -88,7 +92,7 @@ plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,persistenceRange[1])
+plt.xlim(1e-5,xlimMax)
 
 outputfilename = DataColumnName2 + ".png"
 outputfilename.replace(" ", "")
@@ -120,6 +124,9 @@ MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
 
 persistenceRange = persistenceData.GetRange();
 
+xlimMax = persistenceRange[1];
+if (xlimMax > 100.0) : 
+    xlimMax = 100.0
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -137,7 +144,7 @@ plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,persistenceRange[1])
+plt.xlim(1e-5,xlimMax)
 
 outputfilename = DataColumnName2 + ".png"
 outputfilename.replace(" ", "")
@@ -167,6 +174,9 @@ MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
 
 persistenceRange = persistenceData.GetRange();
 
+xlimMax = persistenceRange[1];
+if (xlimMax > 100.0) : 
+    xlimMax = 100.0
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -184,7 +194,7 @@ plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,persistenceRange[1])
+plt.xlim(1e-5,xlimMax)
 
 outputfilename = DataColumnName2 + ".png"
 outputfilename.replace(" ", "")
@@ -214,6 +224,9 @@ MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
 
 persistenceRange = persistenceData.GetRange();
 
+xlimMax = persistenceRange[1];
+if (xlimMax > 100.0) : 
+    xlimMax = 100.0
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -231,7 +244,7 @@ plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,persistenceRange[1])
+plt.xlim(1e-5,xlimMax)
 
 outputfilename = DataColumnName2 + ".png"
 outputfilename.replace(" ", "")

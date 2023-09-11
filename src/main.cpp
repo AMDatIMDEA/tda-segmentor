@@ -28,38 +28,37 @@ int main(int argc, char ** argv){
     
     segmentor * analysis = new segmentor(param);
     
-    vtkSmartPointer<vtkImageData> grid = analysis->readInputFile();
+    grid* inputGrid = analysis->readInputFile(param);
     
-    if (param.useSuperCell) grid = analysis->superCell(grid);
+    if (param.useSuperCell) inputGrid->generateSuperCell(); // inputGrid is now updated to a supercell 
     
-    
-    auto periodicGrid = analysis->inputPrecondition(grid,true,true,param.useAllCores);
+    vtkSmartPointer<ttkTriangulationManager> periodicGrid = analysis->generatePeriodicGrid(inputGrid->cubicGrid,true,param.useAllCores);
 
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;
     vtkSmartPointer<ttkFTMTree> ftmTree;
     if (param.segmentationFlag){
-        morseSmaleComplex = analysis->MSC(periodicGrid,param.persistenceThreshold,1.0,true,param.useAllCores);
+         analysis->MSC(periodicGrid,param.persistenceThreshold,1.0,true,param.useAllCores);
     }
-    if (param.ftmTreeFlag){
+    /*if (param.ftmTreeFlag){
         ftmTree = analysis->ftmtree(periodicGrid, param.persistenceThreshold, param.useAllCores); 
-    }
+    }*/
 
     for (size_t i = 0; i < param.moduleNames.size(); i++ )
     {
         if (param.moduleNames[i] == "accessiblevoidspace")
-            analysis->accessibleVoidSpace(morseSmaleComplex,param.probeRadius,param.useAllCores);
+            inputGrid->accessibleVoidSpace(param.probeRadius,param.useAllCores);
         else if (param.moduleNames[i] == "voidsegmentation")
-            analysis->voidSegmentation(morseSmaleComplex,0);
+            inputGrid->voidSegmentation();
         else if (param.moduleNames[i] == "persistencecurve")
         {
             analysis->persistencecurve(periodicGrid, param.useAllCores);
         } else if (param.moduleNames[i] == "solidsegmentation"){
-            analysis->solidSegmentation(morseSmaleComplex);
-        } else if (param.moduleNames[i] == "accessiblevoidgraph"){
-            analysis->accessibleVoidGraph(ftmTree, param.probeRadius, param.useAllCores);
+            inputGrid->solidSegmentation();
+        } /*else if (param.moduleNames[i] == "accessiblevoidgraph"){
+          //  analysis->accessibleVoidGraph(ftmTree, param.probeRadius, param.useAllCores);
         } else if (param.moduleNames[i] == "accessiblesolidgraph") {
             analysis->accessibleSolidGraph(ftmTree, param.useAllCores); 
-        }
+        }*/
         
     }
      

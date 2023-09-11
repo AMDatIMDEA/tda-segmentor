@@ -59,7 +59,11 @@ bool parameters::checkinputfile(){
         std::cout << "Input file check failed - check invocation syntax" << endl;
         return false;
     }
-        
+    
+    std::stringstream str;
+    str << "segmentor-" << basefilename << ".results";
+    Directory = str.str();
+
     return true;
     
 }

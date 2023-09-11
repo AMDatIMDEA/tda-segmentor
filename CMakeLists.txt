@@ -5,10 +5,10 @@ project(tda-segmentor)
 
 
 
-#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk")
-#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk/vtkm")
-#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build")
-#list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ttk/ttk_install/lib/cmake/ttkVTK")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build/lib/cmake/paraview-5.10/vtk/vtkm")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ParaView-v5.10.1/build")
+list(APPEND CMAKE_PREFIX_PATH "/Users/aditya/Programs/ttk/ttk_install/lib/cmake/ttkVTK")
 
 
 
@@ -45,7 +45,7 @@ if (VTK_VERSION VERSION_LESS "8.90.0")
   target_link_libraries(ReadCML PRIVATE ${VTK_LIBRARIES})
 else ()
   # include all components
-  add_executable(tda-segmentor MACOSX_BUNDLE src/main.cpp src/instructions.cpp src/parameters.cpp src/logger.cpp)
+  add_executable(tda-segmentor MACOSX_BUNDLE src/main.cpp src/instructions.cpp src/parameters.cpp src/logger.cpp src/segmentor.cpp src/grid.cpp src/PEgrid.cpp src/distanceGrid.cpp)
   target_link_libraries(tda-segmentor PRIVATE ${VTK_LIBRARIES})
   # vtk_module_autoinit is needed
   vtk_module_autoinit(

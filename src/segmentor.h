@@ -16,8 +16,9 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
 #include <stdio.h>
 #include "headers.h"
 #include "logger.h"
-
-#define DEBUG 0
+#include "distanceGrid.h"
+#include "PEgrid.h"
+#include "grid.h"
 
 class segmentor
 {
@@ -27,82 +28,51 @@ private:
     
     
 public:
-    //Nanoporous Material name
-    string BaseFileName, fileName, extensionName;
-    string arrayName; 
-    //Directory where the results will be store
-    string Directory;
-    //Input grid
-    vtkImageData * Grid = vtkImageData::New();
-    //Input grid resolution
-    double GridResolution[3][3];
-    double ucVectors[3][3];
-    double invUCVectors[3][3];
-    size_t nx, ny, nz;
-    vtkNew<vtkPoints> gridPointsXYZ;
-    vtkNew<vtkPolyData> criticalPoints;
-    vtkNew<vtkStructuredGrid> segmentation;
     
-    vtkNew<vtkPolyData> ftmTreeNodes;
-    vtkNew<vtkUnstructuredGrid> ftmTreeEdges;
-    //Cell Size(default to zero)
-    double CellSize = 0;
-    
-    double volume;
     //Cleaned functions
+    
     segmentor(const parameters &p);
     ~segmentor();
-    auto superCell(vtkSmartPointer<vtkImageData> grid);
+    
+    vtkIdType                                          getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
+    vtkIdType                                          getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
 
-    vtkIdType getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-    vtkIdType getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-    double    determinant(double matrix[3][3]);
-    void      abcToxyz (double abc[3], double xyz[3]);
+    void                                               getGridResolutionFromCubeFile(double gridResolution[3][3]);
+    void                                               getArrayName(std::string &arrayname);
+    void                                               getArrayNameFromCubeFile(std::string &arrayname);
+    void                                               getArrayNameFromVTIFile(std::string &arrayname);
+    grid*                                              readInputFile(const parameters &p, bool writeGridFile = true);
+    
+    
+    // --- The main TTK functions
+    vtkSmartPointer<ttkTriangulationManager>           generatePeriodicGrid(vtkSmartPointer<vtkImageData> grid,bool periodicConditions,
+                                                                            bool useAllCores);
+    void                                               computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
+    
+    void                                               MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold,
+                                                           double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
+    void                                               persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
+    // ----
+    
+    //auto                                               ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores);
+    //void                                               accessibleVoidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores);
+    //void                                               accessibleSolidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, bool useAllCores);
 
-    void getGridResolutionFromCubeFile();
-    void defineUnitCellVectors();
-    void getArrayNameFromCubeFile(std::string &arrayname);
-    auto readInputFile(bool writeGridFile = true);
-    auto inputPrecondition(vtkSmartPointer<vtkImageData> grid, bool changeValues,bool periodicConditions, bool useAllCores);
-    auto MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
-    void voidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex, bool useAllCores);
-    void accessibleVoidSpace(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,double moleculeRadius, bool useAllCores);
-    auto solidSegmentation(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-    void persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
-    auto ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores);
-    void accessibleVoidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores);
-    void accessibleSolidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, bool useAllCores);
-
-
-    //-------------------------------------------------------------------------------
-
-    void eigenField(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
-    void eigenStructure(vtkSmartPointer<vtkImageData> grid, int numberOfEigenFunctions, bool useAllCores);
-    void gridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores);
-    auto inputPrecondition2(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool computeDistanceField, bool writeFile);
-    void oneGridFileCreator(string scalarName, string inputFilePath, double persistencePercentage, bool useAllCores);
-    auto evolutionFile2( vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,vtkSmartPointer<vtkThreshold> previousSolid);
-    void voidSeparatrices(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-    auto stagesEvolution(vector<string> fileNames);
-    auto getIndex(vector<int> v, int K);
-    auto solidGetter(string currentFile);
-    auto saddlesGetter(string currentFile);
-    int findMostCommonValue(vector<int> &inputVector);
-    void energyDiagrams(vtkSmartPointer<vtkImageData> grid, bool useAllCores);
-    void energyDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores);
-    void distanceDiagrams2(vtkSmartPointer<vtkImageData> grid, bool useAllCores);
-    void energyVsDistance(string inputFile, string distanceDirectory, string energyDirectory);
-    auto persistenceMatchings(bool useAllCores);
-    auto persistenceDiagramsWriter(bool useAllCores);
-    auto energyIncluder(vtkSmartPointer<vtkImageData> distanceGrid,string energyFile,double persistenceThreshold, bool useAllCores);
-    auto segmentsShapes(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
-    auto segmentsShapes2(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex,int numberOfEigenFunctions, bool writeSegments,string scalar, bool useAllCores);
-    auto segmentSelection(string inputFile, int numberOfEigenFunctions, bool writeOutputs,bool useAllCores);
-
+    
+    // Variables
+    
+    string                                               BaseFileName, fileName, extensionName;
+    string                                               arrayName, Directory;
+    grid*                                                Grid;
+    bool                                                 isPersistenceDiagramComputed;
+    
+    
+    
+    vtkSmartPointer<ttkMorseSmaleComplex>                theMSC;
+    vtkSmartPointer<ttkPersistenceDiagram>               thePersistenceDiagram;
+    vtkSmartPointer<ttkPersistenceCurve>                 thePersistenceCurve;
 
 };
-
-#include "segmentor.cpp"
 
 
 #endif 

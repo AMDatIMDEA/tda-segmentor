@@ -30,7 +30,7 @@ public:
     
     
     std::vector <std::string>          moduleNames;
-    std::string                        inputfilename, basefilename, extensionname;
+    std::string                        inputfilename, basefilename, extensionname, Directory;
     std::string                        arrayName;
     bool                               useSuperCell;
     bool                               useAllCores;
