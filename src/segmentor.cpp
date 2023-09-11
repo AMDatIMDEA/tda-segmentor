@@ -550,7 +550,6 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     double totalTime = timeTakenForMSC + writeTime;
     logger::mainlog << "Total time elapsed in the Morse Smale Complex module: " << totalTime << "(s)" << endl;
     
-    return theMSC;
     
 }
 
