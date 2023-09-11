@@ -20,31 +20,31 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
 #include "PEgrid.h"
 #include "grid.h"
 
+/*
+ The main analysis class that contains the functions of TTK.
+ 
+ - Grid stores an instance of the grid, which can be either
+   distanceGrid or PEgrid.
+ - theMSC stores the results of the segmentation as a 3D grid, however this is in
+   normalized coordinates of a unit cube. The segmentation results in the
+   actual coordinates of the nanoporous materials is stored in grid->segmentation
+ - thePersistenceDiagram and thePersistenceCurve are variables that stores the diagram
+   and curve respectively which can be reused if necessary for other functions.
+ - If the name of input file is FAU.cube, then BaseFileName = FAU, extensionName = .cube,
+   Directory = segmentor + Basefile + .results.
+ 
+ */
+
 class segmentor
 {
-private:
-    
-
-    
     
 public:
-    
-    //Cleaned functions
-    
+        
     segmentor(const parameters &p);
     ~segmentor();
     
-    vtkIdType                                          getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-    vtkIdType                                          getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex);
-
-    void                                               getGridResolutionFromCubeFile(double gridResolution[3][3]);
-    void                                               getArrayName(std::string &arrayname);
-    void                                               getArrayNameFromCubeFile(std::string &arrayname);
-    void                                               getArrayNameFromVTIFile(std::string &arrayname);
     grid*                                              readInputFile(const parameters &p, bool writeGridFile = true);
-    
-    
-    // --- The main TTK functions
+
     vtkSmartPointer<ttkTriangulationManager>           generatePeriodicGrid(vtkSmartPointer<vtkImageData> grid,bool periodicConditions,
                                                                             bool useAllCores);
     void                                               computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
@@ -59,18 +59,28 @@ public:
     //void                                               accessibleSolidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, bool useAllCores);
 
     
+
+    
+private:
+    
+    vtkIdType                                          getNumberOfDescendingManifolds();
+    vtkIdType                                          getNumberOfAscendingManifolds();
+
+    void                                               getGridResolutionFromCubeFile(double gridResolution[3][3]);
+    void                                               getArrayName(std::string &arrayname);
+    void                                               getArrayNameFromCubeFile(std::string &arrayname);
+    void                                               getArrayNameFromVTIFile(std::string &arrayname);
+    
+    vtkSmartPointer<ttkMorseSmaleComplex>              theMSC;
+    vtkSmartPointer<ttkPersistenceDiagram>             thePersistenceDiagram;
+    vtkSmartPointer<ttkPersistenceCurve>               thePersistenceCurve;
+    
     // Variables
     
-    string                                               BaseFileName, fileName, extensionName;
-    string                                               arrayName, Directory;
-    grid*                                                Grid;
-    bool                                                 isPersistenceDiagramComputed;
-    
-    
-    
-    vtkSmartPointer<ttkMorseSmaleComplex>                theMSC;
-    vtkSmartPointer<ttkPersistenceDiagram>               thePersistenceDiagram;
-    vtkSmartPointer<ttkPersistenceCurve>                 thePersistenceCurve;
+    string                                              BaseFileName, fileName, extensionName;
+    string                                              arrayName, Directory;
+    grid*                                               Grid;
+    bool                                                isPersistenceDiagramComputed;
 
 };
 

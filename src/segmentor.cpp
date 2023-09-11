@@ -4,10 +4,10 @@ TDA-Segmentor    A segmentation tool for porous structures using the topology
                  toolkit (https://topology-tool-kit.github.io/)
 
 Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
-                 Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
-                 Maciek Haranczyk (maciej.haranczyk@imdea.org)
+          Jorge Zorrilla Prieto (jorge.zorrilla.prieto@gmail.com)
+          Maciek Haranczyk (maciej.haranczyk@imdea.org)
 
-                 IMDEA Materiales Institute
+          IMDEA Materiales Institute
  
 **********************************************************************/
 
@@ -64,12 +64,14 @@ segmentor::~segmentor()
 
 
 /**
- * @brief Get the  grid(vtkImageData) from a Gaussian Cube file(.cube)
+ * @brief This reads the input file and generates the grid either of type distanceGrid or PEgrid.
+ *  This function also sets the variables of the grid class, such as gridresolution, number of points,
+ *  vtk grids, stored both in normalized (cubicGrid) and actual (originalGrid) coordinates.
  *
- * @param inputFilePath Input File Path of the Nanoporous Material
- * @param gridResolution Grid resolution of the Gaussian Cube file
- * @param writeGridFile Write the results to an output file(OPTIONAL)
- * @return auto Grid from the Gaussian Cube file
+ * @param p  the parameter class variable that contains all the input parameters.
+ * @param writeGridFile writes the results of the input grid.'
+ *
+ * @return an instance of the grid.
  */
 grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
 {
@@ -88,7 +90,6 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
     }
     
     // Based on the extension, the properties of the grid are read and stored.
-    
     if (extensionName == ".cube"){
         
         vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
@@ -100,10 +101,12 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
 
         vtkIdType cellDims[3];
         Grid->cubicGrid->GetDimensions(cellDims);
+        // the default spacing is unity, and is normalized with the size in each direction to
+        // get the grid on a unit cube.
         Grid->cubicGrid->SetSpacing(1.0/(cellDims[0]-1), 1.0/(cellDims[1]-1), 1.0/(cellDims[2]-1));
         
     } else if (extensionName == ".vti"){ // This .vti extension is for the input file that has the stresses from LAMMPS
-                                        // (see postProcessing/generate-stress-grids.py)
+                                        // (see postProcessing/generate-stress-grids.py on how to generate them)
         
         vtkSmartPointer<vtkXMLImageDataReader> dataReader = vtkSmartPointer<vtkXMLImageDataReader>::New();
         dataReader->SetFileName((fileName).c_str());
@@ -125,17 +128,33 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
     Grid->defineUnitCellVectors();
     
     vtkIdType numberOfCells = Grid->cubicGrid->GetNumberOfCells();
-    double unitCellVolume = determinant(Grid->gridResolution);
-    double volume = unitCellVolume * numberOfCells;
+    double dV = determinant(Grid->gridResolution);//the volume of the voxel grid (a cross b . c), which is the determinant.
+    double volume = dV * numberOfCells;
     
-    logger::mainlog << "Grid Vector (X)             : (" << Grid->gridResolution[0][0] << ", " << Grid->gridResolution[1][0] << ", " << Grid->gridResolution[2][0] << ")\n";
-    logger::mainlog << "Grid Vector (Y)             : (" << Grid->gridResolution[0][1] << ", " << Grid->gridResolution[1][1] << ", " << Grid->gridResolution[2][1] << ")\n";
-    logger::mainlog << "Grid Vector (Z)             : (" << Grid->gridResolution[0][2] << ", " << Grid->gridResolution[1][2] << ", " << Grid->gridResolution[2][2] << ")\n";
-    logger::mainlog << "Number of points in the grid        : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
-    logger::mainlog << "Volume of the unit cell             : "  << volume << " (A^o)^3" << endl;
-    logger::mainlog << "Unit Cell Vector a :   " << Grid->unitCellVectors[0][0] << "    " << Grid->unitCellVectors[1][0] << "    " << Grid->unitCellVectors[2][0] << "\n";
-    logger::mainlog << "Unit Cell Vector b :   " << Grid->unitCellVectors[0][1] << "    " << Grid->unitCellVectors[1][1] << "    " << Grid->unitCellVectors[2][1] << "\n";
-    logger::mainlog << "Unit Cell Vector c :   " << Grid->unitCellVectors[0][2] << "    " << Grid->unitCellVectors[1][2] << "    " << Grid->unitCellVectors[2][2] << "\n";
+    logger::mainlog << "Grid Vector (X)                                              : (" << Grid->gridResolution[0][0] << ", "
+                                                                                          << Grid->gridResolution[1][0] << ", "
+                                                                                          << Grid->gridResolution[2][0] << ")\n";
+    
+    logger::mainlog << "Grid Vector (Y)                                              : (" << Grid->gridResolution[0][1] << ", "
+                                                                                          << Grid->gridResolution[1][1] << ", "
+                                                                                          << Grid->gridResolution[2][1] << ")\n";
+    
+    logger::mainlog << "Grid Vector (Z)                                              : (" << Grid->gridResolution[0][2] << ", "
+                                                                                          << Grid->gridResolution[1][2] << ", "
+                                                                                          << Grid->gridResolution[2][2] << ")\n";
+    
+    logger::mainlog << "Number of points in the grid                                 : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
+    logger::mainlog << "Volume of the unit cell                                      : "  << volume << " (A^o)^3" << endl;
+    
+    logger::mainlog << "Unit Cell Vector a                                           :   " << Grid->unitCellVectors[0][0] << "    "
+                                                                                           << Grid->unitCellVectors[1][0] << "    "
+                                                                                           << Grid->unitCellVectors[2][0] << "\n";
+    logger::mainlog << "Unit Cell Vector b                                           :   " << Grid->unitCellVectors[0][1] << "    "
+                                                                                           << Grid->unitCellVectors[1][1] << "    "
+                                                                                           << Grid->unitCellVectors[2][1] << "\n";
+    logger::mainlog << "Unit Cell Vector c                                           :   " << Grid->unitCellVectors[0][2] << "    "
+                                                                                           << Grid->unitCellVectors[1][2] << "    "
+                                                                                           << Grid->unitCellVectors[2][2] << "\n";
 
     
     // Store all the locations of the grid points for a general triclinic lattice.
@@ -152,13 +171,16 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
         }
       }
 
+    /* As the input file is only voxel data, the coordinates of the points are computed based
+       on the grid resolution, and the grid in actual coordinates of the nanoporous material
+       is stored in Grid->orginalGrid */
     
     if (writeGridFile == true)
     {
         vtkNew<vtkDoubleArray> pointValues;
         pointValues->SetNumberOfComponents(1);
         pointValues->SetNumberOfTuples(Grid->nx*Grid->ny*Grid->nz);
-        
+        pointValues->SetName(arrayName.c_str());
         for (size_t i = 0; i < (Grid->nx*Grid->ny*Grid->nz); ++i)
         {
           pointValues->SetValue(i, Grid->cubicGrid->GetPointData()->GetArray(arrayName.c_str())->GetVariantValue(i).ToDouble());
@@ -169,10 +191,10 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
         Grid->originalGrid->SetPoints(Grid->gridPointsXYZ);
         Grid->originalGrid->GetPointData()->SetScalars(pointValues);
 
-       vtkNew<vtkStructuredGridWriter> strucGridWriter;
-       strucGridWriter->SetInputData(Grid->originalGrid);
-       strucGridWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vtk").c_str());
-       strucGridWriter->Write();
+        vtkNew<vtkStructuredGridWriter> strucGridWriter;
+        strucGridWriter->SetInputData(Grid->originalGrid);
+        strucGridWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vtk").c_str());
+        strucGridWriter->Write();
         
     }
  
@@ -184,7 +206,10 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
 
 
 
-
+/**
+ @brief From the .cube, reading the first few lines of the input, the gridResolution in X, Y, Z are stored
+  respectively.
+ */
 void segmentor::getGridResolutionFromCubeFile(double  GridResolution[3][3]) {
     
     ifstream inputFile;
@@ -231,18 +256,23 @@ void segmentor::getGridResolutionFromCubeFile(double  GridResolution[3][3]) {
 
 
 
-
+/**
+ @brief The arrayname that is used for TDA is automatically obtained from the input file
+  For file of type .cube, this is the string in the second line of the input file
+  For file of type .vti, the first array of the grid (which is the distance grid) is the array for TDA.
+ @param nameofArray which is updated in this function.
+ */
 void segmentor::getArrayName(std::string &nameOfArray){
     
     if (extensionName == ".cube"){
         
         if (nameOfArray.empty()) getArrayNameFromCubeFile(nameOfArray);
-        logger::mainlog << "Array that is going to be used for TDA analysis: " << nameOfArray << endl;
+        logger::mainlog << "Array that is going to be used for TDA analysis              : " << nameOfArray << endl;
         
     } else if (extensionName == ".vti"){
         
         if (nameOfArray.empty()) getArrayNameFromVTIFile(nameOfArray);
-        logger::mainlog << "Array that is going to be used for TDA analysis: " << nameOfArray << endl;
+        logger::mainlog << "Array that is going to be used for TDA analysis              : " << nameOfArray << endl;
         
     } else {
         
@@ -305,14 +335,11 @@ void segmentor::getArrayNameFromVTIFile(std::string &nameOfArray){
 
 
 /**
- * @brief  Set periodic conditions for the input grid. Set positive distance values for the solid structure and negative
- * values for the pore structure
- *
+ * @brief  Set periodic conditions for the input grid.
  * @param grid Input grid
- * @param changeValues Set positive distance values for the solid structure and negative
- * values for the pore structure
  * @param periodicConditions  Periodic Boundary Conditions
- * @return auto
+ * @param useAllCores
+ * @return a pointer to a ttk variable of type ttkTriangulationManager.
  */
 vtkSmartPointer<ttkTriangulationManager> segmentor::generatePeriodicGrid(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool useAllCores)
 {
@@ -358,7 +385,10 @@ void segmentor::computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManage
  *  simplification of the sadde-saddle connectors
  * @param writeOutputs Write MSC results to external files
  * @param useAllCores Use all cores available to speed up computations
- * @return auto Morse Smale Complex complete field information
+ *
+ * @return nothing is returned, but the results of the MSC in the cubic grid is stored in theMSC,
+ * the persistence diagram is stored in the thePersitenceDiagram, and in the actual coordinates,
+ * the segmentation data is stored in the Grid->segmentation and the critical points in Grid->criticalPoints.
  */
 void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
@@ -428,8 +458,8 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     MSCTimer.reStart();
     logger::mainlog << "Time taken for MSC creation: " << timeTakenForMSC << "(s)" << endl;
     
-    vtkIdType numberOfDescendingManifolds = getNumberOfDescendingManifolds(theMSC);
-    vtkIdType numberOfAscendingManifolds = getNumberOfAscendingManifolds(theMSC);
+    vtkIdType numberOfDescendingManifolds = getNumberOfDescendingManifolds();
+    vtkIdType numberOfAscendingManifolds = getNumberOfAscendingManifolds();
     
     logger::mainlog << "Total number of descending manifolds (typically solid segments) : " << numberOfDescendingManifolds << endl;
     logger::mainlog << "Total number of ascending manifolds (typically void segments) : " << numberOfAscendingManifolds << endl;
@@ -1078,13 +1108,13 @@ void segmentor::accessibleSolidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, bool 
 
 
 
-vtkIdType segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
+vtkIdType segmentor::getNumberOfDescendingManifolds(){
         
     // Output the number of descending manifolds
     vtkSmartPointer<ttkExtract> descendingManifolds = vtkSmartPointer<ttkExtract>::New();
     //accessibleSpace->SetDebugLevel(1);
     descendingManifolds->SetUseAllCores(true);
-    descendingManifolds->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    descendingManifolds->SetInputConnection(theMSC->GetOutputPort(3));
     descendingManifolds->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
     descendingManifolds->SetExtractionMode(3); //Array Values
     descendingManifolds->SetExtractUniqueValues(true);
@@ -1102,13 +1132,13 @@ vtkIdType segmentor::getNumberOfDescendingManifolds(vtkSmartPointer<ttkMorseSmal
 
 
 
-vtkIdType segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex){
+vtkIdType segmentor::getNumberOfAscendingManifolds(){
     
     // Output the number of descending manifolds
     vtkSmartPointer<ttkExtract> ascendingManifolds = vtkSmartPointer<ttkExtract>::New();
     //accessibleSpace->SetDebugLevel(1);
     ascendingManifolds->SetUseAllCores(true);
-    ascendingManifolds->SetInputConnection(morseSmaleComplex->GetOutputPort(3));
+    ascendingManifolds->SetInputConnection(theMSC->GetOutputPort(3));
     ascendingManifolds->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
     ascendingManifolds->SetExtractionMode(3); //Array Values
     ascendingManifolds->SetExtractUniqueValues(true);
@@ -1125,7 +1155,14 @@ vtkIdType segmentor::getNumberOfAscendingManifolds(vtkSmartPointer<ttkMorseSmale
 
 
 
-
+/**
+ @brief for the input periodic grid, this plots the persistence curve and write all the four pairs of persistence curves:
+ @write 1) Minumum-saddle Pairs
+      2) Saddle-saddle Pairs
+      3) Saddle-Maximum Pairs
+      4) All-pairs.
+ These are output as tables, and to plot one can use postProcessing/plotPersistenceCurve.py BaseFileName
+ */
 void segmentor::persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores)
 {
     ttk::Timer percurveTimer;

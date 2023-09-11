@@ -23,6 +23,14 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 double    determinant(double matrix[3][3]);
 void      abcToxyz (double abc[3], double xyz[3], double unitCellVectors[3][3]);
 
+/*
+ 
+ This is the geometry class that stores the 
+ 
+ 
+ */
+
+
 
 class grid {
     
