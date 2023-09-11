@@ -1,1 +1,267 @@
-# To be completed
+%
+% set one as true, and the rest as false
+\newif\ifstandardtemplate \standardtemplatetrue
+\newif\ifelseviertemplate \elseviertemplatefalse
+\newif\ifspringertemplate \springertemplatefalse
+\newif\ifwileytemplate    \wileytemplatefalse
+%
+\newcommand{\mypackages}{
+  \usepackage{amssymb}
+  \usepackage{amsmath}
+  \usepackage{amsthm}
+  \usepackage{graphicx}
+  \usepackage{enumitem}
+  % \usepackage[dvipsnames]{xcolor}
+  \usepackage{natbib}
+  \usepackage{xfrac}%defines sfrac
+  \usepackage{todonotes}
+  \usepackage{siunitx}
+  \usepackage{hyperref}
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    }
+    \usepackage{courier}
+    \usepackage[T1]{fontenc}
+  % \usepackage{showlabels}
+  \graphicspath{{Figures/}{figures/}}
+}
+%
+%--------------------------------------------------------------------------------------------------
+%                                General definitions
+%--------------------------------------------------------------------------------------------------
+\newcommand{\mytitle}{tda-segmentor detailed documentation}
+\newcommand{\myabstract}{}
+\newcommand{\myack}{acknowledgements}
+\newcommand{\code}{\texttt}
+
+%--------------------------------------------------------------------------------------------------
+%                                Header for Springer journals
+%--------------------------------------------------------------------------------------------------
+\ifspringertemplate
+\documentclass[smallcondensed]{svjour3}
+\usepackage[latin1]{inputenc}
+\usepackage[final]{changes}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+
+\title{\mytitle%
+\thanks{the thanks}}
+\author{\ldots \and Ignacio Romero \and \ldots}
+\journalname{The journal name}
+
+
+\institute{I. Romero \at
+  IMDEA Materials Institute, Eric Kandel 2, Tecnogetafe, Madrid 28906, Spain\\
+  Universidad Polit\'ecnica de Madrid, Jos\'e Guti\'errez Abascal, 2, Madrid 29006, Spain\\
+  \email{ignacio.romero@imdea.org}
+  \and
+  XX \at
+  XXX\\
+  \email{XXX}}
+
+\titlerunning{\mytitile}
+\authorrunning{I. Romero}
+
+\date{Received: date / Accepted: date}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  \myabstract 
+\end{abstract}
+\fi
+
+
+
+%--------------------------------------------------------------------------------------------------
+%          Header for Elsevier journals
+%--------------------------------------------------------------------------------------------------
+\ifelseviertemplate
+\documentclass[preprint,11pt]{elsarticle}
+%% Use the option review to obtain double line spacing
+%% \documentclass[authoryear,preprint,review,12pt]{elsarticle}
+%% Use the options 1p,twocolumn; 3p; 3p,twocolumn; 5p; or 5p,twocolumn
+%% for a journal layout:
+%% \documentclass[final,1p,times]{elsarticle}
+%% \documentclass[final,1p,times,twocolumn]{elsarticle}
+%% \documentclass[final,3p,times]{elsarticle}
+%% \documentclass[final,3p,times,twocolumn]{elsarticle}
+%% \documentclass[final,5p,times]{elsarticle}
+%% \documentclass[final,5p,times,twocolumn]{elsarticle}
+\mypackages
+\newcommand{\mybibstyle}{unsrt}
+
+\journal{Computer Methods in Applied Mechanics and Engineering}
+%
+\begin{document}
+\begin{frontmatter}
+
+\title{\mytitle}
+
+\author[1,2]{Ignacio Romero\corref{cor1}}
+\ead{ignacio.romero@upm.es}
+
+\author[3]{xxx}
+\ead{xxx}
+
+\address[1]{Universidad Polit\'ecnica de Madrid, Spain}
+\address[2]{IMDEA Materials Institute, Spain}
+\address[3]{xx}
+
+\cortext[cor1]{Corresponding author. ETS Ingenieros Industriales,
+  Jos\'e Guti\'errez Abascal, 2, Madrid 28006, Spain}
+
+\begin{abstract}
+\myabstract
+\end{abstract}
+
+\begin{keyword}
+  fe \sep fe.
+\end{keyword}
+\end{frontmatter}
+
+\fi
+
+
+%--------------------------------------------------------------------------------------------------
+%                             Header for Wiley journals
+%--------------------------------------------------------------------------------------------------
+\ifwileytemplate
+\documentclass[doublespace,times]{nmeauth}
+\usepackage[latin1]{inputenc}
+\usepackage[final]{changes}
+\usepackage[latin1]{inputenc}
+%\usepackage[spanish]{babel}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+%\usepackage[dvipsnames]{xcolor}
+\usepackage{natbib}
+\usepackage{xfrac}%defines sfrac
+\usepackage{todonotes}
+\usepackage{siunitx}
+%\usepackage{showlabels}
+\graphicspath{{Figures/}{figures/}}
+\message{Compiling with Wiley template}
+
+\begin{document}
+\runningheads{I. Romero}{...}
+
+
+% Title, authors and addresses
+\title{\mytitle}
+\author{Ignacio Romero\affil{1}\affil{2}\corrauth}
+
+\address{\affilnum{1} ETSII, Universidad Politécnica de Madrid, 
+         Jos\'{e} Guti\'{e}rrez Abascal, 2, 28006 Madrid, Spain\break
+         \affilnum{2} IMDEA Materials Institute, Eric Kandel 2, 28096 Getafe, Madrid, Spain}
+
+\corraddr{Dpto. de Ingenier\'{\i}a Mec\'{a}nica; E.T.S. Ingenieros Industriales; 
+José Gutiérrez Abascal, 2; 28006 Madrid; Spain. Fax (+34) 91 336 3004}
+
+\begin{abstract} 
+\end{abstract}
+
+\keywords{.}
+\maketitle
+\fi
+
+
+%--------------------------------------------------------------------------------------------------
+%          Default header for articles, as provided by LaTeX
+%--------------------------------------------------------------------------------------------------
+\ifstandardtemplate
+\documentclass[10pt,a4paper]{article}
+\mypackages
+\newcommand{\mybibstyle}{unsrt}
+
+%-------------
+% extra packages
+%-------------
+\newtheorem{theorem}    {Theorem}[section]
+\newtheorem{lemma}      [theorem]{Lemma}
+\newtheorem{corollary}  [theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{algorithm}  [theorem]{Algorithm}
+
+\theoremstyle{definition}
+\newtheorem{definition} [theorem]{Definition}
+%\newtheorem{example}    [theorem]{Example}
+\newtheorem{problem}    [theorem]{Problem}
+
+\newtheorem{examplex}[theorem]{$\triangleright\;$Ejemplo}
+\newenvironment{example}{\medskip\begin{examplex}}{\hfill$\triangleleft$\end{examplex}}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newtheorem{remarks}{Remarks}
+\newtheorem{note}{Note}
+
+\message{Compiling with default template}
+
+\title{\mytitle}
+\author{A. Vasudevan$^1$}
+\date{$^1$ IMDEA Materials Institute, Eric Kandel,2; 28906 Madrid, Spain\\[2ex]%
+\today}
+
+\newenvironment{acknowledgements}{\section*{Acknowledgements}}{}
+
+ 
+\begin{document}
+\maketitle
+\fi
+
+
+\newcommand{\concept}[1]{\textbf{\emph{#1}}}
+\newcommand{\defined}{:=}
+\newcommand{\dev}{{\mathop{\mathrm{dev}}}}
+\renewcommand{\div}{{\mathop{\mathrm{div}}}}
+\newcommand{\mbs}[1]{\boldsymbol{#1}}
+\newcommand{\pairing}[2]{\langle{#1},{#2}\rangle}
+\newcommand{\dd}[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\fd}[2]{\frac{\delta #1}{\delta #2}}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\trace}{{\mathop{\mathrm{tr}}}}
+\newcommand{\uptohere}{\centerline{\textcolor{blue}{\rule{6cm}{0.2cm}}}}
+
+%--------------------------------------------------------------------------------------------------
+%                                        The document
+%--------------------------------------------------------------------------------------------------
+
+\tableofcontents
+
+
+\vspace{20pt}
+
+\section{Installation of the code}
+
+\section{Input file generation for the code}
+ \subsection{distance grid generation}
+ \subsection{distance grids along with stress grids from LAMMPS}
+ \subsection{Potential Energy grids}
+
+\section{Invocation of the code}
+
+\section{Examples from the code}
+ \subsection{Persistence curve}
+ \subsection{Segmentation}
+ \subsection{Accessible void space}
+
+
+\bibliographystyle{\mybibstyle}
+\bibliography{irobib}
+\end{document} 
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
