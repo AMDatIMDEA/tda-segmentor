@@ -16,6 +16,11 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <stdio.h>
 #include "grid.h"
 
+
+/*
+ This is the distance grid instance.
+ */
+
 class distanceGrid : public grid {
     
 public:

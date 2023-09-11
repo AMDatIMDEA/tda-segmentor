@@ -25,8 +25,23 @@ void      abcToxyz (double abc[3], double xyz[3], double unitCellVectors[3][3]);
 
 /*
  
- This is the geometry class that stores the 
+ This is the geometry class that stores the grid:
  
+ - nx, ny, nz are the number of grid points
+ - gridResolution[3][3] is the vector along the grid cell. For an orthorhombic
+   lattice, this is purely diagonal, but for a general triclinic lattice, it has
+   non-zero off diagonal terms
+ - unitCellVectors[3][3] the points in the same direction of the gridResolution,
+   but has a magnitude of the box lengths of the grid.
+ - invUnitCellVectors[3][3] is the map that maps the normalized unit cube to
+   the general triclinic unit cell.
+ 
+ - cubicGrid is a vtkImageData grid that has the scalar values but defined on a unit cube
+ - originalGrid is the grid in the actual coordinates of the nanoporous material.
+ - gridPointsXYZ are the coordinates of the grid points of the originalGrid.
+ 
+ - segmentation stores the segmentation data on actual coordinates.
+ - criticalPoints stores the critical points data on actual coordinates. 
  
  */
 

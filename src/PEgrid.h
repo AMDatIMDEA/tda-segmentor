@@ -16,7 +16,9 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <stdio.h>
 #include "grid.h"
 
-
+/*
+ This is the Potential Energy grid instance
+ */
 class PEgrid : public grid {
     
 public:
