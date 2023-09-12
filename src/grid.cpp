@@ -25,8 +25,8 @@ cubicGrid(vtkSmartPointer<vtkImageData>::New()),
 originalGrid(vtkSmartPointer<vtkStructuredGrid>::New()),
 gridPointsXYZ(vtkSmartPointer<vtkPoints>::New()),
 segmentation(vtkSmartPointer<vtkStructuredGrid>::New()),
-criticalPoints(vtkSmartPointer<vtkPolyData>::New())
-
+criticalPoints(vtkSmartPointer<vtkPolyData>::New()),
+criticalPointsData()
 {
     
     fileName = p.inputfilename;
@@ -42,6 +42,8 @@ criticalPoints(vtkSmartPointer<vtkPolyData>::New())
             invUnitCellVectors[i][j] = 0.0;
         }
     }
+    
+    segmentationData = new segmentedData();
 
 };
 
@@ -50,7 +52,7 @@ criticalPoints(vtkSmartPointer<vtkPolyData>::New())
 
 grid::~grid()
 {
-    
+    delete segmentationData;
 }
 
 

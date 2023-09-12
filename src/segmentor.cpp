@@ -529,6 +529,50 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
         critPointWriter->SetFileName((Directory+"/" + BaseFileName+"_CriticalPoints.vtk").c_str());
         critPointWriter->Write();
 
+        /* Convert the segmentation data that is stored in a VTK grid to a native C++ structure
+           that can be easily used for postprocessing */
+        
+        bool nativeData = true;
+        if (nativeData){
+            
+            ttk::Timer nativeDataTimer;
+            logger::mainlog << "Generating native C++ data without VTK dependency ...\n";
+            Grid->segmentationData->setDimensions(Grid->nx, Grid->ny, Grid->nz);
+            Grid->criticalPointsData.resize(criticalPointsDataSet->GetNumberOfPoints());
+            
+            // Storing the critical points as a vector of critical points class without VTK //
+            for (size_t i = 0; i < cPoints->GetNumberOfPoints(); i++){
+                double p[3];
+                cPoints->GetPoint(i, p);
+                Grid->criticalPointsData[i].setCoordinates(p);
+                int critType = criticalPointsDataSet->GetPointData()->GetArray("CellDimension")->GetVariantValue(i).ToInt();
+                double scalarVal = criticalPointsDataSet->GetPointData()->GetArray((arrayName).c_str())->GetVariantValue(i).ToDouble();
+                Grid->criticalPointsData[i].setCriticalType((size_t) critType);
+                Grid->criticalPointsData[i].setScalarValue(scalarVal);
+                
+            }
+
+            // Storing the segmentation data without VTK //
+            logger::mainlog << "VTK dataset: " << endl << flush;
+            for (size_t i = 0; i < segmentationDataSet->GetNumberOfPoints(); i++){
+                double p[3];
+                Grid->gridPointsXYZ->GetPoint(i, p);
+                int ascendingManifoldID = segmentationDataSet->GetPointData()->GetArray("AscendingManifold")->GetVariantValue(i).ToInt();
+                int descendingManifoldID = segmentationDataSet->GetPointData()->GetArray("DescendingManifold")->GetVariantValue(i).ToInt();
+                double scalarVal = segmentationDataSet->GetPointData()->GetArray(arrayName.c_str())->GetVariantValue(i).ToDouble();
+
+                Grid->segmentationData->setCoordinates(i, p);
+                Grid->segmentationData->setAscendingManifoldID(i, (size_t) ascendingManifoldID);
+                Grid->segmentationData->setDescendingManifoldID(i, (size_t) descendingManifoldID);
+                Grid->segmentationData->setScalarValue(i, scalarVal);
+                                
+            }
+            
+            double timeTakenForNativeData = nativeDataTimer.getElapsedTime();
+            logger::mainlog << "Time taken to create native segmentation data: " << timeTakenForNativeData << endl;
+
+        }
+        
         // //Saddle connectors
         // vtkNew<vtkThreshold> saddleSeparatrices{};
         // saddleSeparatrices->SetInputConnection(morseSmaleComplex->GetOutputPort(1));

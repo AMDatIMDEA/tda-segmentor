@@ -16,8 +16,9 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <stdio.h>
 #include "headers.h"
 #include "parameters.h"
+#include "segmenteddata.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 
 double    determinant(double matrix[3][3]);
@@ -41,7 +42,7 @@ void      abcToxyz (double abc[3], double xyz[3], double unitCellVectors[3][3]);
  - gridPointsXYZ are the coordinates of the grid points of the originalGrid.
  
  - segmentation stores the segmentation data on actual coordinates.
- - criticalPoints stores the critical points data on actual coordinates. 
+ - criticalPoints stores the critical points data on actual coordinates.
  
  */
 
@@ -81,6 +82,11 @@ public:
     // Data from segmentation that can be used for post processing //
     vtkSmartPointer<vtkStructuredGrid>        segmentation;
     vtkSmartPointer<vtkPolyData>              criticalPoints;
+    
+    // Data from segmentation stored in native C++ format which can be used for post processing too //
+    
+    std::vector<criticalPoint>                criticalPointsData;
+    segmentedData*                            segmentationData;
     
     
 };
