@@ -44,7 +44,9 @@ public:
     ~segmentor();
     
     grid*                                              readInputFile(const parameters &p, bool writeGridFile = true);
-
+    vtkSmartPointer<vtkImageData>                      readFromCubeFile();
+    void                                               readDistanceGrid(vtkSmartPointer<vtkImageData> imageData);
+    void                                               readPEgrid(vtkSmartPointer<vtkImageData> imageData);
     vtkSmartPointer<ttkTriangulationManager>           generatePeriodicGrid(vtkSmartPointer<vtkImageData> grid,bool periodicConditions,
                                                                             bool useAllCores);
     void                                               computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);

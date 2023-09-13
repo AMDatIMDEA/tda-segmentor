@@ -92,18 +92,10 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
     // Based on the extension, the properties of the grid are read and stored.
     if (extensionName == ".cube"){
         
-        vtkSmartPointer<vtkGaussianCubeReader2> cubeReader = vtkSmartPointer<vtkGaussianCubeReader2>::New();
-        cubeReader->SetFileName(fileName.c_str());
-        cubeReader->Update();
-        Grid->cubicGrid = cubeReader->GetGridOutput();
-        
-        getGridResolutionFromCubeFile(Grid->gridResolution);
-
-        vtkIdType cellDims[3];
-        Grid->cubicGrid->GetDimensions(cellDims);
+        Grid->cubicGrid = readFromCubeFile();
         // the default spacing is unity, and is normalized with the size in each direction to
         // get the grid on a unit cube.
-        Grid->cubicGrid->SetSpacing(1.0/(cellDims[0]-1), 1.0/(cellDims[1]-1), 1.0/(cellDims[2]-1));
+        Grid->cubicGrid->SetSpacing(1.0/(Grid->nx-1), 1.0/(Grid->ny-1), 1.0/(Grid->nz-1));
         
     } else if (extensionName == ".vti"){ // This .vti extension is for the input file that has the stresses from LAMMPS
                                         // (see postProcessing/generate-stress-grids.py on how to generate them)
@@ -117,13 +109,11 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
         Grid->gridResolution[0][0] = imageGridRes[0];
         Grid->gridResolution[1][1] = imageGridRes[1];
         Grid->gridResolution[2][2] = imageGridRes[2];
+        vtkIdType cellDims[3];
+        Grid->cubicGrid->GetDimensions(cellDims);
+        Grid->nx = cellDims[0]; Grid->ny = cellDims[1]; Grid->nz = cellDims[2];
         
     }
-    
-    
-    vtkIdType cellDims[3];
-    Grid->cubicGrid->GetDimensions(cellDims);
-    Grid->nx = cellDims[0]; Grid->ny = cellDims[1]; Grid->nz = cellDims[2];
     
     Grid->defineUnitCellVectors();
     
@@ -143,7 +133,7 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
                                                                                           << Grid->gridResolution[1][2] << ", "
                                                                                           << Grid->gridResolution[2][2] << ")\n";
     
-    logger::mainlog << "Number of points in the grid                                 : (" << cellDims[0] << " X " << cellDims[1] << " X "<< cellDims[2] << ")" << endl;
+    logger::mainlog << "Number of points in the grid                                 : (" << Grid->nx << " X " << Grid->ny << " X "<< Grid->nz << ")" << endl;
     logger::mainlog << "Volume of the unit cell                                      : "  << volume << " (A^o)^3" << endl;
     
     logger::mainlog << "Unit Cell Vector a                                           :   " << Grid->unitCellVectors[0][0] << "    "
@@ -159,9 +149,9 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
     
     // Store all the locations of the grid points for a general triclinic lattice.
     double x = 0.0, y = 0.0, z = 0.0;
-    for (unsigned int k = 0; k < cellDims[2]; k++){
-        for (unsigned int j = 0; j < cellDims[1]; j++){
-            for (unsigned int i = 0; i < cellDims[0]; i++){
+    for (unsigned int k = 0; k < Grid->nz; k++){
+        for (unsigned int j = 0; j < Grid->ny; j++){
+            for (unsigned int i = 0; i < Grid->nx; i++){
                 
               x = Grid->gridResolution[0][0]*i + Grid->gridResolution[0][1]*j + Grid->gridResolution[0][2] * k;
               y = Grid->gridResolution[1][0]*i + Grid->gridResolution[1][1]*j + Grid->gridResolution[1][2] * k;
@@ -205,6 +195,232 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
 }
 
 
+
+
+/**
+ @brief Reads the cube file line by line. The code branches into two for distance grids
+ and PEgrids as zeo++ stores it in slightly different format with an additional line 1 1 before the start of data.
+ @return the grid as an vtkImageData grid.
+ */
+vtkSmartPointer<vtkImageData> segmentor::readFromCubeFile(){
+    
+    vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
+    
+    if (arrayName == "This is distance grid"){
+        readDistanceGrid(imageData);
+        
+    } else if (arrayName == "Potential Energy"){
+        readPEgrid(imageData);
+    }
+    
+    return imageData;
+    
+}
+
+
+
+
+void segmentor::readDistanceGrid(vtkSmartPointer<vtkImageData> imageData){
+    
+    ifstream inputFile;
+    
+    inputFile.open(fileName);
+    int nx, ny, nz;
+    int natoms;
+    if (inputFile.is_open())
+    {
+            
+        string line;
+        //Number of the line that is being readed
+        int lineNumber = 0;
+        while (getline(inputFile,line))
+        {
+            if (lineNumber == 2){
+                stringstream ss(line);
+                ss >> natoms;
+            }
+            if (lineNumber == 3)
+            {
+                stringstream ss(line);
+                ss >> Grid->nx;
+                ss >> Grid->gridResolution[0][0]; ss >> Grid->gridResolution[1][0]; ss >> Grid->gridResolution[2][0];
+            }
+                
+            if (lineNumber == 4)
+            {
+                stringstream ss(line);
+                ss >> Grid->ny;
+                ss >> Grid->gridResolution[0][1]; ss >> Grid->gridResolution[1][1]; ss >> Grid->gridResolution[2][1];
+            }
+                
+            if (lineNumber == 5)
+            {
+                stringstream ss(line);
+                ss >> Grid->nz;
+                ss >> Grid->gridResolution[0][2]; ss >> Grid->gridResolution[1][2]; ss >> Grid->gridResolution[2][2];
+            }
+                
+            lineNumber++;
+        }
+                    
+    }
+    inputFile.close();
+
+    // We set the dimensions of the imageData grid
+    imageData->SetDimensions((int) Grid->nx, (int) Grid->ny, (int) Grid->nz);
+    vtkNew<vtkDoubleArray> pointValues;
+    pointValues->SetName(arrayName.c_str());
+    pointValues->SetNumberOfComponents(1);
+    size_t numberOfPoints = Grid->nx * Grid->ny * Grid->nz;
+    pointValues->SetNumberOfTuples(numberOfPoints);
+    
+    // We open the input file again, to read the grid
+    // Note that in zeo++, the z loop is the innermost, then, y, then x,
+    // However in VTK, the x loop is the innermost, then y, then z.
+    size_t ix = 0, iy = 0, iz = 0;
+    inputFile.open(fileName);
+    if (inputFile.is_open())
+    {
+        string line;
+        //Number of the line that is being readed
+        int lineNumber = 0;
+        while (getline(inputFile,line))
+        {
+            if (lineNumber > 6 + natoms){
+                
+                stringstream ss(line);
+                double value;
+                while (ss >> value) {
+                    size_t index = Grid->nx*(iy + Grid->ny*iz) + ix;
+                    pointValues->SetValue(index, value);
+                    iz++;
+                }
+                if (iz == Grid->nz){
+                    iz = 0;
+                    iy++;
+                    if (iy == Grid->ny){
+                        iy = 0;
+                        ix++;
+                    }
+                }
+                    
+            }
+            
+            lineNumber++;
+        }
+    }
+    
+    inputFile.close();
+    imageData->GetPointData()->AddArray(pointValues);
+    
+}
+
+
+
+
+void segmentor::readPEgrid(vtkSmartPointer<vtkImageData> imageData){
+    
+    ifstream inputFile;
+    inputFile.open(fileName);
+    int nx, ny, nz;
+    int natoms;
+    size_t InfCount = 0;
+    
+    if (inputFile.is_open())
+    {
+            
+        string line;
+        //Number of the line that is being readed
+        int lineNumber = 0;
+        while (getline(inputFile,line))
+        {
+            if (lineNumber == 2){
+                stringstream ss(line);
+                ss >> natoms;
+            }
+            if (lineNumber == 3)
+            {
+                stringstream ss(line);
+                ss >> Grid->nx;
+                ss >> Grid->gridResolution[0][0]; ss >> Grid->gridResolution[1][0]; ss >> Grid->gridResolution[2][0];
+            }
+                
+            if (lineNumber == 4)
+            {
+                stringstream ss(line);
+                ss >> Grid->ny;
+                ss >> Grid->gridResolution[0][1]; ss >> Grid->gridResolution[1][1]; ss >> Grid->gridResolution[2][1];
+            }
+                
+            if (lineNumber == 5)
+            {
+                stringstream ss(line);
+                ss >> Grid->nz;
+                ss >> Grid->gridResolution[0][2]; ss >> Grid->gridResolution[1][2]; ss >> Grid->gridResolution[2][2];
+            }
+                
+            lineNumber++;
+        }
+                    
+    }
+    inputFile.close();
+
+    // We set the dimensions of the imageData grid
+    imageData->SetDimensions((int) Grid->nx, (int) Grid->ny, (int) Grid->nz);
+    vtkNew<vtkDoubleArray> pointValues;
+    pointValues->SetName(arrayName.c_str());
+    pointValues->SetNumberOfComponents(1);
+    size_t numberOfPoints = Grid->nx * Grid->ny * Grid->nz;
+    pointValues->SetNumberOfTuples(numberOfPoints);
+    
+    // We open the input file again, to read the grid
+    // Note that in zeo++, the z loop is the innermost, then, y, then x,
+    // However in VTK, the x loop is the innermost, then y, then z.
+    size_t ix = 0, iy = 0, iz = 0;
+    inputFile.open(fileName);
+    if (inputFile.is_open())
+    {
+        string line;
+        //Number of the line that is being readed
+        int lineNumber = 0;
+        while (getline(inputFile,line))
+        {
+            if (lineNumber > 5 + natoms){
+                
+                stringstream ss(line);
+                double value;
+                std::string temp;
+                while (ss >> temp) {
+                    if (temp == "Inf"){
+                        value = 5.0e+20;
+                        InfCount++;
+                    } else {
+                        value = ::atof(temp.c_str());
+                    }
+                    size_t index = Grid->nx*(iy + Grid->ny*iz) + ix;
+                    pointValues->SetValue(index, value);
+                    iz++;
+                }
+                if (iz == Grid->nz){
+                    iz = 0;
+                    iy++;
+                    if (iy == Grid->ny){
+                        iy = 0;
+                        ix++;
+                    }
+                }
+                    
+            }
+            
+            lineNumber++;
+        }
+    }
+    
+    inputFile.close();
+    imageData->GetPointData()->AddArray(pointValues);
+    logger::mainlog << "Number of Inf encountered while reading PEgrid               : " << InfCount << endl<<flush;
+    
+}
 
 /**
  @brief From the .cube, reading the first few lines of the input, the gridResolution in X, Y, Z are stored
@@ -310,7 +526,11 @@ void segmentor::getArrayNameFromCubeFile(std::string &nameOfArray){
         }
                     
     }
-        
+    // If PorousMaterials.jl is used to generate the energy grids,
+    // then the second line is Loop order - this is replaced with Potential Energy
+    // for the code to read better .
+    if (nameOfArray == "Loop order: x, y, z") nameOfArray = "Potential Energy";
+    
 }
 
 
@@ -354,6 +574,9 @@ vtkSmartPointer<ttkTriangulationManager> segmentor::generatePeriodicGrid(vtkSmar
     periodGrid->SetPeriodicity(periodicConditions);
     periodGrid->Update();
 
+    size_t i, j,k,index;
+    
+    
     double elapsedTime = periodicTimer.getElapsedTime();
     logger::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
 
