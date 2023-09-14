@@ -73,7 +73,11 @@ private:
 
 
 /* To traverse the data, the innermost loop is of dimension nx, next on ny and then nz.
-  i.e. (0,0,0), (1,0,0) ... (nx-1,0,0), (0,1,0) ... (nx-1, ny-1, nz-1) */
+  i.e. (0,0,0), (1,0,0) ... (nx-1,0,0), (0,1,0) ... (nx-1, ny-1, nz-1)
+ - coordinates of dimensions nx*ny*nz by 3, while ascendingManifoldID,
+   descendingManifoldID and scalarValue (which is the value distance function/Potential energy at the point)
+   is of dimension nx*ny*ny by 1. 
+ */
 
 class segmentedData {
     

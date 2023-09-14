@@ -44,6 +44,8 @@ void      abcToxyz (double abc[3], double xyz[3], double unitCellVectors[3][3]);
  - segmentation stores the segmentation data on actual coordinates.
  - criticalPoints stores the critical points data on actual coordinates.
  
+ - criticalPointsData stores the same data as criticalPoints, but without the VTK wrapper, in native C++
+ - segmentationData stores the segmentation data, but again without the VTK wrapper. 
  */
 
 
