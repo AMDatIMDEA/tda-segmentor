@@ -18,12 +18,12 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include "parameters.h"
 #include "segmenteddata.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 
 double    determinant(double matrix[3][3]);
-void      abcToxyz (double abc[3], double xyz[3], double unitCellVectors[3][3]);
-
+void      abcToxyz (const double abc[3], double xyz[3], const double unitCellVectors[3][3]);
+void      xyzToabc (const double xyz[3], double abc[3], const double invUnitCellVectors[3][3]);
 /*
  
  This is the geometry class that stores the grid:
@@ -68,6 +68,8 @@ public:
     virtual void                              voidSegmentation() = 0;
     virtual void                              solidSegmentation() = 0;
     virtual void                              accessibleVoidSpace(double moleculeRadius, bool useAllCores) = 0;
+    virtual void                              accessibleVoidGraph(double moleculeRadius, bool useAllCores) = 0;
+    virtual void                              accessibleSolidGraph(bool useAllCores) = 0;
     
     
     

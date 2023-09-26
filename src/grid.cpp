@@ -193,11 +193,20 @@ double determinant(double matrix[3][3]){
 
 
 
-void abcToxyz (double coordABC[3], double coordXYZ[3], double unitCellVectors[3][3]){
+void abcToxyz (const double coordABC[3], double coordXYZ[3], const double unitCellVectors[3][3]){
     
     coordXYZ[0] = coordABC[0]*unitCellVectors[0][0]+coordABC[1]*unitCellVectors[0][1]+coordABC[2]*unitCellVectors[0][2];
     coordXYZ[1] = coordABC[1]*unitCellVectors[1][1]+coordABC[2]*unitCellVectors[1][2];
     coordXYZ[2] = coordABC[2]*unitCellVectors[2][2];
     
+}
+
+
+
+void xyzToabc(const double coordXYZ[3], double coordABC[3], const double invUnitCellVectors[3][3]){
+    
+    coordABC[0] = coordXYZ[0]*invUnitCellVectors[0][0]+coordXYZ[1]*invUnitCellVectors[0][1]+coordXYZ[2]*invUnitCellVectors[0][2];
+    coordABC[1] = coordXYZ[1]*invUnitCellVectors[1][1]+coordXYZ[2]*invUnitCellVectors[1][2];
+    coordABC[2] = coordXYZ[2]*invUnitCellVectors[2][2];
     
 }

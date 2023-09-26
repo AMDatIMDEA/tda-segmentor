@@ -149,12 +149,17 @@ void parameters::parser(int nargs, char **args)
         
     }
     
+    // by default run the segmentation module
+    if (moduleNames.empty()) moduleNames.push_back("segmentation");
+    
     for (size_t i = 0; i < moduleNames.size(); i++){
         
         if (moduleNames[i] == "segmentation"
             || moduleNames[i] == "accessiblevoidspace"
             || moduleNames[i] == "voidsegmentation"
-            || moduleNames[i] == "solidsegmentation")
+            || moduleNames[i] == "solidsegmentation"
+            || moduleNames[i] == "accessiblevoidgraph"
+            || moduleNames[i] == "accessiblesolidgraph")
         {
             segmentationFlag = true;
         }

@@ -791,3 +791,860 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
     logger::mainlog << "Time elapsed in the accesible void space module: " << elapsedTime << "(s) \n" << flush;
     
 }
+
+
+
+
+void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
+    
+    /* We note that a saddle lies on the boundary of two or more segments and the maxima
+     lies inside the segment. So we identify the saddle that connects the two segments
+     and simply join it with the maxima of that segment */
+    
+    logger::mainlog << "\n\nSegmentor: Accessible Void Graph Module" << "\n" << flush;
+    
+    ttk::Timer VoidGraphTimer;
+    
+    //Compute cell dimensions of the input file
+    //---------------------------------------------------------------------------------------------
+    double cellDimensions[6];
+    segmentation->GetCellBounds(0,cellDimensions);
+    //Cell size of the current dataset
+    double cellSize = cellDimensions[1] - cellDimensions[0];
+    //---------------------------------------------------------------------------------------------
+    
+    //Triangulate the segmentation to improve precision
+    vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    triangulation->SetInputData(segmentation);
+    triangulation->Update();
+
+    //Segmentation corresponding to the void structure accessible to the void space
+    vtkSmartPointer<vtkThreshold> voidSegmentation = vtkSmartPointer<vtkThreshold>::New();
+    voidSegmentation->SetInputConnection(triangulation->GetOutputPort());
+    voidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    voidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidSegmentation->SetLowerThreshold(1.0*moleculeRadius);
+    voidSegmentation->SetUpperThreshold(9e9);
+    voidSegmentation->Update();
+    
+    //Same structure segmentation but with a Field Data added
+    
+    auto currentVoidDataSet = vtkDataSet::SafeDownCast(voidSegmentation->GetOutputDataObject(0));
+
+    vtkSmartPointer<vtkAbstractArray> ascendingManifoldArray = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold");
+    
+    std::set<int> ascendingManifoldIDList;
+    for (size_t i = 0; i < ascendingManifoldArray->GetNumberOfValues(); i++ ){
+        
+        ascendingManifoldIDList.insert(ascendingManifoldArray->GetVariantValue(i).ToInt());
+        
+    }
+
+    //Find the 2-saddle critical points
+    vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
+    saddles->SetInputData(criticalPoints);
+    saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
+    saddles->ThresholdBetween(2.0,2.0);
+    saddles->Update();
+    //Find the 2-saddles on the void structure
+    vtkSmartPointer<vtkThresholdPoints> accessibleSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
+    accessibleSaddles->SetInputConnection(saddles->GetOutputPort(0));
+    accessibleSaddles->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    accessibleSaddles->ThresholdBetween(1.0*moleculeRadius, 9e9);
+    accessibleSaddles->Update();
+
+    //DataSet of the accessible saddles to the molecule
+    auto saddlesDataSet = vtkDataSet::SafeDownCast(accessibleSaddles->GetOutputDataObject(0));
+    logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
+    
+    // Next we find the maxima critical points, and those that are accessible
+    vtkSmartPointer<vtkThresholdPoints> maximas = vtkSmartPointer<vtkThresholdPoints>::New();
+    maximas->SetInputData(criticalPoints);
+    maximas->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
+    maximas->ThresholdBetween(3.0,3.0);
+    maximas->Update();
+    //Find the 2-saddles on the void structure
+    vtkSmartPointer<vtkThresholdPoints> accessibleMaximas = vtkSmartPointer<vtkThresholdPoints>::New();
+    accessibleMaximas->SetInputConnection(maximas->GetOutputPort(0));
+    accessibleMaximas->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    accessibleMaximas->ThresholdBetween(1.0*moleculeRadius, 9e9);
+    accessibleMaximas->Update();
+    //DataSet of the accessible maximas to the molecule
+    auto maximaDataSet = vtkDataSet::SafeDownCast(accessibleMaximas->GetOutputDataObject(0));
+    logger::mainlog << "Number of accessible maximas: " << maximaDataSet->GetNumberOfPoints() << endl;
+
+    vector<vector<int>> saddlesConnectivity;
+    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    std::map<int,int> regionsWithSaddleInside;
+    for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
+    {
+        //logger::mainlog << "Current Saddle ID:" << endl;
+        double currentSaddleCoords[3]; //Coordinates of the current saddle
+        saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
+        
+        //Check that this saddle is not noise inside the region
+        vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
+        pointLocator->SetDataSet(currentVoidDataSet);
+        pointLocator->BuildLocator();
+        vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
+        //Find  in the void structure the closest points to the saddle inside a sphere of radius
+        pointLocator->FindPointsWithinRadius(sqrt(2.0)*cellSize,currentSaddleCoords,closestPoints);
+
+       
+        //Find the closest segments to each of the saddles that work as connectors between segments
+        vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
+        logger::mainlog << "Current Saddle ID: " << k << endl;
+        for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
+        {
+            auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
+            logger::mainlog << currentClosestRegion << endl;
+            closestRegionsToSaddle.push_back(currentClosestRegion);
+        }
+        sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
+        vector<int>::iterator it;
+        it = unique(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end());  //Delete repeated values
+        closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
+        if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
+        {
+            logger::mainlog << "YES" <<endl;
+            int contador = 0;
+            for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
+            {
+                logger::mainlog << closestRegionsToSaddle[mm] << endl;
+
+                saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
+                ++contador;
+            }
+            
+        }
+        if (closestRegionsToSaddle.size() == 1)
+        {
+            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
+        }
+        
+
+    }
+    
+    for (auto ip: regionsWithSaddleInside) {
+        
+        logger::mainlog << "Saddle ID for regions with saddle inside = " << ip.first << " and segment ID is " << ip.second << endl;
+    }
+    
+    // Print the saddleconnectivity for debugging
+    if (DEBUG)
+    {
+        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
+            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
+            for (size_t j = 0; j < 4; j++){
+                if (saddlesConnectivity[i][j] != -1){
+                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
+                }
+            }
+            // if saddle is totally inside a particular segment, output that region
+            for (auto ip : regionsWithSaddleInside){
+                if (ip.first == i) logger::mainlog << ip.second;
+            }
+            logger::mainlog << "\n" << flush;
+        }
+    }
+
+    // Next we find the segment that each maxima belongs to:
+    std::map<int,int> segmentIDofMaxima;
+    for (size_t k = 0; k < maximaDataSet->GetNumberOfPoints(); k++){
+        
+        double currentSaddleCoords[3]; //Coordinates of the current saddle
+        maximaDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
+        vtkIdType closestPoint = currentVoidDataSet->FindPoint(currentSaddleCoords[0],currentSaddleCoords[1],currentSaddleCoords[2]);
+        int currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoint).ToInt();
+        
+        segmentIDofMaxima.insert((std::pair<int,int> (k,currentClosestRegion)));
+        logger::mainlog << " For maxima ID : " << k << ", closestPoint is " << closestPoint << " and segment ID is " << currentClosestRegion << endl;
+        
+    }
+    
+    for (auto im : segmentIDofMaxima){
+        logger::mainlog << "For maxima ID : " << im.first << ", segment ID is " << im.second << endl;
+    }
+    
+    for (auto i : ascendingManifoldIDList) //For each of the void segments
+    {
+        int currentRegion = i;
+        //Current Region of the Ascending Segmentation
+        vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
+        sectionID->SetInputConnection(voidSegmentation->GetOutputPort());
+        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
+        sectionID->ThresholdBetween(currentRegion,currentRegion);
+        sectionID->Update();
+
+        //DataSet of the specific region of the Descending Segmentation
+        auto sectionIDDataset = vtkDataSet::SafeDownCast(sectionID->GetOutputDataObject(0));
+        int numberOfPoints = sectionIDDataset->GetNumberOfPoints();
+        
+        logger::mainlog << "For ascending manifold ID: " << i << " number of points is " << numberOfPoints << endl;
+        
+    }
+    
+    // Create the critical points as a point data
+    vtkIdType nsaddles = saddlesDataSet->GetNumberOfPoints();
+    vtkIdType nmaximas = maximaDataSet->GetNumberOfPoints();
+    
+    vtkNew<vtkPoints> graphNodes;
+    graphNodes->SetNumberOfPoints(nsaddles + nmaximas);
+    
+    // We first set the saddle points
+    for (size_t i = 0; i < nsaddles; i++){
+        double coordinates[3];
+        saddlesDataSet->GetPoint(i, coordinates);
+        graphNodes->SetPoint(i, coordinates);
+    }
+    
+    for (size_t i = 0; i < nmaximas; i++){
+        double coordinates[3];
+        maximaDataSet->GetPoint(i, coordinates);
+        int ipoint = nsaddles + i;
+        graphNodes->SetPoint(ipoint, coordinates);
+    }
+
+    
+    vtkNew<vtkUnstructuredGrid> graph;
+    graph->SetPoints(graphNodes);
+    
+    for (size_t i = 0; i < nsaddles; i++){
+        
+        for (size_t j =0; j < 4; j++){
+            if (saddlesConnectivity[i][j] != -1){
+                
+                int connectedSegmentId = saddlesConnectivity[i][j];
+                
+                for (auto ip : segmentIDofMaxima){
+                    if (ip.second == connectedSegmentId){
+                        
+                        int maximaID = ip.first;
+                        // we join saddle ID and maxima ID
+                        vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                        int ipoint = nsaddles + maximaID;
+                        line->GetPointIds()->SetId(0,i);
+                        line->GetPointIds()->SetId(1,ipoint);
+                        logger::mainlog << "Connecting saddle << " << i << " and maxima " << ipoint << endl;
+                        graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+                    }
+                }
+            }
+        }
+        
+        
+        for (auto ip : regionsWithSaddleInside){
+            if (ip.first == i){
+                int connectedSegmentId = ip.second;
+                
+                for (auto im : segmentIDofMaxima){
+                    if (im.second == connectedSegmentId){
+                        
+                        int maximaID = im.first;
+                        // we join saddle ID and maxima ID
+                        vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                        line->GetPointIds()->SetId(0,i);
+                        line->GetPointIds()->SetId(1,i+maximaID);
+                        graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+                    }
+                }
+            }
+            
+        }
+        
+    }
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    graphWriter->SetInputData(graph);
+    graphWriter->SetFileName((Directory+"/" + baseFileName+"_graph.vtk").c_str());
+    graphWriter->Write();
+    
+    //Create a new graph just for visualization, this shows the nodes outside the periodic box.
+    vtkSmartPointer<vtkUnstructuredGrid> vizGraph = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkNew<vtkPoints> allNodes;
+    vizGraph->SetPoints(allNodes);
+    vtkCellIterator *it = graph->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             graph->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             graph->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pabc1[3], pabc2[3];
+             xyzToabc(p1, pabc1, invUnitCellVectors);
+             xyzToabc(p2, pabc2, invUnitCellVectors);
+             
+             vtkIdType id1 = allNodes->InsertNextPoint(p1);
+             vtkIdType id2 = allNodes->InsertNextPoint(p2);
+             
+             
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = pabc2[i] - pabc1[i];
+                 logger::mainlog << "dp[" << i << "] = " << dp[i] << endl;
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             bool periodicityFlag = false;
+             if (periodicity[0] != 0 || periodicity[1] != 0 || periodicity[2] != 0) periodicityFlag = true;
+             
+             double periodicNode1[3], periodicNode2[3];
+             if (periodicityFlag){
+                 
+                 for(size_t i = 0; i < 3; i++){
+                     
+                     periodicNode2[i] = pabc2[i] + periodicity[i];
+                     periodicNode1[i] = pabc1[i] - periodicity[i];
+                 }
+                 
+                 double periodicNodeXYZ1[3], periodicNodeXYZ2[3];
+                 abcToxyz(periodicNode1, periodicNodeXYZ1,unitCellVectors);
+                 abcToxyz(periodicNode2, periodicNodeXYZ2,unitCellVectors);
+                 vtkIdType id3 = allNodes->InsertNextPoint(periodicNodeXYZ1);
+                 vtkIdType id4 = allNodes->InsertNextPoint(periodicNodeXYZ2);
+                 vtkSmartPointer<vtkLine> imageLine1 = vtkSmartPointer<vtkLine>::New();
+                 imageLine1->GetPointIds()->SetId(0,id1);
+                 imageLine1->GetPointIds()->SetId(1,id4);
+                 vtkSmartPointer<vtkLine> imageLine2 = vtkSmartPointer<vtkLine>::New();
+                 imageLine2->GetPointIds()->SetId(0,id2);
+                 imageLine2->GetPointIds()->SetId(1,id3);
+                 
+                 vizGraph->InsertNextCell(imageLine1->GetCellType(), imageLine1->GetPointIds());
+                 vizGraph->InsertNextCell(imageLine2->GetCellType(), imageLine2->GetPointIds());
+                 
+             } else {
+                 
+                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                 line->GetPointIds()->SetId(0,id1);
+                 line->GetPointIds()->SetId(1,id2);
+                 
+                 vizGraph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+             }
+             
+             
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> vizGraphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    vizGraphWriter->SetInputData(vizGraph);
+    vizGraphWriter->SetFileName((Directory+"/" + baseFileName+"_viz_graph.vtk").c_str());
+    vizGraphWriter->Write();
+
+
+    // save the graph in .nt2 format
+    ofstream graphFile;
+    std::string graphFileName = Directory + "/" + baseFileName + "-voidGraph" + ".nt2";
+    graphFile.open((graphFileName).c_str());
+    assert(graphFile.is_open());
+    
+    // We first write all the nodes
+    graphFile << "Nodes: " << "\n";
+    for (size_t i = 0; i < graph->GetNumberOfPoints(); i++){
+        
+        double coord[3];
+        graph->GetPoint(i,coord);
+        graphFile << i << " " << coord[0] << " " << coord[1] << " " << coord[2] << "\n";
+    }
+    
+    
+    vtkIdType cellDims[3];
+    double spacing[3];
+    cubicGrid->GetDimensions(cellDims);
+    cubicGrid->GetSpacing(spacing);
+    double boxLength[3];
+    for (size_t i = 0; i < 3; i++){
+        boxLength[i] = spacing[i] * (cellDims[i]-1);
+    }
+
+    
+    // Next we store all the edges
+    graphFile << "Edges: " << "\n";
+    it = graph->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             graph->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             graph->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pabc1[3], pabc2[3];
+             xyzToabc(p1, pabc1, invUnitCellVectors);
+             xyzToabc(p2, pabc2, invUnitCellVectors);
+
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = pabc2[i] - pabc1[i];
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
+                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    graphFile.close();
+    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
+
+    
+    
+}
+
+
+
+
+void distanceGrid::accessibleSolidGraph(bool useAllCores){
+    
+    /* We note that a saddle lies on the boundary of two or more segments and the minima
+     lies inside the segment. So we ientify the saddle that connects the two segments
+     and simply join it with the minima of that segment */
+    
+    logger::mainlog << "\n\nSegmentor: Accessible Solid Graph Module" << "\n" << flush;
+    
+    ttk::Timer solidGraphTimer;
+    
+    //Compute cell dimensions of the input file
+    //---------------------------------------------------------------------------------------------
+    double cellDimensions[6];
+    segmentation->GetCellBounds(0,cellDimensions);
+    //Cell size of the current dataset
+    double cellSize = cellDimensions[1] - cellDimensions[0];
+    //---------------------------------------------------------------------------------------------
+    
+    //Triangulate the segmentation to improve precision
+    vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    triangulation->SetInputData(segmentation);
+    triangulation->Update();
+
+    //Segmentation corresponding to the solid structure
+    vtkSmartPointer<vtkThreshold> solidSegmentation = vtkSmartPointer<vtkThreshold>::New();
+    solidSegmentation->SetInputConnection(triangulation->GetOutputPort());
+    solidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    solidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    solidSegmentation->SetLowerThreshold(-9e9);
+    solidSegmentation->SetUpperThreshold(0.0);
+    solidSegmentation->Update();
+    
+    //Same structure segmentation but with a Field Data added
+    
+    auto currentSolidDataSet = vtkDataSet::SafeDownCast(solidSegmentation->GetOutputDataObject(0));
+
+    vtkSmartPointer<vtkAbstractArray> descendingManifoldArray = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold");
+    
+    std::set<int> descendingManifoldIDList;
+    for (size_t i = 0; i < descendingManifoldArray->GetNumberOfValues(); i++ ){
+        
+        descendingManifoldIDList.insert(descendingManifoldArray->GetVariantValue(i).ToInt());
+        
+    }
+
+    //Find the 1-saddle critical points
+    vtkSmartPointer<vtkThresholdPoints> saddles = vtkSmartPointer<vtkThresholdPoints>::New();
+    saddles->SetInputData(criticalPoints);
+    saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
+    saddles->ThresholdBetween(1.0,1.0);
+    saddles->Update();
+    //Find the 2-saddles on the void structure
+    vtkSmartPointer<vtkThresholdPoints> accessibleSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
+    accessibleSaddles->SetInputConnection(saddles->GetOutputPort(0));
+    accessibleSaddles->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    accessibleSaddles->ThresholdBetween(-9e9, 0.0);
+    accessibleSaddles->Update();
+
+    //DataSet of the accessible saddles to the molecule
+    auto saddlesDataSet = vtkDataSet::SafeDownCast(accessibleSaddles->GetOutputDataObject(0));
+    logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
+    
+    // Next we find the minima critical points, and those that are accessible
+    vtkSmartPointer<vtkThresholdPoints> minimas = vtkSmartPointer<vtkThresholdPoints>::New();
+    minimas->SetInputData(criticalPoints);
+    minimas->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
+    minimas->ThresholdBetween(0.0,0.0);
+    minimas->Update();
+    //Find the minima on the solid structure
+    vtkSmartPointer<vtkThresholdPoints> accessibleMinimas = vtkSmartPointer<vtkThresholdPoints>::New();
+    accessibleMinimas->SetInputConnection(minimas->GetOutputPort(0));
+    accessibleMinimas->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    accessibleMinimas->ThresholdBetween(-9e9, 0.0);
+    accessibleMinimas->Update();
+    //DataSet of the accessible maximas to the molecule
+    auto minimaDataSet = vtkDataSet::SafeDownCast(accessibleMinimas->GetOutputDataObject(0));
+    logger::mainlog << "Number of accessible minimas: " << minimaDataSet->GetNumberOfPoints() << endl;
+
+    vector<vector<int>> saddlesConnectivity;
+    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    std::map<int,int> regionsWithSaddleInside;
+    for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
+    {
+        //logger::mainlog << "Current Saddle ID:" << endl;
+        double currentSaddleCoords[3]; //Coordinates of the current saddle
+        saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
+        
+        //Check that this saddle is not noise inside the region
+        vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
+        pointLocator->SetDataSet(currentSolidDataSet);
+        pointLocator->BuildLocator();
+        vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
+        //Find  in the void structure the closest points to the saddle inside a sphere of radius
+        pointLocator->FindPointsWithinRadius(sqrt(2.0)*cellSize,currentSaddleCoords,closestPoints);
+
+       
+        //Find the closest segments to each of the saddles that work as connectors between segments
+        vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
+        logger::mainlog << "Current Saddle ID: " << k << endl;
+        for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
+        {
+            auto currentClosestRegion = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
+            logger::mainlog << currentClosestRegion << endl;
+            closestRegionsToSaddle.push_back(currentClosestRegion);
+        }
+        sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
+        vector<int>::iterator it;
+        it = unique(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end());  //Delete repeated values
+        closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
+        if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
+        {
+            logger::mainlog << "YES" <<endl;
+            int contador = 0;
+            for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
+            {
+                logger::mainlog << closestRegionsToSaddle[mm] << endl;
+
+                saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
+                ++contador;
+            }
+            
+        }
+        if (closestRegionsToSaddle.size() == 1)
+        {
+            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
+        }
+        
+
+    }
+    
+    for (auto ip: regionsWithSaddleInside) {
+        
+        logger::mainlog << "Saddle ID for regions with saddle inside = " << ip.first << " and segment ID is " << ip.second << endl;
+    }
+    
+    // Print the saddleconnectivity for debugging
+    if (DEBUG)
+    {
+        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
+            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
+            for (size_t j = 0; j < 4; j++){
+                if (saddlesConnectivity[i][j] != -1){
+                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
+                }
+            }
+            // if saddle is totally inside a particular segment, output that region
+            for (auto ip : regionsWithSaddleInside){
+                if (ip.first == i) logger::mainlog << ip.second;
+            }
+            logger::mainlog << "\n" << flush;
+        }
+    }
+
+    // Next we find the segment that each minima belongs to:
+    std::map<int,int> segmentIDofMinima;
+    for (size_t k = 0; k < minimaDataSet->GetNumberOfPoints(); k++){
+        
+        double currentSaddleCoords[3]; //Coordinates of the current saddle
+        minimaDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
+        vtkIdType closestPoint = currentSolidDataSet->FindPoint(currentSaddleCoords[0],currentSaddleCoords[1],currentSaddleCoords[2]);
+        int currentClosestRegion = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoint).ToInt();
+        
+        segmentIDofMinima.insert((std::pair<int,int> (k,currentClosestRegion)));
+        logger::mainlog << " For minima ID : " << k << ", closestPoint is " << closestPoint << " and segment ID is " << currentClosestRegion << endl;
+        
+    }
+    
+    for (auto im : segmentIDofMinima){
+        logger::mainlog << "For minima ID : " << im.first << ", segment ID is " << im.second << endl;
+    }
+    
+    for (auto i : descendingManifoldIDList) //For each of the void segments
+    {
+        int currentRegion = i;
+        //Current Region of the Ascending Segmentation
+        vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
+        sectionID->SetInputConnection(solidSegmentation->GetOutputPort());
+        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
+        sectionID->ThresholdBetween(currentRegion,currentRegion);
+        sectionID->Update();
+
+        //DataSet of the specific region of the Descending Segmentation
+        auto sectionIDDataset = vtkDataSet::SafeDownCast(sectionID->GetOutputDataObject(0));
+        int numberOfPoints = sectionIDDataset->GetNumberOfPoints();
+        
+        logger::mainlog << "For descending manifold ID: " << i << " number of points is " << numberOfPoints << endl;
+        
+    }
+    
+    // Create the critical points as a point data
+    vtkIdType nsaddles = saddlesDataSet->GetNumberOfPoints();
+    vtkIdType nminimas = minimaDataSet->GetNumberOfPoints();
+    
+    vtkNew<vtkPoints> graphNodes;
+    graphNodes->SetNumberOfPoints(nsaddles + nminimas);
+    
+    // We first set the saddle points
+    for (size_t i = 0; i < nsaddles; i++){
+        double coordinates[3];
+        saddlesDataSet->GetPoint(i, coordinates);
+        graphNodes->SetPoint(i, coordinates);
+    }
+    
+    for (size_t i = 0; i < nminimas; i++){
+        double coordinates[3];
+        minimaDataSet->GetPoint(i, coordinates);
+        int ipoint = nsaddles + i;
+        graphNodes->SetPoint(ipoint, coordinates);
+    }
+
+    
+    vtkNew<vtkUnstructuredGrid> graph;
+    graph->SetPoints(graphNodes);
+    
+    for (size_t i = 0; i < nsaddles; i++){
+        
+        for (size_t j =0; j < 4; j++){
+            if (saddlesConnectivity[i][j] != -1){
+                
+                int connectedSegmentId = saddlesConnectivity[i][j];
+                
+                for (auto ip : segmentIDofMinima){
+                    if (ip.second == connectedSegmentId){
+                        
+                        int minimaID = ip.first;
+                        // we join saddle ID and maxima ID
+                        vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                        int ipoint = nsaddles + minimaID;
+                        line->GetPointIds()->SetId(0,i);
+                        line->GetPointIds()->SetId(1,ipoint);
+                        logger::mainlog << "Connecting saddle << " << i << " and minima " << (ipoint-nsaddles) << endl;
+                        graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+                    }
+                }
+            }
+        }
+        
+        
+        for (auto ip : regionsWithSaddleInside){
+            if (ip.first == i){
+                int connectedSegmentId = ip.second;
+                
+                for (auto im : segmentIDofMinima){
+                    if (im.second == connectedSegmentId){
+                        
+                        int minimaID = im.first;
+                        // we join saddle ID and maxima ID
+                        vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                        line->GetPointIds()->SetId(0,i);
+                        line->GetPointIds()->SetId(1,i+minimaID);
+                        graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+                    }
+                }
+            }
+            
+        }
+        
+    }
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    graphWriter->SetInputData(graph);
+    graphWriter->SetFileName((Directory+"/" + baseFileName+"_graph.vtk").c_str());
+    graphWriter->Write();
+    
+    //Create a new graph just for visualization, this shows the nodes outside the periodic box.
+    vtkSmartPointer<vtkUnstructuredGrid> vizGraph = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkNew<vtkPoints> allNodes;
+    vizGraph->SetPoints(allNodes);
+    vtkCellIterator *it = graph->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             graph->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             graph->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pabc1[3], pabc2[3];
+             xyzToabc(p1, pabc1, invUnitCellVectors);
+             xyzToabc(p2, pabc2, invUnitCellVectors);
+             
+             vtkIdType id1 = allNodes->InsertNextPoint(p1);
+             vtkIdType id2 = allNodes->InsertNextPoint(p2);
+             
+             
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = pabc2[i] - pabc1[i];
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             bool periodicityFlag = false;
+             if (periodicity[0] != 0 || periodicity[1] != 0 || periodicity[2] != 0) periodicityFlag = true;
+             
+             double periodicNode1[3], periodicNode2[3];
+             if (periodicityFlag){
+                 
+                 for(size_t i = 0; i < 3; i++){
+                     
+                     periodicNode2[i] = pabc2[i] + periodicity[i];
+                     periodicNode1[i] = pabc1[i] - periodicity[i];
+                 }
+                 
+                 double periodicNodeXYZ1[3], periodicNodeXYZ2[3];
+                 abcToxyz(periodicNode1, periodicNodeXYZ1,unitCellVectors);
+                 abcToxyz(periodicNode2, periodicNodeXYZ2,unitCellVectors);
+                 vtkIdType id3 = allNodes->InsertNextPoint(periodicNodeXYZ1);
+                 vtkIdType id4 = allNodes->InsertNextPoint(periodicNodeXYZ2);
+                 vtkSmartPointer<vtkLine> imageLine1 = vtkSmartPointer<vtkLine>::New();
+                 imageLine1->GetPointIds()->SetId(0,id1);
+                 imageLine1->GetPointIds()->SetId(1,id4);
+                 vtkSmartPointer<vtkLine> imageLine2 = vtkSmartPointer<vtkLine>::New();
+                 imageLine2->GetPointIds()->SetId(0,id2);
+                 imageLine2->GetPointIds()->SetId(1,id3);
+                 
+                 vizGraph->InsertNextCell(imageLine1->GetCellType(), imageLine1->GetPointIds());
+                 vizGraph->InsertNextCell(imageLine2->GetCellType(), imageLine2->GetPointIds());
+                 
+             } else {
+                 
+                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                 line->GetPointIds()->SetId(0,id1);
+                 line->GetPointIds()->SetId(1,id2);
+                 
+                 vizGraph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+             }
+             
+             
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    vtkSmartPointer<vtkUnstructuredGridWriter> vizGraphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+    vizGraphWriter->SetInputData(vizGraph);
+    vizGraphWriter->SetFileName((Directory+"/" + baseFileName+"_viz_graph.vtk").c_str());
+    vizGraphWriter->Write();
+
+
+    // save the graph in .nt2 format
+    ofstream graphFile;
+    std::string graphFileName = Directory + "/" + baseFileName + "-voidGraph" + ".nt2";
+    graphFile.open((graphFileName).c_str());
+    assert(graphFile.is_open());
+    
+    // We first write all the nodes
+    graphFile << "Nodes: " << "\n";
+    for (size_t i = 0; i < graph->GetNumberOfPoints(); i++){
+        
+        double coord[3];
+        graph->GetPoint(i,coord);
+        graphFile << i << " " << coord[0] << " " << coord[1] << " " << coord[2] << "\n";
+    }
+    
+    
+    vtkIdType cellDims[3];
+    double spacing[3];
+    cubicGrid->GetDimensions(cellDims);
+    cubicGrid->GetSpacing(spacing);
+    double boxLength[3];
+    for (size_t i = 0; i < 3; i++){
+        boxLength[i] = spacing[i] * (cellDims[i]-1);
+    }
+
+    
+    // Next we store all the edges
+    graphFile << "Edges: " << "\n";
+    it = graph->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             graph->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             graph->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pabc1[3], pabc2[3];
+             xyzToabc(p1, pabc1, invUnitCellVectors);
+             xyzToabc(p2, pabc2, invUnitCellVectors);
+
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = pabc2[i] - pabc1[i];
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
+                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
+         }
+         else {
+             logger::mainlog << " Error in accessible Solid Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Solid Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    graphFile.close();
+    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
+    
+}

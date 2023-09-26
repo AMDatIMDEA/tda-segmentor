@@ -355,3 +355,17 @@ void PEgrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
 
 
 
+void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
+    
+    
+    
+}
+
+
+
+
+void PEgrid::accessibleSolidGraph(bool useAllCores){
+
+    
+    
+}

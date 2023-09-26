@@ -225,6 +225,10 @@ void segmentor::readDistanceGrid(vtkSmartPointer<vtkImageData> imageData){
     ifstream inputFile;
     
     inputFile.open(fileName);
+    
+    if(!inputFile) {
+        throw std::runtime_error("Failed to open file!!\n");
+    }
     int nx, ny, nz;
     int natoms;
     if (inputFile.is_open())
@@ -322,6 +326,10 @@ void segmentor::readPEgrid(vtkSmartPointer<vtkImageData> imageData){
     
     ifstream inputFile;
     inputFile.open(fileName);
+    if(!inputFile) {
+        throw std::runtime_error("Failed to open file!!\n");
+    }
+    
     int nx, ny, nz;
     int natoms;
     size_t InfCount = 0;
@@ -507,6 +515,9 @@ void segmentor::getArrayNameFromCubeFile(std::string &nameOfArray){
     
     ifstream inputFile;
     inputFile.open(fileName);
+    if(!inputFile) {
+        throw std::runtime_error("Failed to open file!!\n");
+    }
     
     if (inputFile.is_open())
     {
@@ -589,11 +600,13 @@ vtkSmartPointer<ttkTriangulationManager> segmentor::generatePeriodicGrid(vtkSmar
 
 void segmentor::computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores){
 
+    logger::mainlog << "Computing persistence diagram ...";
     thePersistenceDiagram->SetUseAllCores(useAllCores);
     thePersistenceDiagram->SetInputConnection(grid->GetOutputPort());
     thePersistenceDiagram->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
     
     isPersistenceDiagramComputed = true;
+    logger::mainlog << ". done" << endl;
 }
 
 
@@ -665,6 +678,7 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     //=============================================================================================
     //3.3 Morse Smale Complex Computation
     //Morse Smale Complex Computation
+    logger::mainlog << "Computing Morse Smale Complex ...";
     theMSC->SetUseAllCores(useAllCores);
     theMSC->SetReturnSaddleConnectors(1);
     theMSC->SetSaddleConnectorsPersistenceThreshold(saddlesaddleIncrement*persistenceThreshold);
@@ -676,6 +690,7 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     theMSC->SetComputeDescendingSeparatrices1(false);
     theMSC->SetComputeDescendingSeparatrices2(false);
     theMSC->Update();
+    logger::mainlog << ". done" << endl;
     
     double timeTakenForMSC = MSCTimer.getElapsedTime();
     MSCTimer.reStart();
@@ -776,7 +791,6 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
             }
 
             // Storing the segmentation data without VTK //
-            logger::mainlog << "VTK dataset: " << endl << flush;
             for (size_t i = 0; i < segmentationDataSet->GetNumberOfPoints(); i++){
                 double p[3];
                 Grid->gridPointsXYZ->GetPoint(i, p);
