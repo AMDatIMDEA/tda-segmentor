@@ -33,7 +33,7 @@ public:
     virtual void             solidSegmentation();
     virtual void             accessibleVoidSpace(double moleculeRadius, bool useAllCores);
     virtual void             accessibleVoidGraph(double moleculeRadius, bool useAllCores);
-    virtual void             accessibleSolidGraph(bool useAllCores);
+    virtual void             accessibleSolidGraph(double moleculeRadius, bool useAllCores);
     
 };
 

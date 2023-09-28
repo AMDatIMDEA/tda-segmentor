@@ -1225,7 +1225,7 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
 
 
 
-void distanceGrid::accessibleSolidGraph(bool useAllCores){
+void distanceGrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores){
     
     /* We note that a saddle lies on the boundary of two or more segments and the minima
      lies inside the segment. So we ientify the saddle that connects the two segments
@@ -1241,6 +1241,7 @@ void distanceGrid::accessibleSolidGraph(bool useAllCores){
     segmentation->GetCellBounds(0,cellDimensions);
     //Cell size of the current dataset
     double cellSize = cellDimensions[1] - cellDimensions[0];
+    logger::mainlog << "Cell size is : " << cellSize << endl;
     //---------------------------------------------------------------------------------------------
     
     //Triangulate the segmentation to improve precision
@@ -1280,7 +1281,7 @@ void distanceGrid::accessibleSolidGraph(bool useAllCores){
     vtkSmartPointer<vtkThresholdPoints> accessibleSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
     accessibleSaddles->SetInputConnection(saddles->GetOutputPort(0));
     accessibleSaddles->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
-    accessibleSaddles->ThresholdBetween(-9e9, 0.0);
+    accessibleSaddles->ThresholdBetween(-9e9, -moleculeRadius);
     accessibleSaddles->Update();
 
     //DataSet of the accessible saddles to the molecule
@@ -1311,7 +1312,6 @@ void distanceGrid::accessibleSolidGraph(bool useAllCores){
         //logger::mainlog << "Current Saddle ID:" << endl;
         double currentSaddleCoords[3]; //Coordinates of the current saddle
         saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
-        
         //Check that this saddle is not noise inside the region
         vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
         pointLocator->SetDataSet(currentSolidDataSet);
@@ -1323,11 +1323,9 @@ void distanceGrid::accessibleSolidGraph(bool useAllCores){
        
         //Find the closest segments to each of the saddles that work as connectors between segments
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
@@ -1336,7 +1334,6 @@ void distanceGrid::accessibleSolidGraph(bool useAllCores){
         closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
         if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
         {
-            logger::mainlog << "YES" <<endl;
             int contador = 0;
             for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
             {

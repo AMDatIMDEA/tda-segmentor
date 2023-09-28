@@ -364,7 +364,7 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
 
 
 
-void PEgrid::accessibleSolidGraph(bool useAllCores){
+void PEgrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores){
 
     
     

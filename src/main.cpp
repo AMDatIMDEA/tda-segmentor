@@ -53,7 +53,7 @@ int main(int argc, char ** argv){
         } else if (param.moduleNames[i] == "accessiblevoidgraph"){
             inputGrid->accessibleVoidGraph(param.probeRadius, param.useAllCores);
         } else if (param.moduleNames[i] == "accessiblesolidgraph") {
-            inputGrid->accessibleSolidGraph(param.useAllCores);
+            inputGrid->accessibleSolidGraph(param.probeRadius, param.useAllCores);
         }
         
     }

@@ -112,6 +112,7 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
         vtkIdType cellDims[3];
         Grid->cubicGrid->GetDimensions(cellDims);
         Grid->nx = cellDims[0]; Grid->ny = cellDims[1]; Grid->nz = cellDims[2];
+        Grid->cubicGrid->SetSpacing(1.0/(Grid->nx-1), 1.0/(Grid->ny-1), 1.0/(Grid->nz-1));
         
     }
     
@@ -286,7 +287,7 @@ void segmentor::readDistanceGrid(vtkSmartPointer<vtkImageData> imageData){
     if (inputFile.is_open())
     {
         string line;
-        //Number of the line that is being readed
+        //Number of the line that is being read
         int lineNumber = 0;
         while (getline(inputFile,line))
         {
