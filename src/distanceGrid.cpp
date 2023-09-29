@@ -90,7 +90,8 @@ void distanceGrid::voidSegmentation(){
     //2d vector to store the saddles id and the regions connected to them
     vector<vector<int>> saddlesConnectivity;
     //Set default values to -1.0
-    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    size_t nmaxneighbors = 20;
+    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(nmaxneighbors,-1.0));
     std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
@@ -140,7 +141,7 @@ void distanceGrid::voidSegmentation(){
     {
         for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
             logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < 4; j++){
+            for (size_t j = 0; j < nmaxneighbors; j++){
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
@@ -189,7 +190,7 @@ void distanceGrid::voidSegmentation(){
                     regionsSaddlesID.push_back(closestRegionPoint);
 
                     ++numberOfConnections;
-                    for (size_t c = 0; c < 4; c++){
+                    for (size_t c = 0; c < nmaxneighbors; c++){
                         if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
                             connectedSegments.insert(saddlesConnectivity[k][c]);
                     }
@@ -348,7 +349,8 @@ void distanceGrid::solidSegmentation(){
     logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
-    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    size_t nmaxneighbors = 20;
+    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(nmaxneighbors,-1.0));
     std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
@@ -401,7 +403,7 @@ void distanceGrid::solidSegmentation(){
     {
         for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
             logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < 4; j++){
+            for (size_t j = 0; j < nmaxneighbors; j++){
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
@@ -453,7 +455,7 @@ void distanceGrid::solidSegmentation(){
                     regionsSaddlesID.push_back(closestRegionPoint);
 
                     ++numberOfConnections;
-                    for (size_t c = 0; c < 4; c++){
+                    for (size_t c = 0; c < nmaxneighbors; c++){
                         if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
                             connectedSegments.insert(saddlesConnectivity[k][c]);
                     }
@@ -624,6 +626,7 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
     logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
+    size_t nmaxneighbors = 20;
     saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
     std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
@@ -680,7 +683,7 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
     {
         for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
             logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < 4; j++){
+            for (size_t j = 0; j < nmaxneighbors; j++){
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
@@ -728,7 +731,7 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
                 if (it != saddlesConnectivity[k].end())
                 {
                     ++numberOfConnections;
-                    for (size_t c = 0; c < 4; c++){
+                    for (size_t c = 0; c < nmaxneighbors; c++){
                         if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
                             connectedSegments.insert(saddlesConnectivity[k][c]);
                     }
@@ -874,7 +877,8 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
     logger::mainlog << "Number of accessible maximas: " << maximaDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
-    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    size_t nmaxneighbors = 20;
+    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(nmaxneighbors,-1.0));
     std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
@@ -935,7 +939,7 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
     {
         for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
             logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < 4; j++){
+            for (size_t j = 0; j < nmaxneighbors; j++){
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
@@ -1011,7 +1015,7 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
     
     for (size_t i = 0; i < nsaddles; i++){
         
-        for (size_t j =0; j < 4; j++){
+        for (size_t j =0; j < nmaxneighbors; j++){
             if (saddlesConnectivity[i][j] != -1){
                 
                 int connectedSegmentId = saddlesConnectivity[i][j];
@@ -1255,7 +1259,7 @@ void distanceGrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores)
     solidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
     solidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
     solidSegmentation->SetLowerThreshold(-9e9);
-    solidSegmentation->SetUpperThreshold(0.0);
+    solidSegmentation->SetUpperThreshold(-moleculeRadius);
     solidSegmentation->Update();
     
     //Same structure segmentation but with a Field Data added
@@ -1298,14 +1302,15 @@ void distanceGrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores)
     vtkSmartPointer<vtkThresholdPoints> accessibleMinimas = vtkSmartPointer<vtkThresholdPoints>::New();
     accessibleMinimas->SetInputConnection(minimas->GetOutputPort(0));
     accessibleMinimas->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
-    accessibleMinimas->ThresholdBetween(-9e9, 0.0);
+    accessibleMinimas->ThresholdBetween(-9e9, -moleculeRadius);
     accessibleMinimas->Update();
     //DataSet of the accessible maximas to the molecule
     auto minimaDataSet = vtkDataSet::SafeDownCast(accessibleMinimas->GetOutputDataObject(0));
     logger::mainlog << "Number of accessible minimas: " << minimaDataSet->GetNumberOfPoints() << endl;
 
     vector<vector<int>> saddlesConnectivity;
-    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
+    size_t nmaxneighbors = 20;
+    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(nmaxneighbors,-1.0));
     std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
@@ -1362,7 +1367,7 @@ void distanceGrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores)
     {
         for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
             logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < 4; j++){
+            for (size_t j = 0; j < nmaxneighbors; j++){
                 if (saddlesConnectivity[i][j] != -1){
                     logger::mainlog << saddlesConnectivity[i][j] << ", ";
                 }
@@ -1438,7 +1443,7 @@ void distanceGrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores)
     
     for (size_t i = 0; i < nsaddles; i++){
         
-        for (size_t j =0; j < 4; j++){
+        for (size_t j =0; j < nmaxneighbors; j++){
             if (saddlesConnectivity[i][j] != -1){
                 
                 int connectedSegmentId = saddlesConnectivity[i][j];
