@@ -641,7 +641,7 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
         //Find  in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(sqrt(2.0)*cellSize,currentSaddleCoords,closestPoints);
+        pointLocator->FindPointsWithinRadius(sqrt(3.0)*cellSize*2,currentSaddleCoords,closestPoints);
 
        
         //Find the closest segments to each of the saddles that work as connectors between segments
@@ -892,7 +892,7 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
         //Find  in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(sqrt(2.0)*cellSize,currentSaddleCoords,closestPoints);
+        pointLocator->FindPointsWithinRadius(sqrt(3.0)*cellSize*2,currentSaddleCoords,closestPoints);
 
        
         //Find the closest segments to each of the saddles that work as connectors between segments
@@ -1304,7 +1304,7 @@ void distanceGrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores)
         pointLocator->BuildLocator();
         vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
         //Find  in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(sqrt(2.0)*cellSize,currentSaddleCoords,closestPoints);
+        pointLocator->FindPointsWithinRadius(sqrt(3.0)*cellSize*2,currentSaddleCoords,closestPoints);
 
        
         //Find the closest segments to each of the saddles that work as connectors between segments
