@@ -897,7 +897,7 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
        
         //Find the closest segments to each of the saddles that work as connectors between segments
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        logger::mainlog << "Current Saddle ID: " << k << endl;
+        // logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
@@ -910,11 +910,11 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
         closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
         if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
         {
-            logger::mainlog << "YES" <<endl;
+            // logger::mainlog << "YES" <<endl;
             int contador = 0;
             for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
             {
-                logger::mainlog << closestRegionsToSaddle[mm] << endl;
+                // logger::mainlog << closestRegionsToSaddle[mm] << endl;
 
                 saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
                 ++contador;
@@ -970,24 +970,6 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
         logger::mainlog << "For maxima ID : " << im.first << ", segment ID is " << im.second << endl;
     }
     
-    for (auto i : ascendingManifoldIDList) //For each of the void segments
-    {
-        int currentRegion = i;
-        //Current Region of the Ascending Segmentation
-        vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
-        sectionID->SetInputConnection(voidSegmentation->GetOutputPort());
-        sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
-        sectionID->ThresholdBetween(currentRegion,currentRegion);
-        sectionID->Update();
-
-        //DataSet of the specific region of the Descending Segmentation
-        auto sectionIDDataset = vtkDataSet::SafeDownCast(sectionID->GetOutputDataObject(0));
-        int numberOfPoints = sectionIDDataset->GetNumberOfPoints();
-        
-        logger::mainlog << "For ascending manifold ID: " << i << " number of points is " << numberOfPoints << endl;
-        
-    }
-    
     // Create the critical points as a point data
     vtkIdType nsaddles = saddlesDataSet->GetNumberOfPoints();
     vtkIdType nmaximas = maximaDataSet->GetNumberOfPoints();
@@ -1029,7 +1011,7 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
                         int ipoint = nsaddles + maximaID;
                         line->GetPointIds()->SetId(0,i);
                         line->GetPointIds()->SetId(1,ipoint);
-                        logger::mainlog << "Connecting saddle << " << i << " and maxima " << ipoint << endl;
+                        if (DEBUG) logger::mainlog << "Connecting saddle << " << i << " and maxima " << ipoint << endl;
                         graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
                     }
                 }
@@ -1089,7 +1071,6 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
              int periodicity[3] = {0,0,0};
              double dp[3];for (size_t i = 0; i < 3; i++){
                  dp[i] = pabc2[i] - pabc1[i];
-                 logger::mainlog << "dp[" << i << "] = " << dp[i] << endl;
              }
              
              for (size_t i = 0; i < 3 ; i++){
