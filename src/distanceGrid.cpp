@@ -882,7 +882,6 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
     std::map<int,int> regionsWithSaddleInside;
     for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
     {
-        //logger::mainlog << "Current Saddle ID:" << endl;
         double currentSaddleCoords[3]; //Coordinates of the current saddle
         saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
         
@@ -897,11 +896,9 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
        
         //Find the closest segments to each of the saddles that work as connectors between segments
         vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        // logger::mainlog << "Current Saddle ID: " << k << endl;
         for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
         {
             auto currentClosestRegion = currentVoidDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            logger::mainlog << currentClosestRegion << endl;
             closestRegionsToSaddle.push_back(currentClosestRegion);
         }
         sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
@@ -910,11 +907,9 @@ void distanceGrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
         closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
         if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
         {
-            // logger::mainlog << "YES" <<endl;
             int contador = 0;
             for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
             {
-                // logger::mainlog << closestRegionsToSaddle[mm] << endl;
 
                 saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
                 ++contador;

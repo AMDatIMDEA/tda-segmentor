@@ -10,6 +10,8 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
  
 **********************************************************************/
 
+#define NITERATIONS 2
+
 
 //Visualization Toolkit(VTK) libraries
 //-------------------------------------------------------------------------------------------------
@@ -80,6 +82,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <ttkPersistenceDiagramClustering.h>
 #include <ttkPersistenceCurve.h>
 #include <ttkTriangulationManager.h>
+#include <ttkScalarFieldSmoother.h>
 //-------------------------------------------------------------------------------------------------
 
 

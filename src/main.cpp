@@ -32,8 +32,10 @@ int main(int argc, char ** argv){
     grid* inputGrid = analysis->readInputFile(param);
     
     if (param.useSuperCell) inputGrid->generateSuperCell(); // inputGrid is now updated to a supercell 
-    
-    vtkSmartPointer<ttkTriangulationManager> periodicGrid = analysis->generatePeriodicGrid(inputGrid->cubicGrid,true,param.useAllCores);
+
+    // Data is smoothed by NITERATIONS (set in headers.h) and periodicity is applied
+    auto smoothGrid = analysis->smoothInputGrid(inputGrid->cubicGrid, NITERATIONS, param.useAllCores);
+    auto periodicGrid = analysis->generatePeriodicGrid(smoothGrid, true, param.useAllCores);
 
     vtkSmartPointer<ttkMorseSmaleComplex> morseSmaleComplex;
     if (param.segmentationFlag){

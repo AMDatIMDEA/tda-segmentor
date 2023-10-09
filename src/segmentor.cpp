@@ -567,35 +567,55 @@ void segmentor::getArrayNameFromVTIFile(std::string &nameOfArray){
 
 
 /**
- * @brief  Set periodic conditions for the input grid.
- * @param grid Input grid
+ * @brief  Set periodic conditions for the smoothed grid.
+ * @param smoothgrid Input grid
  * @param periodicConditions  Periodic Boundary Conditions
  * @param useAllCores
  * @return a pointer to a ttk variable of type ttkTriangulationManager.
  */
-vtkSmartPointer<ttkTriangulationManager> segmentor::generatePeriodicGrid(vtkSmartPointer<vtkImageData> grid,bool periodicConditions, bool useAllCores)
+vtkSmartPointer<ttkTriangulationManager> segmentor::generatePeriodicGrid(vtkSmartPointer<ttkScalarFieldSmoother> smoothgrid, bool periodicConditions, bool useAllCores)
 {
-    
-    
-    logger::mainlog << "\n\nSegmentor: generate periodic grid Module" << "\n";
+
+    logger::mainlog << "\n\nSegmentor: generate periodic grid Module"
+                    << "\n";
     ttk::Timer periodicTimer;
-    //VTK function used to set Periodic Boundary Conditions
+
+    // VTK function used to set Periodic Boundary Conditions
     vtkSmartPointer<ttkTriangulationManager> periodGrid = vtkSmartPointer<ttkTriangulationManager>::New();
     periodGrid->SetUseAllCores(useAllCores);
-    periodGrid->SetInputData(grid);
+    periodGrid->SetInputConnection(smoothgrid->GetOutputPort());
     periodGrid->SetPeriodicity(periodicConditions);
     periodGrid->Update();
 
-    size_t i, j,k,index;
-    
-    
     double elapsedTime = periodicTimer.getElapsedTime();
-    logger::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n" << flush;
+    logger::mainlog << "Time elapsed in periodic condition setter module: " << elapsedTime << "\n"
+                    << flush;
 
     return periodGrid;
-    
 }
 
+
+
+
+vtkSmartPointer<ttkScalarFieldSmoother>  segmentor::smoothInputGrid(vtkSmartPointer<vtkImageData> grid, int niterations, bool useAllCores)
+{
+    logger::mainlog << "\n\nSegmentor: Smooth Input Grid module"
+                    << "\n";
+    ttk::Timer smootherTimer;
+
+    vtkSmartPointer<ttkScalarFieldSmoother> smoother = vtkSmartPointer<ttkScalarFieldSmoother>::New();
+    smoother->AddInputData(grid);
+    smoother->SetNumberOfIterations(niterations);
+    smoother->SetInputArrayToProcess(0, 0, 0, 0, arrayName.c_str());
+    smoother->SetUseAllCores(useAllCores);
+    smoother->Update();
+
+    double elapsedTime = smootherTimer.getElapsedTime();
+    logger::mainlog << "Time elapsed in in smoothing the input grid: " << elapsedTime << "\n"
+                    << flush;
+
+    return smoother;
+}
 
 
 
@@ -605,6 +625,7 @@ void segmentor::computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManage
     thePersistenceDiagram->SetUseAllCores(useAllCores);
     thePersistenceDiagram->SetInputConnection(grid->GetOutputPort());
     thePersistenceDiagram->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
+    thePersistenceDiagram->Update();
     
     isPersistenceDiagramComputed = true;
     logger::mainlog << ". done" << endl;

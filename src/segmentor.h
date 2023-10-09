@@ -47,8 +47,9 @@ public:
     vtkSmartPointer<vtkImageData>                      readFromCubeFile();
     void                                               readDistanceGrid(vtkSmartPointer<vtkImageData> imageData);
     void                                               readPEgrid(vtkSmartPointer<vtkImageData> imageData);
-    vtkSmartPointer<ttkTriangulationManager>           generatePeriodicGrid(vtkSmartPointer<vtkImageData> grid,bool periodicConditions,
+    vtkSmartPointer<ttkTriangulationManager>           generatePeriodicGrid(vtkSmartPointer<ttkScalarFieldSmoother> smoothgrid,bool periodicConditions,
                                                                             bool useAllCores);
+    vtkSmartPointer<ttkScalarFieldSmoother>            smoothInputGrid(vtkSmartPointer<vtkImageData> grid, int niterations, bool useAllCores); 
     void                                               computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
     
     void                                               MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold,
