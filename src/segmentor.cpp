@@ -27,6 +27,7 @@ thePersistenceCurve(vtkSmartPointer<ttkPersistenceCurve>::New())
     BaseFileName = p.basefilename;
     extensionName = p.extensionname;
     arrayName = p.arrayName; 
+    writeFractionalGrid = p.writeFractionalGrid; 
     // All the results will be saved in cwd/segmentor-BaseFileName.results/
     std::stringstream str;
     str << "segmentor-" << BaseFileName << ".results";
@@ -186,6 +187,18 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
         strucGridWriter->SetInputData(Grid->originalGrid);
         strucGridWriter->SetFileName((Directory+"/"+BaseFileName+"_grid.vtk").c_str());
         strucGridWriter->Write();
+
+        // It could be useful to dump the fractional grid too for debugging purposes,
+        // for this use -writefractionalgrid at invocation
+
+        if (writeFractionalGrid) {
+            vtkNew<vtkXMLImageDataWriter> imageWriter;
+            std::ostringstream oss;
+            oss << Directory << "/" << BaseFileName << "_fractional_grid." << imageWriter->GetDefaultFileExtension();
+            imageWriter->SetInputData(Grid->cubicGrid);
+            imageWriter->SetFileName(oss.str().c_str());
+            imageWriter->Write();
+        }
         
     }
  

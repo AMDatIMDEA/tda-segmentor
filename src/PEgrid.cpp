@@ -364,7 +364,7 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
     
     logger::mainlog << "\n\nSegmentor: Accessible Void Graph Module" << "\n" << flush;
     
-    ttk::Timer solidGraphTimer;
+    ttk::Timer voidGraphTimer;
     
     //Compute cell dimensions of the input file
     //---------------------------------------------------------------------------------------------
@@ -775,6 +775,9 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
     
     graphFile.close();
     logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
+
+    double elapsedTime = voidGraphTimer.getElapsedTime();
+    logger::mainlog << "Time elapsed in the accessible void graph module: " << elapsedTime << "(s)\n" << flush;
     
 }
 
@@ -783,6 +786,7 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
 
 void PEgrid::accessibleSolidGraph(double moleculeRadius, bool useAllCores){
 
-    
+    logger::mainlog << "This method is not implemented for the potential energy grids!!" << endl;
+    logger::errlog << "This method is not implemented for the potential energy grids!!" << endl;
     
 }

@@ -25,6 +25,7 @@ useAllCores(false),
 saveLogFile(false),
 segmentationFlag(false),
 ftmTreeFlag(false),
+writeFractionalGrid(false),
 persistenceThreshold(0.0),
 probeRadius(0.0),
 arrayName()
@@ -133,6 +134,12 @@ void parameters::parser(int nargs, char **args)
         if ( strcmp(args[i] , "-usesupercell") == 0 && i < nargs - 1)
         {
             useSuperCell = true;
+            j++;
+        }
+
+        if ( strcmp(args[i] , "-writefractionalgrid") == 0 && i < nargs - 1)
+        {
+            writeFractionalGrid = true;
             j++;
         }
         
@@ -249,5 +256,7 @@ void parameters::writetoLogFile() {
     dummy = "False";
     if (saveLogFile) dummy = "True";
     logger::mainlog << "Save log file                                                : " << dummy << endl;
+    if (writeFractionalGrid) dummy = "True";
+    logger::mainlog << "Write fractional grid                                        : " << dummy << endl;
     
 }

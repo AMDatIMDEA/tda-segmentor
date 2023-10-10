@@ -84,6 +84,7 @@ private:
     string                                              arrayName, Directory;
     grid*                                               Grid;
     bool                                                isPersistenceDiagramComputed;
+    bool                                                writeFractionalGrid; 
 
 };
 

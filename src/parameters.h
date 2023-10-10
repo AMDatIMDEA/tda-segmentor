@@ -34,6 +34,7 @@ public:
     std::string                        arrayName;
     bool                               useSuperCell;
     bool                               useAllCores;
+    bool                               writeFractionalGrid;
     bool                               saveLogFile;
     bool                               segmentationFlag;
     bool                               ftmTreeFlag;
