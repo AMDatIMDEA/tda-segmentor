@@ -132,8 +132,13 @@ void grid::generateSuperCell(){
     
     cubicGrid->Initialize();
     cubicGrid = appendedImage;
-    // We reinitialize the grid points, nx, ny, nz that now belongs to the super cell
+    // We reinitialize the grid points, nx, ny, nz that now belongs to the super cell, and reset the spacing
     nx = cellDimsSuperCell[0]; ny = cellDimsSuperCell[1]; nz = cellDimsSuperCell[2];
+    cubicGrid->SetSpacing(1.0/(nx-1), 1.0/(ny-1), 1.0/(nz-1));
+    // We also need to reinitialize the unit cell vectors that should now map the super cell
+    // to the unit cube
+    this->defineUnitCellVectors();
+    
     gridPointsXYZ->Initialize();
     // Store all the locations of the grid points for a general triclinic lattice.
     double x = 0.0, y = 0.0, z = 0.0;
