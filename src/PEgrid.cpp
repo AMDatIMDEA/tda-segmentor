@@ -584,7 +584,7 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
                         int ipoint = nsaddles + minimaID;
                         line->GetPointIds()->SetId(0,i);
                         line->GetPointIds()->SetId(1,ipoint);
-                        logger::mainlog << "Connecting saddle << " << i << " and minima " << (ipoint-nsaddles) << endl;
+                        logger::mainlog << "Connecting saddle << " << i << " and minima " << (ipoint) << endl;
                         graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
                     }
                 }
@@ -600,10 +600,12 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
                     if (im.second == connectedSegmentId){
                         
                         int minimaID = im.first;
+                        int ipoint = nsaddles + minimaID; 
                         // we join saddle ID and maxima ID
                         vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
                         line->GetPointIds()->SetId(0,i);
-                        line->GetPointIds()->SetId(1,i+minimaID);
+                        line->GetPointIds()->SetId(1,ipoint);
+                        logger::mainlog << "Connecting saddle << " << i << " and minima " << (ipoint) << endl;
                         graph->InsertNextCell(line->GetCellType(), line->GetPointIds());
                     }
                 }
