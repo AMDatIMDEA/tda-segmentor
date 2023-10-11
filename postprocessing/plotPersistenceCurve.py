@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TDA-Segmentor postprocessing scripts: 
+TDA-Segmentor plotting persistence curve: 
     
 Developers:       Aditya Vasudevan
                   Maciej Haranzcyk
@@ -14,14 +14,12 @@ Developers:       Aditya Vasudevan
 
 If tda-segmentor is used with the -module persistencecurve,
    then a 4 files are created:
-       basefilename_minSaddlePairs.vtk
-       basefilename_saddleSaddlePairs.vtk
-       basefilename_SaddleMaxPairs.vtk
-       basefilename_allPairs.vtk
-   These stores as a vtk table, the persistence and the 
-   number of respective critical pairs.
-This script, takes this file as an input and plots the 
-   number of critical pairs as function of the persistence
+       basefilename-minSaddlePairs.txt
+       basefilename-saddleSaddlePairs.txt
+       basefilename-SaddleMaxPairs.txt
+       basefilename-allPairs.txt
+This script, plots the number of critical pairs 
+       as function of the persistence
 
 One must then choose a persistence value that corresponds
    to the plateau as the persistence threshold for the
@@ -31,9 +29,6 @@ One must then choose a persistence value that corresponds
     
 """
 
-import os
-import vtk
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -54,26 +49,8 @@ basefilename = sys.argv[1];
 #######################################################
 
 
-inputfilename = basefilename + "_minSaddlePairs.vtk"
-
-tableReader = vtk.vtkTableReader();
-tableReader.SetFileName(inputfilename);
-tableReader.Update();
-
-table = vtk.vtkTable();
-table.DeepCopy(tableReader.GetOutput(0));
-DataColumnName1 = table.GetColumnName(0);
-DataColumnName2 = table.GetColumnName(1);
-
-
-persistenceData = table.GetColumnByName(DataColumnName1);
-MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
-
-persistenceRange = persistenceData.GetRange();
-
-xlimMax = persistenceRange[1];
-if (xlimMax > 100.0) : 
-    xlimMax = 100.0
+inputfilename = basefilename + "-minSaddlePairs.txt"
+persistence, minSaddlePairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
 
 fntsize = 9.0;lwdth = 2.0;
@@ -86,16 +63,14 @@ plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
 plt.xticks(fontsize=fntsize)
 plt.yticks(fontsize=fntsize)
-plt.xlabel(DataColumnName1,fontsize=fntsize)
-plt.ylabel(DataColumnName2,fontsize=fntsize)
-plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
+plt.xlabel("persistence",fontsize=fntsize)
+plt.ylabel("min-saddle-pairs",fontsize=fntsize)
+plt.plot(persistence,minSaddlePairs,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,xlimMax)
 
-outputfilename = DataColumnName2 + ".png"
-outputfilename.replace(" ", "")
+outputfilename = "minSaddlePairs.png"
 
 plt.savefig(outputfilename, format="png", dpi=1000,bbox_inches="tight")
 plt.close(fig);
@@ -106,27 +81,9 @@ plt.close(fig);
 ##### Plotting the SaddleSaddlePairs vs persistence
 #######################################################
 
+inputfilename = basefilename + "-SaddleSaddlePairs.txt"
+persistence, SaddleSaddlePairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
-inputfilename = basefilename + "_saddleSaddlePairs.vtk"
-
-tableReader = vtk.vtkTableReader();
-tableReader.SetFileName(inputfilename);
-tableReader.Update();
-
-table = vtk.vtkTable();
-table.DeepCopy(tableReader.GetOutput(0));
-DataColumnName1 = table.GetColumnName(0);
-DataColumnName2 = table.GetColumnName(1);
-
-
-persistenceData = table.GetColumnByName(DataColumnName1);
-MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
-
-persistenceRange = persistenceData.GetRange();
-
-xlimMax = persistenceRange[1];
-if (xlimMax > 100.0) : 
-    xlimMax = 100.0
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -138,16 +95,14 @@ plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
 plt.xticks(fontsize=fntsize)
 plt.yticks(fontsize=fntsize)
-plt.xlabel(DataColumnName1,fontsize=fntsize)
-plt.ylabel(DataColumnName2,fontsize=fntsize)
-plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
+plt.xlabel("persistence",fontsize=fntsize)
+plt.ylabel("saddle-saddle-pairs",fontsize=fntsize)
+plt.plot(persistence,SaddleSaddlePairs,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,xlimMax)
 
-outputfilename = DataColumnName2 + ".png"
-outputfilename.replace(" ", "")
+outputfilename = "SaddleSaddlePairs.png"
 
 plt.savefig(outputfilename, format="png", dpi=1000,bbox_inches="tight")
 plt.close(fig);
@@ -157,26 +112,10 @@ plt.close(fig);
 ##### Plotting the maxSaddlePairs vs persistence
 #######################################################
 
-inputfilename = basefilename + "_SaddleMaxPairs.vtk"
 
-tableReader = vtk.vtkTableReader();
-tableReader.SetFileName(inputfilename);
-tableReader.Update();
+inputfilename = basefilename + "-maxSaddlePairs.txt"
+persistence, maxSaddlePairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
-table = vtk.vtkTable();
-table.DeepCopy(tableReader.GetOutput(0));
-DataColumnName1 = table.GetColumnName(0);
-DataColumnName2 = table.GetColumnName(1);
-
-
-persistenceData = table.GetColumnByName(DataColumnName1);
-MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
-
-persistenceRange = persistenceData.GetRange();
-
-xlimMax = persistenceRange[1];
-if (xlimMax > 100.0) : 
-    xlimMax = 100.0
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -188,45 +127,25 @@ plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
 plt.xticks(fontsize=fntsize)
 plt.yticks(fontsize=fntsize)
-plt.xlabel(DataColumnName1,fontsize=fntsize)
-plt.ylabel(DataColumnName2,fontsize=fntsize)
-plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
+plt.xlabel("persistence",fontsize=fntsize)
+plt.ylabel("max-saddle-pairs",fontsize=fntsize)
+plt.plot(persistence,maxSaddlePairs,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,xlimMax)
 
-outputfilename = DataColumnName2 + ".png"
-outputfilename.replace(" ", "")
+outputfilename = "maxSaddlePairs.png"
 
 plt.savefig(outputfilename, format="png", dpi=1000,bbox_inches="tight")
 plt.close(fig);
-
 
 #######################################################
 ##### Plotting allPairs vs persistence
 #######################################################
 
-inputfilename = basefilename + "_allPairs.vtk"
+inputfilename = basefilename + "-allPairs.txt"
+persistence, allPairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
-tableReader = vtk.vtkTableReader();
-tableReader.SetFileName(inputfilename);
-tableReader.Update();
-
-table = vtk.vtkTable();
-table.DeepCopy(tableReader.GetOutput(0));
-DataColumnName1 = table.GetColumnName(0);
-DataColumnName2 = table.GetColumnName(1);
-
-
-persistenceData = table.GetColumnByName(DataColumnName1);
-MinSaddlePairsData = table.GetColumnByName(DataColumnName2);
-
-persistenceRange = persistenceData.GetRange();
-
-xlimMax = persistenceRange[1];
-if (xlimMax > 100.0) : 
-    xlimMax = 100.0
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
@@ -238,16 +157,14 @@ plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
 plt.xticks(fontsize=fntsize)
 plt.yticks(fontsize=fntsize)
-plt.xlabel(DataColumnName1,fontsize=fntsize)
-plt.ylabel(DataColumnName2,fontsize=fntsize)
-plt.plot(persistenceData,MinSaddlePairsData,'-', color='BLACK', linewidth=lwdth)
+plt.xlabel("persistence",fontsize=fntsize)
+plt.ylabel("all-pairs",fontsize=fntsize)
+plt.plot(persistence,allPairs,'-', color='BLACK', linewidth=lwdth)
 ax.set_yscale('log')
 ax.set_xscale('log')
 
-plt.xlim(1e-5,xlimMax)
 
-outputfilename = DataColumnName2 + ".png"
-outputfilename.replace(" ", "")
+outputfilename = "allPairs.png"
 
 plt.savefig(outputfilename, format="png", dpi=1000,bbox_inches="tight")
 plt.close(fig);
