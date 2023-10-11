@@ -63,7 +63,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <vtkStructuredGrid.h>
 #include <vtkStructuredGridWriter.h>
 #include <vtkLine.h>
-
+#include <vtkTable.h>
 
 //-------------------------------------------------------------------------------------------------
 

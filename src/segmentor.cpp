@@ -1490,28 +1490,72 @@ void segmentor::persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, 
 
     thePersistenceCurve->SetInputConnection(thePersistenceDiagram->GetOutputPort());
     thePersistenceCurve->Update();
+
+    /* Write Minimum Saddle Pairs */
+    ofstream pcurveResults1;
+    pcurveResults1.open((Directory + "/" + BaseFileName + "-minSaddlePairs.txt").c_str());
+    assert(pcurveResults1.is_open());
+    pcurveResults1 << "   #persistence     minSaddlePairs  " << "\n";
     
-    /* Write the persistence curve in VTK format */
-    vtkNew<vtkTableWriter> curveWriter0{};
-    curveWriter0->SetInputConnection(thePersistenceCurve->GetOutputPort(0));
-    curveWriter0->SetFileName((Directory+"/" + BaseFileName+"_minSaddlePairs.vtk").c_str());
-    curveWriter0->Write();
+    vtkTable* outputTable = thePersistenceCurve->GetOutput(0);
+    vtkIdType nrows = outputTable->GetNumberOfRows();
+    vtkAbstractArray * output1 = outputTable->GetColumn(0);
+    vtkAbstractArray * output2 = outputTable->GetColumn(1);
+
+    for (size_t i = 0; i < nrows; i++){
+        pcurveResults1 << scientific << setw(18) << output1->GetVariantValue(i).ToDouble() << setw(18) << output2->GetVariantValue(i).ToDouble() << "\n";
+    }
+
+
+    /* Write Saddle Saddle Pairs */
+    ofstream pcurveResults2;
+    pcurveResults2.open((Directory + "/" + BaseFileName + "-SaddleSaddlePairs.txt").c_str());
+    assert(pcurveResults2.is_open());
+    pcurveResults2 << "   #persistence   SaddleSaddlePairs " << "\n";
     
-    vtkNew<vtkTableWriter> curveWriter1{};
-    curveWriter1->SetInputConnection(thePersistenceCurve->GetOutputPort(1));
-    curveWriter1->SetFileName((Directory+"/" + BaseFileName+"_saddleSaddlePairs.vtk").c_str());
-    curveWriter1->Write();
+    outputTable = thePersistenceCurve->GetOutput(1);
+    nrows = outputTable->GetNumberOfRows();
+    output1 = outputTable->GetColumn(0);
+    output2 = outputTable->GetColumn(1);
+
+    for (size_t i = 0; i < nrows; i++){
+        pcurveResults2 << scientific << setw(18) << output1->GetVariantValue(i).ToDouble() << setw(18) << output2->GetVariantValue(i).ToDouble() << "\n";
+    }
+
+    /* Write maximum Saddle Pairs */
+    ofstream pcurveResults3;
+    pcurveResults3.open((Directory + "/" + BaseFileName + "-maxSaddlePairs.txt").c_str());
+    assert(pcurveResults3.is_open());
+    pcurveResults3 << "   #persistence     MaxSaddlePairs  " << "\n";
     
-    vtkNew<vtkTableWriter> curveWriter2{};
-    curveWriter2->SetInputConnection(thePersistenceCurve->GetOutputPort(2));
-    curveWriter2->SetFileName((Directory+"/" + BaseFileName+"_SaddleMaxPairs.vtk").c_str());
-    curveWriter2->Write();
+    outputTable = thePersistenceCurve->GetOutput(2);
+    nrows = outputTable->GetNumberOfRows();
+    output1 = outputTable->GetColumn(0);
+    output2 = outputTable->GetColumn(1);
+
+    for (size_t i = 0; i < nrows; i++){
+        pcurveResults3 << scientific << setw(18) << output1->GetVariantValue(i).ToDouble() << setw(18) << output2->GetVariantValue(i).ToDouble() << "\n";
+    }
+
+    /* Write all Pairs */
+    ofstream pcurveResults4;
+    pcurveResults4.open((Directory + "/" + BaseFileName + "-allPairs.txt").c_str());
+    assert(pcurveResults4.is_open());
+    pcurveResults4 << "   #persistence        AllPairs     " << "\n";
     
-    vtkNew<vtkTableWriter> curveWriter3{};
-    curveWriter3->SetInputConnection(thePersistenceCurve->GetOutputPort(3));
-    curveWriter3->SetFileName((Directory+"/" + BaseFileName+"_allPairs.vtk").c_str());
-    curveWriter3->Write();
-    
+    outputTable = thePersistenceCurve->GetOutput(3);
+    nrows = outputTable->GetNumberOfRows();
+    output1 = outputTable->GetColumn(0);
+    output2 = outputTable->GetColumn(1);
+
+    for (size_t i = 0; i < nrows; i++){
+        pcurveResults4 << scientific << setw(18) << output1->GetVariantValue(i).ToDouble() << setw(18) << output2->GetVariantValue(i).ToDouble() << "\n";
+    }
+
+    pcurveResults1.close();
+    pcurveResults2.close();
+    pcurveResults3.close();
+    pcurveResults4.close();    
     
     double timeTakenForPerCurve = percurveTimer.getElapsedTime();
     logger::mainlog << "Time taken in persistence curve module: " << timeTakenForPerCurve << "(s)" << endl;
