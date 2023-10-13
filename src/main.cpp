@@ -26,7 +26,7 @@ int main(int argc, char ** argv){
     param.printinvocation(argc, argv);
     param.writetoLogFile();
         
-    
+    /* the segmentor class is the main analysis class that uses the algorithms from the TTK library */
     segmentor * analysis = new segmentor(param);
     
     grid* inputGrid = analysis->readInputFile(param);
@@ -44,18 +44,18 @@ int main(int argc, char ** argv){
 
     for (size_t i = 0; i < param.moduleNames.size(); i++ )
     {
-        if (param.moduleNames[i] == "accessiblevoidspace")
+        if (param.moduleNames[i] == module::ACCESSIBLE_VOID_SPACE)
             inputGrid->accessibleVoidSpace(param.probeRadius,param.useAllCores);
-        else if (param.moduleNames[i] == "voidsegmentation")
+        else if (param.moduleNames[i] == module::VOID_SEGMENTATION)
             inputGrid->voidSegmentation();
-        else if (param.moduleNames[i] == "persistencecurve")
+        else if (param.moduleNames[i] == module::PERSISTENCE_CURVE)
         {
             analysis->persistencecurve(periodicGrid, param.useAllCores);
-        } else if (param.moduleNames[i] == "solidsegmentation"){
+        } else if (param.moduleNames[i] == module::SOLID_SEGMENTATION){
             inputGrid->solidSegmentation();
-        } else if (param.moduleNames[i] == "accessiblevoidgraph"){
+        } else if (param.moduleNames[i] == module::ACCESSIBLE_VOID_GRAPH){
             inputGrid->accessibleVoidGraph(param.probeRadius, param.useAllCores);
-        } else if (param.moduleNames[i] == "accessiblesolidgraph") {
+        } else if (param.moduleNames[i] == module::ACCESSIBLE_SOLID_GRAPH) {
             inputGrid->accessibleSolidGraph(param.probeRadius, param.useAllCores);
         }
         

@@ -504,7 +504,16 @@ void segmentor::getArrayName(std::string &nameOfArray){
     
     if (extensionName == ".cube"){
         
-        if (nameOfArray.empty()) getArrayNameFromCubeFile(nameOfArray);
+        if (nameOfArray.empty()) {
+            getArrayNameFromCubeFile(nameOfArray);
+        } else {
+            std::string temp;
+            getArrayNameFromCubeFile(temp);
+            if (temp.compare(nameOfArray) != 0){
+                std::cout << "(ERROR) Array name in the .cube file is " << temp << ", while that provided as input is " << nameOfArray << endl;
+                exit(0);
+            }
+        } 
         logger::mainlog << "Array that is going to be used for TDA analysis              : " << nameOfArray << endl;
         
     } else if (extensionName == ".vti"){

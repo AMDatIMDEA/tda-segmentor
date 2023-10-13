@@ -17,6 +17,25 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include <stdio.h>
 #include "headers.h"
 
+/* This class parses all the input information such as 
+    - name of the input file,
+    - the type of analysis that is to be performed,
+    - setting optional flags.
+*/
+
+
+enum class module {
+
+    SEGMENTATION,
+    VOID_SEGMENTATION,
+    SOLID_SEGMENTATION,
+    ACCESSIBLE_VOID_SPACE,
+    ACCESSIBLE_VOID_GRAPH,
+    ACCESSIBLE_SOLID_GRAPH,
+    PERSISTENCE_CURVE
+};
+
+
 class parameters
 {
 public:
@@ -25,11 +44,12 @@ public:
     
     void                               parser(int nargs, char** args);
     void                               printinvocation(int nargs, char** args);
+    std::string                        moduleNameAsString(const module modulename);                               
 
     void                               writetoLogFile();
     
     
-    std::vector <std::string>          moduleNames;
+    std::vector <module>               moduleNames;
     std::string                        inputfilename, basefilename, extensionname, Directory;
     std::string                        arrayName;
     bool                               useSuperCell;
@@ -37,7 +57,6 @@ public:
     bool                               writeFractionalGrid;
     bool                               saveLogFile;
     bool                               segmentationFlag;
-    bool                               ftmTreeFlag;
     double                             persistenceThreshold, probeRadius;
     
 private:

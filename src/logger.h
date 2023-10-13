@@ -18,6 +18,10 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 #include "parameters.h"
 
 
+/*
+  The logger class has two streams mainlog and errlog on which information
+  is continuously written as the code is executed. 
+*/
 class logger {
     
 public:
