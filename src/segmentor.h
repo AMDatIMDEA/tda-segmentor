@@ -62,7 +62,6 @@ private:
     vtkIdType                                          getNumberOfDescendingManifolds();
     vtkIdType                                          getNumberOfAscendingManifolds();
 
-    void                                               getGridResolutionFromCubeFile(double gridResolution[3][3]);
     void                                               getArrayName(std::string &arrayname);
     void                                               getArrayNameFromCubeFile(std::string &arrayname);
     void                                               getArrayNameFromVTIFile(std::string &arrayname);

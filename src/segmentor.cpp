@@ -53,10 +53,9 @@ Grid(nullptr)
     
 }
 
-/**
- * @brief segmentor Destructor class
- *
- */
+
+
+
 segmentor::~segmentor()
 {
     delete Grid;
@@ -68,10 +67,10 @@ segmentor::~segmentor()
 /**
  * @brief This reads the input file and generates the grid either of type distanceGrid or PEgrid.
  *  This function also sets the variables of the grid class, such as gridresolution, number of points,
- *  vtk grids, stored both in normalized (cubicGrid) and actual (originalGrid) coordinates.
+ *  vtk grids, stored both in fractional (cubicGrid) and actual (originalGrid) coordinates.
  *
  * @param p  the parameter class variable that contains all the input parameters.
- * @param writeGridFile writes the results of the input grid.'
+ * @param writeGridFile writes the results of the input grid.
  *
  * @return an instance of the grid.
  */
@@ -95,8 +94,8 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
     if (extensionName == ".cube"){
         
         Grid->cubicGrid = readFromCubeFile();
-        // the default spacing is unity, and is normalized with the size in each direction to
-        // get the grid on a unit cube.
+        // the default spacing is a voxel, and is normalized with the size in each direction to
+        // fit the grid on a unit cube.
         Grid->cubicGrid->SetSpacing(1.0/(Grid->nx-1), 1.0/(Grid->ny-1), 1.0/(Grid->nz-1));
         
     } else if (extensionName == ".vti"){ // This .vti extension is for the input file that has the stresses from LAMMPS
@@ -106,6 +105,7 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
         dataReader->SetFileName((fileName).c_str());
         dataReader->Update();
         Grid->cubicGrid = dataReader->GetOutput();
+
         double imageGridRes[3];
         Grid->cubicGrid->GetSpacing(imageGridRes);
         Grid->gridResolution[0][0] = imageGridRes[0];
@@ -121,7 +121,7 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
     Grid->defineUnitCellVectors();
     
     vtkIdType numberOfCells = Grid->cubicGrid->GetNumberOfCells();
-    double dV = determinant(Grid->gridResolution);//the volume of the voxel grid (a cross b . c), which is the determinant.
+    double dV = determinant(Grid->gridResolution);//the volume of the voxel grid 
     double volume = dV * numberOfCells;
     
     logger::mainlog << "Grid Vector (X)                                              : (" << Grid->gridResolution[0][0] << ", "
@@ -165,7 +165,7 @@ grid*  segmentor::readInputFile(const parameters &p, bool writeGridFile)
       }
 
     /* As the input file is only voxel data, the coordinates of the points are computed based
-       on the grid resolution, and the grid in actual coordinates of the nanoporous material
+       on the grid resolution vector, and the grid in actual coordinates of the nanoporous material
        is stored in Grid->orginalGrid */
     
     if (writeGridFile == true)
@@ -234,7 +234,10 @@ vtkSmartPointer<vtkImageData> segmentor::readFromCubeFile(){
 
 
 
-
+/**
+ @brief Reads the distance grid generated from zeo++
+ @param imageData is a vtkImageData class, and is updated in this function
+*/
 void segmentor::readDistanceGrid(vtkSmartPointer<vtkImageData> imageData){
     
     ifstream inputFile;
@@ -250,7 +253,6 @@ void segmentor::readDistanceGrid(vtkSmartPointer<vtkImageData> imageData){
     {
             
         string line;
-        //Number of the line that is being readed
         int lineNumber = 0;
         while (getline(inputFile,line))
         {
@@ -336,7 +338,11 @@ void segmentor::readDistanceGrid(vtkSmartPointer<vtkImageData> imageData){
 
 
 
-
+/**
+ @brief Reads the PE  grid generated from PorousMaterials.jl repo. 
+  Some data points can have Inf, and this is given a large value of 5e+20.
+ @param imageData is a vtkImageData class, and is updated in this function
+*/
 void segmentor::readPEgrid(vtkSmartPointer<vtkImageData> imageData){
     
     ifstream inputFile;
@@ -442,54 +448,6 @@ void segmentor::readPEgrid(vtkSmartPointer<vtkImageData> imageData){
     inputFile.close();
     imageData->GetPointData()->AddArray(pointValues);
     logger::mainlog << "Number of Inf encountered while reading PEgrid               : " << InfCount << endl<<flush;
-    
-}
-
-/**
- @brief From the .cube, reading the first few lines of the input, the gridResolution in X, Y, Z are stored
-  respectively.
- */
-void segmentor::getGridResolutionFromCubeFile(double  GridResolution[3][3]) {
-    
-    ifstream inputFile;
-    
-    inputFile.open(fileName);
-    int nx, ny, nz;
-    if (inputFile.is_open())
-    {
-            
-        string line;
-        //Number of the line that is being readed
-        int lineNumber = 0;
-        while (getline(inputFile,line))
-        {
-            if (lineNumber == 3)
-            {
-                stringstream ss(line);
-                ss >> nx;
-                ss >> GridResolution[0][0]; ss >> GridResolution[1][0]; ss >> GridResolution[2][0];
-            }
-                
-            if (lineNumber == 4)
-            {
-                stringstream ss(line);
-                ss >> ny;
-                ss >> GridResolution[0][1]; ss >> GridResolution[1][1]; ss >> GridResolution[2][1];
-            }
-                
-            if (lineNumber == 5)
-            {
-                stringstream ss(line);
-                ss >> nz;
-                ss >> GridResolution[0][2]; ss >> GridResolution[1][2]; ss >> GridResolution[2][2];
-            }
-                
-            lineNumber++;
-        }
-                    
-    }
-        
-    inputFile.close();
     
 }
 
@@ -619,7 +577,13 @@ vtkSmartPointer<ttkTriangulationManager> segmentor::generatePeriodicGrid(vtkSmar
 
 
 
-
+/**
+ * @brief  Smooths the scalar grid by taking average of the neighbors for niterations.
+ * @param grid Input grid
+ * @param niterations number of iterations for smoothing. 
+ * @param useAllCores
+ * @return a pointer to a ttk variable of type ttkScalarFieldSmoother.
+ */
 vtkSmartPointer<ttkScalarFieldSmoother>  segmentor::smoothInputGrid(vtkSmartPointer<vtkImageData> grid, int niterations, bool useAllCores)
 {
     logger::mainlog << "\n\nSegmentor: Smooth Input Grid module"
@@ -641,7 +605,14 @@ vtkSmartPointer<ttkScalarFieldSmoother>  segmentor::smoothInputGrid(vtkSmartPoin
 }
 
 
+/**
+ @brief computes the persistence diagram for the periodic grid. 
+ @param grid - Input grid
+ @param useAllCores
 
+ The variable thePersistenceDiagram is updated storing the persistencediagram and sets 
+ the flag isPersistenceDiagramComputed to TRUE. 
+*/
 void segmentor::computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores){
 
     logger::mainlog << "Computing persistence diagram ...";
@@ -658,8 +629,8 @@ void segmentor::computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManage
 
 /**
  * @brief Computes a topological simplification based on the persistence of the scalar field
- * attached to the input grid. Besides, it computes the Morse Smale Complex Segmentation. It writes 3 files: 1) Critical points file.
- * 2) Segmentation file. 3) Separatrices file.
+ * attached to the input grid. Besides, it computes the Morse Smale Complex Segmentation. It writes 2 files: 1) Critical points file.
+ * 2) Segmentation file. 
  * @param grid  Input grid to analyse
  * @param persistenceThreshold Persistence threshold to discard noisy maxima's and minima's.
  * @param saddlesaddleIncrement Persistence threshold increment(if needed) for the
@@ -670,6 +641,7 @@ void segmentor::computePersistenceDiagram(vtkSmartPointer<ttkTriangulationManage
  * @return nothing is returned, but the results of the MSC in the cubic grid is stored in theMSC,
  * the persistence diagram is stored in the thePersitenceDiagram, and in the actual coordinates,
  * the segmentation data is stored in the Grid->segmentation and the critical points in Grid->criticalPoints.
+ * Moreover, critical points are also stored in native C++ data structures without the VTK wrappers. 
  */
 void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold, double saddlesaddleIncrement, bool writeOutputs, bool useAllCores)
 {
@@ -677,7 +649,7 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     
     ttk::Timer MSCTimer;
     
-    if (!isPersistenceDiagramComputed) computePersistenceDiagram(grid, useAllCores); // Persistence Diagram is stored in the variable thePersistenceDiagram of the class.
+    if (!isPersistenceDiagramComputed) computePersistenceDiagram(grid, useAllCores); 
     
     //We delete the persistence pairs corresponding to the graph diagonal
     vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
@@ -719,9 +691,6 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
     topologicalSimplification->SetInputArrayToProcess(0,0,0, 0,arrayName.c_str());
     topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
 
-    //=============================================================================================
-    //=============================================================================================
-    //3.3 Morse Smale Complex Computation
     //Morse Smale Complex Computation
     logger::mainlog << "Computing Morse Smale Complex ...";
     theMSC->SetUseAllCores(useAllCores);
@@ -749,7 +718,8 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
 
     if (writeOutputs)
     {
-        // We write the critical points for a triclinic lattice:
+        // We store the critical points and the segmentation data in actual coordinates.
+        // These are stored in Grid->criticalPoints and Grid->segmentation
         auto segmentationDataSet = vtkDataSet::SafeDownCast(theMSC->GetOutputDataObject(3));
         size_t numberOfArrays = segmentationDataSet->GetPointData()->GetNumberOfArrays();
         Grid->segmentation->SetDimensions((int) Grid->nx, (int) Grid->ny,(int) Grid->nz);
@@ -911,534 +881,13 @@ void segmentor::MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persist
 
 
 
-
-/*auto segmentor::ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores)
-{
-    
-    logger::mainlog << "\n\nSegmentor: FTM tree module" << "\n" << flush;
-    
-    ttk::Timer graphTimer;
-    //Persistence Diagram of the data
-    if (!isPersistenceDiagramComputed) computePersistenceDiagram(grid);
-    
-    //We delete the persistence pairs corresponding to the graph diagonal
-    vtkSmartPointer<vtkThreshold> criticalPairs = vtkSmartPointer<vtkThreshold>::New();
-    criticalPairs->SetInputConnection(thePersistenceDiagram->GetOutputPort());
-    criticalPairs->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_CELLS,"PairIdentifier");
-    criticalPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    criticalPairs->SetLowerThreshold(-0.1);
-    criticalPairs->SetUpperThreshold(9e9);
-    criticalPairs->Update();
-    
-    //Persistence DataSet
-    auto persistenceDataSet = vtkDataSet::SafeDownCast(criticalPairs->GetOutputDataObject(0))->GetCellData()->GetArray("Persistence");
-    
-    double* persistenceRange = persistenceDataSet->GetRange();
-    
-    double minimumPersistence = persistenceRange[0];
-    double maximumPersistence = persistenceRange[1];
-    
-    // If persistenceThreshold is not provided as input, then 10% of max is automatically taken.
-    if (persistenceThreshold == 0.0) {
-        persistenceThreshold = 0.1 * maximumPersistence;
-    }
-    
-    logger::mainlog << "Maximum persistence = " << maximumPersistence << endl;
-    logger::mainlog << "Persistence threshold = " << persistenceThreshold << endl;
-    
-    //Persistence threshold for future simplifications
-    vtkSmartPointer<vtkThreshold> persistentPairs = vtkSmartPointer<vtkThreshold>::New();
-    persistentPairs->SetInputConnection(criticalPairs->GetOutputPort());
-    persistentPairs->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Persistence");
-    persistentPairs->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    persistentPairs->SetLowerThreshold(persistenceThreshold);
-    persistentPairs->SetUpperThreshold(9e21);
-
-    //Topological simplification from the persistence results
-    vtkSmartPointer<ttkTopologicalSimplification> topologicalSimplification = vtkSmartPointer<ttkTopologicalSimplification>::New();
-    //topologicalSimplification->SetDebugLevel(4);
-    topologicalSimplification->SetUseAllCores(useAllCores);
-    //topologicalSimplification->SetInputData(grid);
-    topologicalSimplification->SetInputConnection(0,grid->GetOutputPort());
-    topologicalSimplification->SetInputArrayToProcess(0,0,0, 0,arrayName.c_str());
-    topologicalSimplification->SetInputConnection(1, persistentPairs->GetOutputPort());
-
-    // TTK contour tree calculation
-    int treetype = 0;
-    if (arrayName == "This is distance grid"){
-        treetype = 1;
-    } else if (arrayName == "Potential Energy"){
-        treetype = 0;
-    }
-    vtkSmartPointer<ttkFTMTree> ftmTree = vtkSmartPointer<ttkFTMTree>::New();
-    //ftmTree->SetDebugLevel(3);
-    ftmTree->SetUseAllCores(useAllCores);
-    ftmTree->SetInputConnection(topologicalSimplification->GetOutputPort());
-    ftmTree->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
-    ftmTree->SetTreeType(treetype);
-    ftmTree->SetWithSegmentation(true);
-    ftmTree->Update();
-
-    logger::mainlog << "FTM Tree computed" << endl;
-
-
-    //Critical points file
-    auto nodesDataSet = vtkDataSet::SafeDownCast(ftmTree->GetOutputDataObject(0));
-    size_t numberOfArrays = nodesDataSet->GetPointData()->GetNumberOfArrays();
-    
-    vtkNew<vtkPoints> cPoints;
-    for (size_t i = 0; i < nodesDataSet->GetNumberOfPoints(); i++){
-        double coordABC[3];
-        nodesDataSet->GetPoint(i,coordABC);
-        double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
-        double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
-        double zt = coordABC[2]*ucVectors[2][2];
-        
-        cPoints->InsertNextPoint(xt, yt, zt);
-        
-    }
-    
-    ftmTreeNodes->SetPoints(cPoints);
-    
-    for (size_t i = 0; i < numberOfArrays; i++){
-        vtkNew<vtkDoubleArray> pointValues;
-        char * name = nodesDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
-        pointValues->SetName(name);
-        pointValues->SetNumberOfComponents(1);
-        vtkIdType numberOfPoints = nodesDataSet->GetNumberOfPoints();
-        pointValues->SetNumberOfTuples(numberOfPoints);
-        for (size_t j = 0; j < nodesDataSet->GetNumberOfPoints(); j++){
-            
-            pointValues->SetValue(j, nodesDataSet->GetPointData()->GetArray(name)->GetVariantValue(j).ToDouble());
-            
-        }
-        
-        ftmTreeNodes->GetPointData()->AddArray(pointValues);
-    }
-    
-    vtkSmartPointer<vtkPolyDataWriter> nodesWriterPoly = vtkSmartPointer<vtkPolyDataWriter>::New();
-    nodesWriterPoly->SetInputData(ftmTreeNodes);
-    nodesWriterPoly->SetFileName((Directory+"/" + BaseFileName+"_FTM_nodes_poly.vtk").c_str());
-    nodesWriterPoly->Write();
-
-    //arcs file
-    auto arcsDataSet = vtkDataSet::SafeDownCast(ftmTree->GetOutputDataObject(1));
-    vtkNew<vtkPoints> edgeNodes;
-    for (size_t i = 0; i < arcsDataSet->GetNumberOfPoints(); i++){
-        double coordABC[3];
-        arcsDataSet->GetPoint(i,coordABC);
-        double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
-        double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
-        double zt = coordABC[2]*ucVectors[2][2];
-        
-        edgeNodes->InsertNextPoint(xt, yt, zt);
-        
-    }
-    
-    ftmTreeEdges->SetPoints(edgeNodes);
-    
-    vtkCellIterator *it = arcsDataSet->NewCellIterator();
-    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
-     {
-         if (it->GetCellType() == VTK_LINE)
-         {
-             vtkIdList *pointIds = it->GetPointIds();
-             vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
-             line->GetPointIds()->SetId(0,pointIds->GetId(0));
-             line->GetPointIds()->SetId(1,pointIds->GetId(1));
-             
-             ftmTreeEdges->InsertNextCell(line->GetCellType(), line->GetPointIds());
-         }
-         
-     }
-    it->Delete();
-    
-    numberOfArrays = arcsDataSet->GetPointData()->GetNumberOfArrays();
-    for (size_t i = 0; i < numberOfArrays; i++){
-        vtkNew<vtkDoubleArray> pointValues;
-        char * name = arcsDataSet->GetPointData()->GetAbstractArray((int)i)->GetName();
-        pointValues->SetName(name);
-        pointValues->SetNumberOfComponents(1);
-        vtkIdType numberOfPoints = arcsDataSet->GetNumberOfPoints();
-        pointValues->SetNumberOfTuples(numberOfPoints);
-        for (size_t j = 0; j < arcsDataSet->GetNumberOfPoints(); j++){
-            
-            pointValues->SetValue(j, arcsDataSet->GetPointData()->GetArray(name)->GetVariantValue(j).ToDouble());
-            
-        }
-        
-        ftmTreeEdges->GetPointData()->AddArray(pointValues);
-    }
-    
-    size_t numberOfCellScalars = arcsDataSet->GetCellData()->GetNumberOfArrays();
-    
-    for (size_t i = 0; i < numberOfCellScalars; i++){
-        vtkNew<vtkDoubleArray> pointValues;
-        char * name = arcsDataSet->GetCellData()->GetAbstractArray((int)i)->GetName();
-        pointValues->SetName(name);
-        pointValues->SetNumberOfComponents(1);
-        vtkIdType numberOfCells = arcsDataSet->GetNumberOfCells();
-        pointValues->SetNumberOfTuples(numberOfCells);
-        for (size_t j = 0; j < arcsDataSet->GetNumberOfCells(); j++){
-            
-            pointValues->SetValue(j, arcsDataSet->GetCellData()->GetArray(name)->GetVariantValue(j).ToDouble());
-            
-        }
-        
-        ftmTreeEdges->GetCellData()->AddArray(pointValues);
-    }
-    
-    vtkSmartPointer<vtkUnstructuredGridWriter> ftmtreeEdgesWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    ftmtreeEdgesWriter->SetInputData(ftmTreeEdges);
-    ftmtreeEdgesWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs_ugrid.vtk").c_str());
-    ftmtreeEdgesWriter->Write();
-    
-    
-    
-    vtkSmartPointer<vtkUnstructuredGridWriter> narcsWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    narcsWriter->SetInputConnection(ftmTree->GetOutputPort(1));
-    narcsWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs.vtk").c_str());
-    narcsWriter->Write();
-    
-    
-    
-    double totalTime =  graphTimer.getElapsedTime();
-    logger::mainlog << "Total time elapsed in the ftm tree module : " << totalTime << "(s)" << endl;
-    
-    return ftmTree;
-
-} */
-
-
-
-/*void segmentor::accessibleVoidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores){
-    
-    logger::mainlog << "\n\nSegmentor: Accessible Void graph module" << "\n" << flush;
-    logger::mainlog << "Molecule Radius : " << moleculeRadius << endl << flush;
-    
-    ttk::Timer accessibleGraphTimer;
-    
-    double lowerThreshold = 0.0, upperThreshold = 0.0;
-    std::string fileNameNodes = ""; std::string fileNameEdges = "";
-    if (arrayName == "This is distance grid"){
-        lowerThreshold = 1.0*moleculeRadius;
-        upperThreshold = 9e9;
-        fileNameNodes = Directory+"/" + BaseFileName+"_accessibleVoid_rad_" + to_string(moleculeRadius) + "_FTM_nodes.vtk";
-        fileNameEdges = Directory+"/" + BaseFileName+"_accessibleVoid_rad_" + to_string(moleculeRadius) + "_FTM_edges.vtk";
-    } else if (arrayName == "Potential Energy"){
-        upperThreshold = 0.0;
-        lowerThreshold = -9e9;
-        fileNameNodes = Directory+"/" + BaseFileName+"_accessibleVoid_FTM_nodes.vtk";
-        fileNameEdges = Directory+"/" + BaseFileName+"_accessibleVoid_FTM_edges.vtk";
-    }
-    
-    vtkSmartPointer<vtkThreshold> accessibleGraphABC = vtkSmartPointer<vtkThreshold>::New();
-    accessibleGraphABC->SetInputConnection(ftmTree->GetOutputPort(1));
-    accessibleGraphABC->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleGraphABC->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    accessibleGraphABC->SetLowerThreshold(lowerThreshold);
-    accessibleGraphABC->SetUpperThreshold(upperThreshold);
-    accessibleGraphABC->Update();
-
-    vtkSmartPointer<vtkThreshold> accessibleGraphXYZ = vtkSmartPointer<vtkThreshold>::New();
-    accessibleGraphXYZ->SetInputData(ftmTreeEdges);
-    accessibleGraphXYZ->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleGraphXYZ->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    accessibleGraphXYZ->SetLowerThreshold(lowerThreshold);
-    accessibleGraphXYZ->SetUpperThreshold(upperThreshold);
-    accessibleGraphXYZ->Update();
-    
-    vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    graphWriter->SetInputConnection(accessibleGraphXYZ->GetOutputPort(0));
-    graphWriter->SetFileName((fileNameEdges).c_str());
-    graphWriter->Write();
-
-    
-    // save the graph in .nt2 format
-    ofstream graphFile;
-    std::string graphFileName = Directory + "/" + BaseFileName + "-voidGraph" + ".nt2";
-    graphFile.open((graphFileName).c_str());
-    assert(graphFile.is_open());
-    
-    // Dataset for the graph
-    vtkSmartPointer<vtkUnstructuredGrid> ugrid = accessibleGraphABC->GetOutput();
-    // We store all the vertices
-    graphFile << "Nodes: " << "\n";
-    for (size_t i = 0; i < ugrid->GetNumberOfPoints(); i++){
-        
-        double coordABC[3];
-        ugrid->GetPoint(i,coordABC);
-        double xt = coordABC[0]*ucVectors[0][0]+coordABC[1]*ucVectors[0][1]+coordABC[2]*ucVectors[0][2];
-        double yt = coordABC[1]*ucVectors[1][1]+coordABC[2]*ucVectors[1][2];
-        double zt = coordABC[2]*ucVectors[2][2];
-        
-        graphFile << i << " " << xt << " " << yt << " " << zt << "\n";
-    }
-    
-    
-    vtkIdType cellDims[3];
-    double spacing[3];
-    Grid->GetDimensions(cellDims);
-    Grid->GetSpacing(spacing);
-    double boxLength[3];
-    for (size_t i = 0; i < 3; i++){
-        boxLength[i] = spacing[i] * (cellDims[i]-1);
-    }
-
-    
-    // Next we store all the edges
-    graphFile << "Edges: " << "\n";
-    vtkCellIterator *it = ugrid->NewCellIterator();
-    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
-     {
-         if (it->GetCellType() == VTK_LINE)
-         {
-             vtkIdList *pointIds = it->GetPointIds();
-             
-             double p1[3], p2[3];
-             ugrid->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
-             ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
-             
-             int periodicity[3] = {0,0,0};
-             double dp[3];for (size_t i = 0; i < 3; i++){
-                 dp[i] = p2[i] - p1[i];
-             }
-             
-             for (size_t i = 0; i < 3 ; i++){
-                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
-                 {
-                     if (dp[i] > 0.0) periodicity[i] = -1;
-                     else if (dp[i] <  0.0) periodicity[i] = 1;
-                 }
-             }
-             
-             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
-                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
-         }
-         else {
-             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
-             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
-         }
-         
-     }
-    it->Delete();
-    
-    graphFile.close();
-    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
-    double totalTime =  accessibleGraphTimer.getElapsedTime();
-    logger::mainlog << "Total time elapsed in the accessible graph module : " << totalTime << "(s)" << endl;
-    
-    //Create a new graph just for visualization, this shows the nodes outside the periodic box.
-    vtkSmartPointer<vtkUnstructuredGrid> vizGraph = vtkSmartPointer<vtkUnstructuredGrid>::New();
-    vtkNew<vtkPoints> allNodes;
-    vizGraph->SetPoints(allNodes);
-    it = ugrid->NewCellIterator();
-    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
-     {
-         if (it->GetCellType() == VTK_LINE)
-         {
-             vtkIdList *pointIds = it->GetPointIds();
-             
-             double p1[3], p2[3];
-             ugrid->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
-             ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
-             
-             double pxyz1[3], pxyz2[3];
-             abcToxyz(p1, pxyz1);
-             abcToxyz(p2, pxyz2);
-             
-             vtkIdType id1 = allNodes->InsertNextPoint(pxyz1);
-             vtkIdType id2 = allNodes->InsertNextPoint(pxyz2);
-             
-             
-             int periodicity[3] = {0,0,0};
-             double dp[3];for (size_t i = 0; i < 3; i++){
-                 dp[i] = p2[i] - p1[i];
-             }
-             
-             for (size_t i = 0; i < 3 ; i++){
-                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
-                 {
-                     if (dp[i] > 0.0) periodicity[i] = -1;
-                     else if (dp[i] <  0.0) periodicity[i] = 1;
-                 }
-             }
-             
-             bool periodicityFlag = false;
-             if (periodicity[0] != 0 || periodicity[1] != 0 || periodicity[2] != 0) periodicityFlag = true;
-             
-             double periodicNode1[3], periodicNode2[3];
-             if (periodicityFlag){
-                 
-                 for(size_t i = 0; i < 3; i++){
-                     
-                     periodicNode2[i] = p2[i] + periodicity[i];
-                     periodicNode1[i] = p1[i] - periodicity[i];
-                 }
-                 
-                 double periodicNodeXYZ1[3], periodicNodeXYZ2[3];
-                 abcToxyz(periodicNode1, periodicNodeXYZ1);
-                 abcToxyz(periodicNode2, periodicNodeXYZ2);
-                 vtkIdType id3 = allNodes->InsertNextPoint(periodicNodeXYZ1);
-                 vtkIdType id4 = allNodes->InsertNextPoint(periodicNodeXYZ2);
-                 vtkSmartPointer<vtkLine> imageLine1 = vtkSmartPointer<vtkLine>::New();
-                 imageLine1->GetPointIds()->SetId(0,id1);
-                 imageLine1->GetPointIds()->SetId(1,id4);
-                 vtkSmartPointer<vtkLine> imageLine2 = vtkSmartPointer<vtkLine>::New();
-                 imageLine2->GetPointIds()->SetId(0,id2);
-                 imageLine2->GetPointIds()->SetId(1,id3);
-                 
-                 vizGraph->InsertNextCell(imageLine1->GetCellType(), imageLine1->GetPointIds());
-                 vizGraph->InsertNextCell(imageLine2->GetCellType(), imageLine2->GetPointIds());
-                 
-             } else {
-                 
-                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
-                 line->GetPointIds()->SetId(0,id1);
-                 line->GetPointIds()->SetId(1,id2);
-                 
-                 vizGraph->InsertNextCell(line->GetCellType(), line->GetPointIds());
-             }
-             
-             
-         }
-         else {
-             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
-             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
-         }
-         
-     }
-    it->Delete();
-    
-    vtkSmartPointer<vtkUnstructuredGridWriter> vizGraphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    vizGraphWriter->SetInputData(vizGraph);
-    vizGraphWriter->SetFileName((Directory+"/" + BaseFileName+"_FTM_arcs_ugrid_viz_graph.vtk").c_str());
-    vizGraphWriter->Write();
-    
-    
-}
-
-
-
-void segmentor::accessibleSolidGraph(vtkSmartPointer <ttkFTMTree> ftmTree, bool useAllCores){
-    
-    logger::mainlog << "\n\nSegmentor: Accessible Solid graph module" << "\n" << flush;
-    ttk::Timer accessibleGraphTimer;
-    
-    double lowerThreshold = 0.0, upperThreshold = 0.0;
-    std::string fileNameNodes = ""; std::string fileNameEdges = "";
-    if (arrayName == "This is distance grid"){
-        lowerThreshold = -9e9;
-        upperThreshold = 0.0;
-        fileNameNodes = Directory+"/" + BaseFileName+"_accessibleSolid" + "_FTM_nodes.vtk";
-        fileNameEdges = Directory+"/" + BaseFileName+"_accessibleSolid" + "_FTM_edges.vtk";
-        
-    } else {
-        logger::mainlog << "This module is to be used only with the distance function!" << endl;
-        logger::errlog << "This module is to be used only with the distance function!" << endl;
-        std::cout << "This module is to be used only with the distance function!" << endl;
-        exit(1);
-    }
-    
-    // updating tree type to get leaves of minima-saddle tree as this corresponds
-    // to the solid in the israeli structures.
-    ftmTree->SetTreeType(0);
-    ftmTree->Update();
-    
-    vtkSmartPointer<vtkThreshold> accessibleGraph = vtkSmartPointer<vtkThreshold>::New();
-    accessibleGraph->SetInputConnection(ftmTree->GetOutputPort(1));
-    accessibleGraph->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"Scalar");
-    accessibleGraph->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
-    accessibleGraph->SetLowerThreshold(lowerThreshold);
-    accessibleGraph->SetUpperThreshold(upperThreshold);
-    accessibleGraph->Update();
-
-    
-    vtkSmartPointer<vtkUnstructuredGridWriter> graphWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-    graphWriter->SetInputConnection(accessibleGraph->GetOutputPort(0));
-    graphWriter->SetFileName((fileNameEdges).c_str());
-    graphWriter->Write();
-    
-    // save the graph in .nt2 format
-    ofstream graphFile;
-    std::string graphFileName = Directory + "/" + BaseFileName + "-voidGraph" + ".nt2";
-    graphFile.open((graphFileName).c_str());
-    assert(graphFile.is_open());
-    
-    // Dataset for the graph
-    vtkSmartPointer<vtkUnstructuredGrid> ugrid = accessibleGraph->GetOutput();
-    // We store all the vertices
-    graphFile << "Nodes: " << "\n";
-    for (size_t i = 0; i < ugrid->GetNumberOfPoints(); i++){
-        
-        double coords[3];
-        ugrid->GetPoint(i,coords);
-        graphFile << i << " " << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
-    }
-    
-    
-    vtkIdType cellDims[3];
-    double spacing[3];
-    Grid->GetDimensions(cellDims);
-    Grid->GetSpacing(spacing);
-    double boxLength[3];
-    for (size_t i = 0; i < 3; i++){
-        boxLength[i] = spacing[i] * (cellDims[i]-1);
-    }
-
-    
-    // Next we store all the edges
-    graphFile << "Edges: " << "\n";
-    vtkCellIterator *it = ugrid->NewCellIterator();
-    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
-     {
-         if (it->GetCellType() == VTK_LINE)
-         {
-             vtkIdList *pointIds = it->GetPointIds();
-             
-             double p1[3], p2[3];
-             ugrid->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
-             ugrid->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
-             
-             int periodicity[3] = {0,0,0};
-             double dp[3];
-             dp[0] = p2[0] - p1[0];
-             dp[1] = p2[1] - p1[0];
-             dp[2] = p2[2] - p1[2];
-             
-             for (size_t i = 0; i < 3 ; i++){
-                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
-                 {
-                     if (dp[i] > 0.0) periodicity[i] = -1;
-                     else if (dp[i] <  0.0) periodicity[i] = 1;
-                 }
-             }
-             
-             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
-                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
-         }
-         else {
-             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
-             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
-         }
-         
-     }
-    it->Delete();
-    
-    graphFile.close();
-    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
-    double totalTime =  accessibleGraphTimer.getElapsedTime();
-    logger::mainlog << "Total time elapsed in the accessible graph module : " << totalTime << "(s)" << endl;
-    
-}*/
-
-
-
+/**
+ @brief Output the total number of Descending Manifolds. 
+*/
 vtkIdType segmentor::getNumberOfDescendingManifolds(){
         
-    // Output the number of descending manifolds
+    
     vtkSmartPointer<ttkExtract> descendingManifolds = vtkSmartPointer<ttkExtract>::New();
-    //accessibleSpace->SetDebugLevel(1);
     descendingManifolds->SetUseAllCores(true);
     descendingManifolds->SetInputConnection(theMSC->GetOutputPort(3));
     descendingManifolds->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
@@ -1457,12 +906,12 @@ vtkIdType segmentor::getNumberOfDescendingManifolds(){
 
 
 
-
+/**
+ @brief Output the total number of Ascending Manifolds. 
+*/
 vtkIdType segmentor::getNumberOfAscendingManifolds(){
     
-    // Output the number of descending manifolds
     vtkSmartPointer<ttkExtract> ascendingManifolds = vtkSmartPointer<ttkExtract>::New();
-    //accessibleSpace->SetDebugLevel(1);
     ascendingManifolds->SetUseAllCores(true);
     ascendingManifolds->SetInputConnection(theMSC->GetOutputPort(3));
     ascendingManifolds->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
@@ -1487,7 +936,7 @@ vtkIdType segmentor::getNumberOfAscendingManifolds(){
       2) Saddle-saddle Pairs
       3) Saddle-Maximum Pairs
       4) All-pairs.
- These are output as tables, and to plot one can use postProcessing/plotPersistenceCurve.py BaseFileName
+ These are output as tables in text files, and to plot one can use postProcessing/plotPersistenceCurve.py BaseFileName
  */
 void segmentor::persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores)
 {
