@@ -19,7 +19,8 @@ segmentor::segmentor(const parameters &p):
 isPersistenceDiagramComputed(false),
 theMSC(vtkSmartPointer<ttkMorseSmaleComplex>::New()),
 thePersistenceDiagram(vtkSmartPointer<ttkPersistenceDiagram>::New()),
-thePersistenceCurve(vtkSmartPointer<ttkPersistenceCurve>::New())
+thePersistenceCurve(vtkSmartPointer<ttkPersistenceCurve>::New()),
+Grid(nullptr)
 
 {
 

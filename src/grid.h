@@ -34,10 +34,10 @@ void      xyzToabc (const double xyz[3], double abc[3], const double invUnitCell
    non-zero off diagonal terms
  - unitCellVectors[3][3] the points in the same direction of the gridResolution,
    but has a magnitude of the box lengths of the grid.
- - invUnitCellVectors[3][3] is the map that maps the normalized unit cube to
+ - invUnitCellVectors[3][3] is the map that maps the cube in fractional coordinates to
    the general triclinic unit cell.
  
- - cubicGrid is a vtkImageData grid that has the scalar values but defined on a unit cube
+ - cubicGrid is a vtkImageData grid that has the scalar values but defined on a unit cube.
  - originalGrid is the grid in the actual coordinates of the nanoporous material.
  - gridPointsXYZ are the coordinates of the grid points of the originalGrid.
  
@@ -60,7 +60,7 @@ public:
     virtual                                   ~grid();
     
     
-    void                                      generateSuperCell( );
+    void                                      convertToSuperCell();
     void                                      defineUnitCellVectors();
 
     

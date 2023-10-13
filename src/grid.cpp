@@ -91,7 +91,7 @@ void grid::defineUnitCellVectors(){
 
 
 
-void grid::generateSuperCell(){
+void grid::convertToSuperCell(){
     
     ttk::Timer superCellTimer;
     logger::mainlog << "\n\nGenerating Super Cell:         " << "\n";

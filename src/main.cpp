@@ -26,12 +26,11 @@ int main(int argc, char ** argv){
     param.printinvocation(argc, argv);
     param.writetoLogFile();
         
-    /* the segmentor class is the main analysis class that uses the algorithms from the TTK library */
     segmentor * analysis = new segmentor(param);
-    
+
     grid* inputGrid = analysis->readInputFile(param);
     
-    if (param.useSuperCell) inputGrid->generateSuperCell(); // inputGrid is now updated to a supercell 
+    if (param.useSuperCell) inputGrid->convertToSuperCell(); // inputGrid is now updated to a supercell 
 
     // Data is smoothed by NITERATIONS (set in headers.h) and periodicity is applied
     auto smoothGrid = analysis->smoothInputGrid(inputGrid->cubicGrid, NITERATIONS, param.useAllCores);
@@ -62,7 +61,6 @@ int main(int argc, char ** argv){
     }
      
 
-    //Computations' finish time(TDA)
     double elapsedTime = programTimer.getElapsedTime();
     logger::mainlog << "\nTotal Time taken for all the modules: " << elapsedTime << " seconds" <<endl;
 

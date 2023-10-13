@@ -26,7 +26,7 @@ Authors:         Aditya Vasudevan (adityavv.iitkgp@gmail.com)J
  - Grid stores an instance of the grid, which can be either
    distanceGrid or PEgrid.
  - theMSC stores the results of the segmentation as a 3D grid, however this is in
-   normalized coordinates of a unit cube. The segmentation results in the
+   fractional coordinates of a unit cube. The segmentation results in the
    actual coordinates of the nanoporous materials is stored in grid->segmentation
  - thePersistenceDiagram and thePersistenceCurve are variables that stores the diagram
    and curve respectively which can be reused if necessary for other functions.
@@ -40,8 +40,9 @@ class segmentor
     
 public:
         
-    segmentor(const parameters &p);
-    ~segmentor();
+                                                       segmentor(const parameters &p);
+                                                       ~segmentor();
+
     
     grid*                                              readInputFile(const parameters &p, bool writeGridFile = true);
     vtkSmartPointer<vtkImageData>                      readFromCubeFile();
@@ -55,14 +56,6 @@ public:
     void                                               MSC(vtkSmartPointer<ttkTriangulationManager> grid,double persistenceThreshold,
                                                            double saddlesaddleIncrement, bool writeOutputs, bool useAllCores);
     void                                               persistencecurve(vtkSmartPointer<ttkTriangulationManager> grid, bool useAllCores);
-    // ----
-    
-    //auto                                               ftmtree(vtkSmartPointer<ttkTriangulationManager> grid, double persistenceThreshold, bool useAllCores);
-    //void                                               accessibleVoidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, double moleculeRadius, bool useAllCores);
-    //void                                               accessibleSolidGraph(vtkSmartPointer<ttkFTMTree> ftmTree, bool useAllCores);
-
-    
-
     
 private:
     
