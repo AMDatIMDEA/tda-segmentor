@@ -153,22 +153,23 @@ void distanceGrid::voidSegmentation(){
             }
                 
         }
-            
-        //Array corresponding to the scalar values of the Region
+
+        // Get the distance array in the segment    
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray(arrayName.c_str());
 
+        // Get the maximumValue  and its index of the distance array in the segment. 
         double maximumValue = 0.0;
-
-        int maxID;                                                         // ID of the maximum point of the region
-        for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) // For each of the points of the segment
+        int maxID;                                                         
+        for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) 
         {
-            double currentValue = scalarValues->GetVariantValue(j).ToDouble(); // Current scalar value of the point
-            if (currentValue >= maximumValue)                                  // Check if this point distance is greater than maximim
+            double currentValue = scalarValues->GetVariantValue(j).ToDouble(); 
+            if (currentValue >= maximumValue)                                  
             {
                 maximumValue = currentValue;
                 maxID = j;
             }
         }
+
         bool isMaxima;
         for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) // For each of the points of the segment
         {
@@ -227,6 +228,20 @@ void distanceGrid::voidSegmentation(){
 
 
 
+/**
+ * @brief This routine writes the segment information for the solids (distance function < 0.0)
+ * For every segment, this routine also identifies the number of segments it is connected to. 
+ * A file baseFileName + _Solid_Segments.csv is written that has many columns:
+ * regionID            - ID of the segment
+ * x,y,z               - coordinates of the grid point
+ * Scalar              - Value of the distance function at the grid point
+ * RegionMaxValue      - Maximum value of the distance function in the segment
+ * isMaximum, isSaddle - Notes if the grid point corresponds to a maxima or saddle
+ * numberOfPoints      - number of grid points in the segment
+ * numberOfConnections - number of segments the segmentID is connected to. 
+ * 
+ * Note : if DEBUG is set to 1 in grid.h, then the connectivity is printed in the log file. 
+*/
 void distanceGrid::solidSegmentation(){
     
     logger::mainlog << "\n\nSegmentor: Solid Segmentation Module" << "\n" << flush;
@@ -234,29 +249,33 @@ void distanceGrid::solidSegmentation(){
     ttk::Timer SolidSegmentationTimer;
     //Writer of the .csv results file
     ofstream misDatos;
-    misDatos.open((Directory+"/"+ baseFileName +"_Solid.csv").c_str());
+    misDatos.open((Directory+"/"+ baseFileName +"_Solid_Segments.csv").c_str());
     assert(misDatos.is_open());
-    misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinima,isSaddle,numberOfPoints,numberOfConnections,xScaled,yScaled,zScaled" << "\n";
+    misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinima,isSaddle,numberOfPoints,numberOfConnections" << "\n";
 
-    
-    //Compute cell dimensions
-    double dimensionesCelda[6];
-    segmentation->GetCellBounds(0,dimensionesCelda);
-    //Cell size of the current dataset
-    double cellSize = dimensionesCelda[1] - dimensionesCelda[0];
+    // Get the max bounding box of the voxel grid.     
+    double cellDimensions[6];
+    segmentation->GetCellBounds(0,cellDimensions);
+    double cellSizeX = cellDimensions[1] - cellDimensions[0];
+    double cellSizeY = cellDimensions[3] - cellDimensions[2];
+    double cellSizeZ = cellDimensions[5] - cellDimensions[4];
+
+    double cellSize = 0.0;
+    if (cellSizeX > cellSizeY) cellSize = cellSizeX;
+    else cellSize = cellSizeY;
+    if (cellSizeZ > cellSize) cellSize = cellSizeZ;
 
     //Segmentation corresponding to the solid structure
     vtkSmartPointer<vtkThresholdPoints> solidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
     solidSegmentation->SetInputData(segmentation);
-    solidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    solidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
     solidSegmentation->ThresholdBetween(-9e10,-1e-10);
     solidSegmentation->Update();
 
     auto currentSolidDataSet = vtkDataSet::SafeDownCast(solidSegmentation->GetOutputDataObject(0));
     
     // Set of ID list of the manifolds
-    vtkSmartPointer<vtkDataSet> solidSegmentationDataSet = vtkDataSet::SafeDownCast(solidSegmentation->GetOutputDataObject(0));
-    vtkSmartPointer<vtkAbstractArray> descendingManifoldArray = solidSegmentationDataSet->GetPointData()->GetAbstractArray("DescendingManifold");
+    vtkSmartPointer<vtkAbstractArray> descendingManifoldArray = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold");
     
     std::set<int> descendingManifoldIDList;
     for (size_t i = 0; i < descendingManifoldArray->GetNumberOfValues(); i++ ){
@@ -272,7 +291,7 @@ void distanceGrid::solidSegmentation(){
     saddles->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"CellDimension");
     saddles->ThresholdBetween(1,1);
     saddles->Update();
-    //Find the 1-saddles on the void structure
+    //Find the 1-saddles on the solid structure
     vtkSmartPointer<vtkThresholdPoints> negativeSaddles = vtkSmartPointer<vtkThresholdPoints>::New();
     negativeSaddles->SetInputConnection(saddles->GetOutputPort(0));
     negativeSaddles->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
@@ -283,79 +302,13 @@ void distanceGrid::solidSegmentation(){
     auto saddlesDataSet = vtkDataSet::SafeDownCast(negativeSaddles->GetOutputDataObject(0));
     logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
-    vector<vector<int>> saddlesConnectivity;
-    size_t nmaxneighbors = 20;
-    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(nmaxneighbors,-1.0));
-    std::map<int,int> regionsWithSaddleInside;
-    for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
-    {
-                
-        double currentSaddleCoords[3]; //Coordinates of the current saddle
-        saddlesDataSet->GetPoint(k,currentSaddleCoords);
-        
-        //Check that this saddle is not noise inside the region
-        vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
-        pointLocator->SetDataSet(currentSolidDataSet);
-        pointLocator->BuildLocator();
-        vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the void structure
-        //Find the in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(sqrt(2.0) * cellSize,currentSaddleCoords,closestPoints);
+    //  A vector of sets to store the segments connected by each saddle. 
+    vector<set<int>> saddlesConnectivity;
+    std::string manifoldName("DescendingManifold");
+    getSaddleConnectivity(saddlesDataSet, currentSolidDataSet, manifoldName, cellSize, saddlesConnectivity);
 
-        vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //logger::mainlog << "Current Saddle ID: " << k << endl;
-        for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
-        {
-            auto currentClosestRegion = currentSolidDataSet->GetPointData()->GetAbstractArray("DescendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //logger::mainlog << currentClosestRegion << endl;
-            closestRegionsToSaddle.push_back(currentClosestRegion);
-        }
-        sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the segmentation
-        vector<int>::iterator it;
-        it = unique(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end());  //Delete repeated values
-        closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
-        if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
-        {
-            int contador = 0;
-            for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
-            {
-                saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
-                ++contador;
-            }
-            
-        }
-        
-        if (closestRegionsToSaddle.size() == 1)
-        {
-            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
-        }
-        
 
-    }
-
-    
-    
-    if (DEBUG)
-    {
-        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
-            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < nmaxneighbors; j++){
-                if (saddlesConnectivity[i][j] != -1){
-                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
-                }
-            }
-            
-            // if saddle is totally inside a particular segment, output that region
-            for (auto ip : regionsWithSaddleInside){
-                if (ip.first == i) logger::mainlog << ip.second;
-            }
-            logger::mainlog << "\n" << flush;
-        }
-    }
-    
-
-    
-
-    for (auto i : descendingManifoldIDList) //For each of the void segments
+    for (auto i : descendingManifoldIDList) 
     {
         int currentRegion = i;
         
@@ -375,14 +328,12 @@ void distanceGrid::solidSegmentation(){
         std::set <int> connectedSegments;
         if(sectionIDDataset->GetNumberOfPoints() > 0) //If not an empty region
         {
-        
             for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
             {
-                
-                auto it = find(saddlesConnectivity[k].begin(), saddlesConnectivity[k].end(), currentRegion);
+                 auto it = find(saddlesConnectivity[k].begin(), saddlesConnectivity[k].end(), currentRegion);
  
-                // If element was found
-                if (it != saddlesConnectivity[k].end())
+                // If element was found and is not an isolated saddle
+                if ((it != saddlesConnectivity[k].end()) && (saddlesConnectivity[k].size() > 1) )
                 {
                     double currentSaddleCoords[3]; //Coordinates of the current saddle
                     saddlesDataSet->GetPoint(k,currentSaddleCoords);
@@ -390,45 +341,25 @@ void distanceGrid::solidSegmentation(){
                     regionsSaddlesID.push_back(closestRegionPoint);
 
                     ++numberOfConnections;
-                    for (size_t c = 0; c < nmaxneighbors; c++){
-                        if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
-                            connectedSegments.insert(saddlesConnectivity[k][c]);
+
+                    for (auto it2 : saddlesConnectivity[k]){
+                        if (it2 != currentRegion){
+                            connectedSegments.insert(it2);
+                        }
                     }
-
                 }
-
-            }
-
-                
-                
+            }      
         }
         
-        //Check the number of Connections of each segment
-        if (numberOfConnections == 0)
-        {
-            bool found = false;
-            for (auto it : regionsWithSaddleInside){
-                if (it.second == currentRegion) found = true;
-            }
-            if (found)
-            {
-                ++numberOfConnections;
-                connectedSegments.insert(currentRegion);
-            }
-            
-        }
-
         //Array corresponding to the scalar values of the Region
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray("This is distance grid");
-
-        double minimumValue = 10e2;
-        
-        int minID; //ID of the maximum point of the region
-        for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
+        // Find minimum value in the segment.
+        double minimumValue = 10e9;
+        int minID; 
+        for (size_t j = 0; j < sectionIDDataset->GetNumberOfPoints(); j++) 
         {
-            bool isMaximum = false;
-            double currentValue = scalarValues->GetVariantValue(j).ToDouble(); //Current scalar value of the point
-            if (currentValue <= minimumValue) //Check if this point distance is smaller than minimum
+            double currentValue = scalarValues->GetVariantValue(j).ToDouble(); 
+            if (currentValue <= minimumValue) 
             {
                 minimumValue = currentValue;
                 minID = j;
@@ -458,7 +389,7 @@ void distanceGrid::solidSegmentation(){
                 isMinima = 0;
             }
 
-            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<","<< pointCoords[0]<<","<< pointCoords[1]<<","<< pointCoords[2]<<"\n";
+            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<"\n";
 
         }
         
