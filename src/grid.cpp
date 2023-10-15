@@ -215,3 +215,74 @@ void xyzToabc(const double coordXYZ[3], double coordABC[3], const double invUnit
     coordABC[2] = coordXYZ[2]*invUnitCellVectors[2][2];
     
 }
+
+
+
+/**
+ * @brief Typically saddle should lie on the boudary of two or more segments, and this routine 
+ * finds all the segments which the saddle is connected to. 
+ * 
+ * **** Updates saddlesConnectivity variable. ****
+ * 
+ * Connectivtity is found out by drawing a sphere of certain radius and looking for grid points
+ * within that radius, and then get its corresponding segment ID. 
+ * 
+ * @param saddlesDataSet           - the vtkDataSet of the saddles
+ * @param structureDataSet         - the vtkDataSet of the structure, that can correspond to either void,
+ *                                   solid, or accessible void
+ * @param manifoldName             - Based on the nature of the analysis, this can be either 
+ *                                   an ascending or descending manifold. 
+ * @param cellSize                 - Size of the grid cell. 
+ * @param saddlesConnectivity      - Stores all the segments the saddle is connected to.  
+ * 
+*/
+void grid::getSaddleConnectivity(vtkDataSet* saddlesDataSet, vtkDataSet* structureDataSet, 
+                            std::string manifoldName, double cellSize, 
+                            vector<set<int>> & saddlesConnectivity)
+{
+    
+    // Loop one by one on each saddle, and look for the grid points 
+    // within a radius, find its segment ID, and store them in saddlesConnectivity for each saddle. 
+    for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) 
+    {
+
+        double currentSaddleCoords[3];                    
+        saddlesDataSet->GetPoint(k, currentSaddleCoords); 
+
+        vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
+        pointLocator->SetDataSet(structureDataSet);
+        pointLocator->BuildLocator();
+        vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); 
+        double searchRadius = sqrt(3.0) * cellSize * 2; 
+        pointLocator->FindPointsWithinRadius(searchRadius, currentSaddleCoords, closestPoints);
+
+        std::set<int> closestRegionsToSaddle; 
+        for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
+        {
+            auto currentClosestRegion = structureDataSet->GetPointData()->GetAbstractArray(manifoldName.c_str())->GetVariantValue(closestPoints->GetId(kk)).ToInt();
+            closestRegionsToSaddle.insert(currentClosestRegion);
+        }
+
+        saddlesConnectivity.push_back(closestRegionsToSaddle);
+
+    }
+
+    if (DEBUG)
+    {
+        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++)
+        {
+            if (saddlesConnectivity[i].size() == 1 ){
+                logger::mainlog << "Saddle " << i << " is inside segment " << *saddlesConnectivity[i].begin() << " and is not connected to any segment. " << endl; 
+            } else {
+                logger::mainlog << "Saddle " << i << " is connected to segments : ";
+                for (auto it : saddlesConnectivity[i]){
+                    logger::mainlog << it << ", ";
+                }
+                logger::mainlog << "\n";
+
+            }
+
+        }
+
+    }
+}

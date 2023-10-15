@@ -91,6 +91,14 @@ public:
     
     std::vector<criticalPoint>                criticalPointsData;
     segmentedData*                            segmentationData;
+
+    protected:
+    
+    void                                      getSaddleConnectivity(vtkDataSet* saddlesDataSet, vtkDataSet* structureDataSet, 
+                                                                    std::string manifoldName, double cellSize, 
+                                                                    vector<set<int>> & saddlesConnectivity);
+    void                                      writeGraphinNT2format();
+    void                                      saveGraphForVisualization();
     
     
 };
