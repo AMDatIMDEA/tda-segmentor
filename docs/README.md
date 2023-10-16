@@ -29,6 +29,35 @@ The persistence curve for the input grid can be obtained through the command :
 
 This generates four .txt files which saves the number of critcal pairs as a function of the persistence; this can be plotted as shown below.
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/persistence-curve.pdf?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/persistence-curve.png?raw=true)
 
-The persistence curve helps in estimating the **persistence threshold** which is used to removing noise in the analysis. All critical pairs below the **persistence threshold** will be ignored, and much cleaner segments will be generated. A good estimate of the persistence threshold is to choose a value just before the plateau, as the plateau separates noise from actual geometric features. 
+The persistence curve helps in estimating the **persistence threshold** which is used to removing noise in the analysis. All critical pairs below the **persistence threshold** will be ignored, and much cleaner segments will be generated. A good estimate of the persistence threshold is to choose a value just before the plateau, as the plateau separates noise from actual geometric features. The blue vertical line can be chosen for example as a persistence threshold for this example. NOTE: If TTK is compiled correctly with MPI, the flag uses the multicore capabilities of TTK and gives significant speed-up. 
+
+### Morse Smale Complex
+
+This is main segmentation routine of the code and is run by the command 
+
+    tda-segmentor -msc 0.04 -useallcores FAU.cube 
+   
+This routine takes an optional **persistence threshold** which is input here as 0.04. If no persistence threshold is given then 1% of the maximum persistence is taken as the persistence threshold. The -msc analysis saves two files : the *FAU_CriticalPoints.vtk* that saves the critical points data, and *FAU_Segmentation.vtk*, that saves the segmentation data. These *.vtk* files can be viewed using *Paraview*. For the above analysis, the segmentation drawn on a contour of distance 1.6 is as shown below. 
+
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/FAU-segmentation?raw=true)
+
+
+### Void Segmentation
+
+
+### Solid Segmentation
+
+
+### Accessible Void Space
+
+
+### Accessible Void Graph
+
+
+### Accessible Solid Graph
+
+
+### Other flags
+
