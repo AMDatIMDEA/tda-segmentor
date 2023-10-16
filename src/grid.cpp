@@ -286,3 +286,171 @@ void grid::getSaddleConnectivity(vtkDataSet* saddlesDataSet, vtkDataSet* structu
 
     }
 }
+
+
+
+
+
+vtkSmartPointer<vtkUnstructuredGrid> grid::saveGraphForVisualization(vtkSmartPointer<vtkUnstructuredGrid> graph){
+
+    //Create a new graph just for visualization, this shows the nodes outside the periodic box.
+    vtkSmartPointer<vtkUnstructuredGrid> vizGraph = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkNew<vtkPoints> allNodes;
+    vizGraph->SetPoints(allNodes);
+    vtkCellIterator *it = graph->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             graph->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             graph->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pabc1[3], pabc2[3];
+             xyzToabc(p1, pabc1, invUnitCellVectors);
+             xyzToabc(p2, pabc2, invUnitCellVectors);
+             
+             vtkIdType id1 = allNodes->InsertNextPoint(p1);
+             vtkIdType id2 = allNodes->InsertNextPoint(p2);
+             
+             
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = pabc2[i] - pabc1[i];
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             bool periodicityFlag = false;
+             if (periodicity[0] != 0 || periodicity[1] != 0 || periodicity[2] != 0) periodicityFlag = true;
+             
+             double periodicNode1[3], periodicNode2[3];
+             if (periodicityFlag){
+                 
+                 for(size_t i = 0; i < 3; i++){
+                     
+                     periodicNode2[i] = pabc2[i] + periodicity[i];
+                     periodicNode1[i] = pabc1[i] - periodicity[i];
+                 }
+                 
+                 double periodicNodeXYZ1[3], periodicNodeXYZ2[3];
+                 abcToxyz(periodicNode1, periodicNodeXYZ1,unitCellVectors);
+                 abcToxyz(periodicNode2, periodicNodeXYZ2,unitCellVectors);
+                 vtkIdType id3 = allNodes->InsertNextPoint(periodicNodeXYZ1);
+                 vtkIdType id4 = allNodes->InsertNextPoint(periodicNodeXYZ2);
+                 vtkSmartPointer<vtkLine> imageLine1 = vtkSmartPointer<vtkLine>::New();
+                 imageLine1->GetPointIds()->SetId(0,id1);
+                 imageLine1->GetPointIds()->SetId(1,id4);
+                 vtkSmartPointer<vtkLine> imageLine2 = vtkSmartPointer<vtkLine>::New();
+                 imageLine2->GetPointIds()->SetId(0,id2);
+                 imageLine2->GetPointIds()->SetId(1,id3);
+                 
+                 vizGraph->InsertNextCell(imageLine1->GetCellType(), imageLine1->GetPointIds());
+                 vizGraph->InsertNextCell(imageLine2->GetCellType(), imageLine2->GetPointIds());
+                 
+             } else {
+                 
+                 vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+                 line->GetPointIds()->SetId(0,id1);
+                 line->GetPointIds()->SetId(1,id2);
+                 
+                 vizGraph->InsertNextCell(line->GetCellType(), line->GetPointIds());
+             }
+             
+             
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+
+    return vizGraph;
+}
+
+
+
+
+void grid::writeGraphinNT2format(vtkSmartPointer<vtkUnstructuredGrid> graph){
+
+    // save the graph in .nt2 format
+    ofstream graphFile;
+    std::string graphFileName = Directory + "/" + baseFileName + "-voidGraph" + ".nt2";
+    graphFile.open((graphFileName).c_str());
+    assert(graphFile.is_open());
+    
+    // We first write all the nodes
+    graphFile << "Nodes: " << "\n";
+    for (size_t i = 0; i < graph->GetNumberOfPoints(); i++){
+        
+        double coord[3];
+        graph->GetPoint(i,coord);
+        graphFile << i << " " << coord[0] << " " << coord[1] << " " << coord[2] << "\n";
+    }
+    
+    
+    vtkIdType cellDims[3];
+    double spacing[3];
+    cubicGrid->GetDimensions(cellDims);
+    cubicGrid->GetSpacing(spacing);
+    double boxLength[3];
+    for (size_t i = 0; i < 3; i++){
+        boxLength[i] = spacing[i] * (cellDims[i]-1);
+    }
+
+    
+    // Next we store all the edges
+    graphFile << "Edges: " << "\n";
+    vtkCellIterator* it = graph->NewCellIterator();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+     {
+         if (it->GetCellType() == VTK_LINE)
+         {
+             vtkIdList *pointIds = it->GetPointIds();
+             
+             double p1[3], p2[3];
+             graph->GetPoint(pointIds->GetId(0),p1); // coordinates of birth point
+             graph->GetPoint(pointIds->GetId(1),p2); // coordinates of death point
+             
+             double pabc1[3], pabc2[3];
+             xyzToabc(p1, pabc1, invUnitCellVectors);
+             xyzToabc(p2, pabc2, invUnitCellVectors);
+
+             int periodicity[3] = {0,0,0};
+             double dp[3];for (size_t i = 0; i < 3; i++){
+                 dp[i] = pabc2[i] - pabc1[i];
+             }
+             
+             for (size_t i = 0; i < 3 ; i++){
+                 if ( abs(dp[i]) > 0.5 * boxLength[i] )
+                 {
+                     if (dp[i] > 0.0) periodicity[i] = -1;
+                     else if (dp[i] <  0.0) periodicity[i] = 1;
+                 }
+             }
+             
+             graphFile << pointIds->GetId(0) << " -> " << pointIds->GetId(1) << " "
+                           << periodicity[0] << " " << periodicity[1] << " " << periodicity[2] << "\n";
+         }
+         else {
+             logger::mainlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+             logger::errlog << " Error in accessible Void Graph module: graph is not VTK_LINE" << endl;
+         }
+         
+     }
+    it->Delete();
+    
+    graphFile.close();
+    logger::mainlog << "Graph is stored in the file " <<  graphFileName << endl;
+
+}

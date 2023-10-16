@@ -97,8 +97,8 @@ public:
     void                                      getSaddleConnectivity(vtkDataSet* saddlesDataSet, vtkDataSet* structureDataSet, 
                                                                     std::string manifoldName, double cellSize, 
                                                                     vector<set<int>> & saddlesConnectivity);
-    void                                      writeGraphinNT2format();
-    void                                      saveGraphForVisualization();
+    void                                      writeGraphinNT2format(vtkSmartPointer<vtkUnstructuredGrid> graph);
+    vtkSmartPointer<vtkUnstructuredGrid>      saveGraphForVisualization(vtkSmartPointer<vtkUnstructuredGrid> graph);
     
     
 };
