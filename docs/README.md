@@ -25,7 +25,7 @@ Given an input grid with limited information, the first step can be to plot the 
 
 The persistence curve for the input grid can be obtained through the command : 
 
-`tda-segmentor -pc -useallcores FAU.cube`
+    tda-segmentor -pc -useallcores FAU.cube
 
 This generates four .txt files which saves the number of critcal pairs as a function of the persistence; this can be plotted as shown below.
 
