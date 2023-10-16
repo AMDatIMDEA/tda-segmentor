@@ -39,6 +39,7 @@ distanceGrid::~distanceGrid(){
  * RegionMaxValue      - Maximum value of the distance function in the segment
  * isMaximum, isSaddle - Notes if the grid point corresponds to a maxima or saddle
  * numberOfPoints      - number of grid points in the segment
+ * Volume              - Volume of the segment 
  * numberOfConnections - number of segments the segmentID is connected to. 
  * 
  * Note : if DEBUG is set to 1 in grid.h, then the connectivity is printed in the log file. 
@@ -52,7 +53,7 @@ void distanceGrid::voidSegmentation(){
     ofstream misDatos;
     misDatos.open((Directory + "/" + baseFileName + "_Void_Segments.csv").c_str());
     assert(misDatos.is_open());
-    misDatos << "regionID,x,y,z,Scalar,RegionMaxValue,isMaximum,isSaddle,numberOfPoints,numberOfConnections" << "\n";
+    misDatos << "regionID,x,y,z,Scalar,RegionMaxValue,isMaximum,isSaddle,numberOfPoints,Volume,numberOfConnections" << "\n";
     
 
     // Get the max bounding box of the voxel grid.     
@@ -67,11 +68,22 @@ void distanceGrid::voidSegmentation(){
     else cellSize = cellSizeY;
     if (cellSizeZ > cellSize) cellSize = cellSizeZ;
 
+    //Triangulate the segmentation to improve precision
+    vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    triangulation->SetInputData(segmentation);
+    triangulation->Update();
+
+
+    // Each voxel can be fit with 6 tetrahedrons; so the unitCellVolume is 1/6th of the voxel volume. 
+    double unitCellVolume = determinant(gridResolution)/6.0;
+
     //Segmentation corresponding to the void structure
-    vtkSmartPointer<vtkThresholdPoints> voidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
-    voidSegmentation->SetInputData(segmentation);
-    voidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
-    voidSegmentation->ThresholdBetween(0.0,9e9);
+    vtkSmartPointer<vtkThreshold> voidSegmentation = vtkSmartPointer<vtkThreshold>::New();
+    voidSegmentation->SetInputConnection(triangulation->GetOutputPort());
+    voidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    voidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    voidSegmentation->SetLowerThreshold(0.0);
+    voidSegmentation->SetUpperThreshold(9e9);
     voidSegmentation->Update();
     
     auto currentVoidDataSet = vtkDataSet::SafeDownCast(voidSegmentation->GetOutputDataObject(0));
@@ -112,10 +124,12 @@ void distanceGrid::voidSegmentation(){
     {
         int currentRegion = i;
         
-        vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
+        vtkSmartPointer<vtkThreshold> sectionID = vtkSmartPointer<vtkThreshold>::New();
         sectionID->SetInputConnection(voidSegmentation->GetOutputPort());
         sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
-        sectionID->ThresholdBetween(currentRegion,currentRegion);
+        sectionID->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        sectionID->SetLowerThreshold(currentRegion);
+        sectionID->SetUpperThreshold(currentRegion);
         sectionID->Update();
 
         auto sectionIDDataset = vtkDataSet::SafeDownCast(sectionID->GetOutputDataObject(0));
@@ -156,6 +170,9 @@ void distanceGrid::voidSegmentation(){
 
         // Get the distance array in the segment    
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray(arrayName.c_str());
+        int segmentNumberOfCells = sectionIDDataset->GetNumberOfCells();
+        logger::mainlog << "Number of cells in segment " << currentRegion << "is : " << segmentNumberOfCells << endl;
+        double segmentVolume = segmentNumberOfCells * unitCellVolume; 
 
         // Get the maximumValue  and its index of the distance array in the segment. 
         double maximumValue = 0.0;
@@ -193,7 +210,7 @@ void distanceGrid::voidSegmentation(){
                 isMaxima = 0;
             }
 
-            misDatos << currentRegion << "," << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << "," << scalarValues->GetVariantValue(j).ToDouble() << "," << maximumValue << "," << isMaxima << "," << isSaddle << "," << sectionIDDataset->GetNumberOfPoints() << "," << numberOfConnections << "\n";
+            misDatos << currentRegion << "," << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << "," << scalarValues->GetVariantValue(j).ToDouble() << "," << maximumValue << "," << isMaxima << "," << isSaddle << "," << sectionIDDataset->GetNumberOfPoints() << "," << segmentVolume << "," << numberOfConnections << "\n";
         }
 
         if (DEBUG)
@@ -236,8 +253,9 @@ void distanceGrid::voidSegmentation(){
  * x,y,z               - coordinates of the grid point
  * Scalar              - Value of the distance function at the grid point
  * RegionMaxValue      - Maximum value of the distance function in the segment
- * isMaximum, isSaddle - Notes if the grid point corresponds to a maxima or saddle
+ * isMinima, isSaddle - Notes if the grid point corresponds to a minima or saddle
  * numberOfPoints      - number of grid points in the segment
+ * Volume              - Volume of the segment 
  * numberOfConnections - number of segments the segmentID is connected to. 
  * 
  * Note : if DEBUG is set to 1 in grid.h, then the connectivity is printed in the log file. 
@@ -251,7 +269,7 @@ void distanceGrid::solidSegmentation(){
     ofstream misDatos;
     misDatos.open((Directory+"/"+ baseFileName +"_Solid_Segments.csv").c_str());
     assert(misDatos.is_open());
-    misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinima,isSaddle,numberOfPoints,numberOfConnections" << "\n";
+    misDatos << "regionID,x,y,z,Scalar,RegionMinValue,isMinima,isSaddle,numberOfPoints,Volume,numberOfConnections" << "\n";
 
     // Get the max bounding box of the voxel grid.     
     double cellDimensions[6];
@@ -265,11 +283,22 @@ void distanceGrid::solidSegmentation(){
     else cellSize = cellSizeY;
     if (cellSizeZ > cellSize) cellSize = cellSizeZ;
 
-    //Segmentation corresponding to the solid structure
-    vtkSmartPointer<vtkThresholdPoints> solidSegmentation = vtkSmartPointer<vtkThresholdPoints>::New();
-    solidSegmentation->SetInputData(segmentation);
-    solidSegmentation->SetInputArrayToProcess(0,0,0,0,arrayName.c_str());
-    solidSegmentation->ThresholdBetween(-9e10,-1e-10);
+    //Triangulate the segmentation to improve precision
+    vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    triangulation->SetInputData(segmentation);
+    triangulation->Update();
+
+
+    // Each voxel can be fit with 6 tetrahedrons; so the unitCellVolume is 1/6th of the voxel volume. 
+    double unitCellVolume = determinant(gridResolution)/6.0;
+
+    //Segmentation corresponding to the void structure
+    vtkSmartPointer<vtkThreshold> solidSegmentation = vtkSmartPointer<vtkThreshold>::New();
+    solidSegmentation->SetInputConnection(triangulation->GetOutputPort());
+    solidSegmentation->SetInputArrayToProcess(0,0,0,0,"This is distance grid");
+    solidSegmentation->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+    solidSegmentation->SetLowerThreshold(-9e9);
+    solidSegmentation->SetUpperThreshold(-1e-10);
     solidSegmentation->Update();
 
     auto currentSolidDataSet = vtkDataSet::SafeDownCast(solidSegmentation->GetOutputDataObject(0));
@@ -313,10 +342,12 @@ void distanceGrid::solidSegmentation(){
         int currentRegion = i;
         
         //Current Region of the Descending Segmentation
-        vtkSmartPointer<vtkThresholdPoints> sectionID = vtkSmartPointer<vtkThresholdPoints>::New();
+        vtkSmartPointer<vtkThreshold> sectionID = vtkSmartPointer<vtkThreshold>::New();
         sectionID->SetInputConnection(solidSegmentation->GetOutputPort());
         sectionID->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"DescendingManifold");
-        sectionID->ThresholdBetween(currentRegion,currentRegion);
+        sectionID->SetThresholdFunction(vtkThreshold::THRESHOLD_BETWEEN);
+        sectionID->SetLowerThreshold(currentRegion);
+        sectionID->SetUpperThreshold(currentRegion);
         sectionID->Update();
 
         //DataSet of the specific region of the Descending Segmentation
@@ -351,6 +382,9 @@ void distanceGrid::solidSegmentation(){
             }      
         }
         
+        int segmentNumberOfCells = sectionIDDataset->GetNumberOfCells();
+        double segmentVolume = segmentNumberOfCells * unitCellVolume; 
+
         //Array corresponding to the scalar values of the Region
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray("This is distance grid");
         // Find minimum value in the segment.
@@ -389,7 +423,9 @@ void distanceGrid::solidSegmentation(){
                 isMinima = 0;
             }
 
-            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," << numberOfConnections<<"\n";
+            misDatos << currentRegion <<","<< pointCoords[0]<<","<<pointCoords[1]<<","<<pointCoords[2]<<","<<scalarValues->GetVariantValue(j).ToDouble()
+                                      << "," << minimumValue<<","<< isMinima << "," << isSaddle <<","<< sectionIDDataset->GetNumberOfPoints()<< "," 
+                                      << segmentVolume << "," << numberOfConnections<<"\n";
 
         }
         
@@ -423,6 +459,22 @@ void distanceGrid::solidSegmentation(){
 
 
 
+/**
+ * @brief This routine writes the segment information for the voids that are accessible to a probe
+ *        of certain radius (distance function  > probe-radius)
+ * For every segment, this routine also identifies the number of segments it is connected to. 
+ * A file baseFileName + -avs-radius.csv is written that has many columns:
+ * regionID            - ID of the segment
+ * x,y,z               - coordinates of the grid point
+ * Scalar              - Value of the distance function at the grid point
+ * RegionMaxValue      - Maximum value of the distance function in the segment
+ * isMaximum, isSaddle - Notes if the grid point corresponds to a maxima or saddle
+ * numberOfPoints      - number of grid points in the segment
+ * Volume              - Volume of the segment 
+ * numberOfConnections - number of segments the segmentID is connected to. 
+ * 
+ * Note : if DEBUG is set to 1 in grid.h, then the connectivity is printed in the log file. 
+*/
 void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
     
     logger::mainlog << "\n\nSegmentor: Accessible Void Space Module" << "\n" << flush;
@@ -430,27 +482,30 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
     ttk::Timer VoidSpaceTimer;
     //Writer of the .csv results file
     ofstream segmentResults;
-    segmentResults.open((Directory + "/" + baseFileName + "-accessible-void-space-mRad-" + to_string(moleculeRadius) + ".csv").c_str());
+    segmentResults.open((Directory + "/" + baseFileName + "-avs-" + to_string(moleculeRadius) + ".csv").c_str());
     assert(segmentResults.is_open());
-    segmentResults << "regionID,Scalar,Volume,NumberOfConexions" << "\n";
+    segmentResults << "regionID,x,y,z,Scalar,RegionMaxValue,isMaximum,isSaddle,numberOfPoints,Volume,numberOfConnections" << "\n";
 
-    //Compute cell dimensions of the input file
-    //---------------------------------------------------------------------------------------------
+    // Get the max bounding box of the voxel grid.     
     double cellDimensions[6];
     segmentation->GetCellBounds(0,cellDimensions);
-    //Cell size of the current dataset
-    double cellSize = cellDimensions[1] - cellDimensions[0];
-    //---------------------------------------------------------------------------------------------
+    double cellSizeX = cellDimensions[1] - cellDimensions[0];
+    double cellSizeY = cellDimensions[3] - cellDimensions[2];
+    double cellSizeZ = cellDimensions[5] - cellDimensions[4];
 
-    //Volume of each tetrahedron. As we know the volume of an unit cubic cell and each
-    //cubic cell is made of 6 tetrahedrons. We set their volume to be a sixth part of the total
-    
-    double unitCellVolume = determinant(gridResolution)/6.0;
+    double cellSize = 0.0;
+    if (cellSizeX > cellSizeY) cellSize = cellSizeX;
+    else cellSize = cellSizeY;
+    if (cellSizeZ > cellSize) cellSize = cellSizeZ;
 
     //Triangulate the segmentation to improve precision
     vtkSmartPointer<vtkDataSetTriangleFilter> triangulation = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
     triangulation->SetInputData(segmentation);
     triangulation->Update();
+
+    // Each voxel can be fit with 6 tetrahedrons; so the unitCellVolume is 1/6th of the voxel volume. 
+    double unitCellVolume = determinant(gridResolution)/6.0;
+
 
     //Segmentation corresponding to the void structure accessible to the void space
     vtkSmartPointer<vtkThreshold> voidSegmentation = vtkSmartPointer<vtkThreshold>::New();
@@ -491,83 +546,16 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
     auto saddlesDataSet = vtkDataSet::SafeDownCast(accessibleSaddles->GetOutputDataObject(0));
     logger::mainlog << "Number of accessible saddles: " << saddlesDataSet->GetNumberOfPoints() << endl;
 
-    vector<vector<int>> saddlesConnectivity;
-    size_t nmaxneighbors = 20;
-    saddlesConnectivity.resize(saddlesDataSet->GetNumberOfPoints(),vector<int>(4,-1.0));
-    std::map<int,int> regionsWithSaddleInside;
-    for (size_t k = 0; k < saddlesDataSet->GetNumberOfPoints(); k++) //For each of the saddles
-    {
-        //logger::mainlog << "Current Saddle ID:" << endl;
-        double currentSaddleCoords[3]; //Coordinates of the current saddle
-        saddlesDataSet->GetPoint(k,currentSaddleCoords); //Save its coordinates
-        
-        //Check that this saddle is not noise inside the region
-        vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
-        pointLocator->SetDataSet(accessibleSpaceDataSet);
-        pointLocator->BuildLocator();
-        vtkSmartPointer<vtkIdList> closestPoints = vtkSmartPointer<vtkIdList>::New(); //IDs of the closest points to the saddle in the accessible void structure
-        //Find  in the void structure the closest points to the saddle inside a sphere of radius
-        pointLocator->FindPointsWithinRadius(sqrt(3.0)*cellSize*2,currentSaddleCoords,closestPoints);
-
-       
-        //Find the closest segments to each of the saddles that work as connectors between segments
-        vector<int> closestRegionsToSaddle; //Closest Regions ID to the saddle
-        //logger::mainlog << "Current Saddle ID: " << k << endl;
-        for (size_t kk = 0; kk < closestPoints->GetNumberOfIds(); kk++)
-        {
-            auto currentClosestRegion = accessibleSpaceDataSet->GetPointData()->GetAbstractArray("AscendingManifold")->GetVariantValue(closestPoints->GetId(kk)).ToInt();
-            //logger::mainlog << currentClosestRegion << endl;
-            closestRegionsToSaddle.push_back(currentClosestRegion);
-        }
-        sort(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end()); //Order the values of the connected segments
-        vector<int>::iterator it;
-        it = unique(closestRegionsToSaddle.begin(), closestRegionsToSaddle.end());  //Delete repeated values
-        closestRegionsToSaddle.resize(distance(closestRegionsToSaddle.begin(),it)); //Resize with the unique values
-        if (closestRegionsToSaddle.size() > 1) //If the number of connected regions to this saddle is greater than 1
-        {
-            //logger::mainlog << "YES" <<endl;
-            int contador = 0;
-            for (size_t mm = 0; mm < closestRegionsToSaddle.size(); mm++)
-            {
-                //logger::mainlog << closestRegionsToSaddle[mm] << endl;
-
-                saddlesConnectivity[k][contador] = closestRegionsToSaddle[mm];
-                ++contador;
-            }
-            
-        }
-        if (closestRegionsToSaddle.size() == 1)
-        {
-            regionsWithSaddleInside.insert(std::pair<int,int> (k,closestRegionsToSaddle[0]));
-        }
-        
-
-    }
-    
-    // Print the saddleconnectivity for debugging
-    if (DEBUG)
-    {
-        for (size_t i = 0; i < saddlesDataSet->GetNumberOfPoints(); i++){
-            logger::mainlog << "Saddle " << i << " is connected to segments : " ;
-            for (size_t j = 0; j < nmaxneighbors; j++){
-                if (saddlesConnectivity[i][j] != -1){
-                    logger::mainlog << saddlesConnectivity[i][j] << ", ";
-                }
-            }
-            // if saddle is totally inside a particular segment, output that region
-            for (auto ip : regionsWithSaddleInside){
-                if (ip.first == i) logger::mainlog << ip.second;
-            }
-            logger::mainlog << "\n" << flush;
-        }
-    }
+        //2d vector to store the saddles id and the regions connected to them
+    vector<set<int>> saddlesConnectivity;
+    std::string manifoldName("AscendingManifold");
+    getSaddleConnectivity(saddlesDataSet, accessibleSpaceDataSet, manifoldName, cellSize, saddlesConnectivity);
 
     for (size_t i = 0; i < segmentsID->GetNumberOfValues(); i++) //For each of the void segments
     {
         int currentRegion = segmentsID->GetVariantValue(i).ToInt();
-        //logger::mainlog << "Current Region: " <<  currentRegion << endl;
-        
-        //Current Region of the Descending Segmentation
+
+        //Current Region of the Ascending Segmentation
         vtkSmartPointer<vtkThreshold> segment = vtkSmartPointer<vtkThreshold>::New();
         segment->SetInputConnection(voidSegmentation->GetOutputPort());
         segment->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,"AscendingManifold");
@@ -579,11 +567,9 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
         //DataSet of the specific region of the Descending Segmentation
         auto segmentDataset = vtkDataSet::SafeDownCast(segment->GetOutputDataObject(0));
         
-        
-        int segmentNumberOfCells = segmentDataset->GetNumberOfCells();
-        //logger::mainlog << segmentNumberOfCells << endl;
         //---------------------------------------------------------------------------
         int numberOfConnections = 0; //Number of connections of the current region
+        vector<int> regionsSaddlesID; 
         std::set <int> connectedSegments;
         if(segmentDataset->GetNumberOfPoints() > 0) //If not an empty region
         {
@@ -592,48 +578,72 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
             {
                 //Check if the segment is connected to a saddle
                 auto it = find(saddlesConnectivity[k].begin(), saddlesConnectivity[k].end(), currentRegion);
- 
-                // If element was found
-                if (it != saddlesConnectivity[k].end())
+                
+                // If element was found and is not an isolated saddle
+                if ((it != saddlesConnectivity[k].end()) && (saddlesConnectivity[k].size() > 1) )
                 {
+                    double currentSaddleCoords[3]; //Coordinates of the current saddle
+                    saddlesDataSet->GetPoint(k,currentSaddleCoords);
+                    int closestRegionPoint = segmentDataset->FindPoint(currentSaddleCoords); //ID of the closest point to the saddle from the region
+                    regionsSaddlesID.push_back(closestRegionPoint);
+
                     ++numberOfConnections;
-                    for (size_t c = 0; c < nmaxneighbors; c++){
-                        if ((saddlesConnectivity[k][c] != currentRegion) && (saddlesConnectivity[k][c] != -1))
-                            connectedSegments.insert(saddlesConnectivity[k][c]);
+
+                    for (auto it2 : saddlesConnectivity[k]){
+                        if (it2 != currentRegion){
+                            connectedSegments.insert(it2);
+                        }
                     }
                 }
-
             }
         }
-        //logger::mainlog << numberOfConnections << endl;
-
-        //Check the number of Connections of each segment
-        if (numberOfConnections == 0)
-        {
-            bool found = false;
-            for (auto it : regionsWithSaddleInside){
-                if (it.second == currentRegion) found = true;
-            }
-            if (found)
-            {
-                ++numberOfConnections;
-                connectedSegments.insert(currentRegion);
-            }
-            
-        }
-
-        //logger::mainlog << numberOfConnections << endl;
-
         
         //Array corresponding to the scalar values of the Region
         auto scalarValues = segmentDataset->GetPointData()->GetArray("This is distance grid");
 
-        //Write the output file
-        for (size_t j = 0; j < segmentDataset->GetNumberOfPoints(); j++) //For each of the points of the segment
-        {
-            double segmentsVolume = segmentNumberOfCells * unitCellVolume;
-            segmentResults << currentRegion<<","<<scalarValues->GetVariantValue(j).ToDouble()<< "," << segmentsVolume << "," << numberOfConnections <<"\n";
+        int segmentNumberOfCells = segmentDataset->GetNumberOfCells();
+        double segmentsVolume = segmentNumberOfCells * unitCellVolume;
 
+        logger::mainlog << "Number of cells in segment " << currentRegion << "is : " << segmentNumberOfCells << endl;
+
+        // Get the maximumValue  and its index of the distance array in the segment. 
+        double maximumValue = 0.0;
+        int maxID;                                                         
+        for (size_t j = 0; j < segmentDataset->GetNumberOfPoints(); j++) 
+        {
+            double currentValue = scalarValues->GetVariantValue(j).ToDouble(); 
+            if (currentValue >= maximumValue)                                  
+            {
+                maximumValue = currentValue;
+                maxID = j;
+            }
+        }
+
+        bool isMaxima;
+        for (size_t j = 0; j < segmentDataset->GetNumberOfPoints(); j++) // For each of the points of the segment
+        {
+            bool isSaddle = false;
+
+            for (size_t jj = 0; jj < regionsSaddlesID.size(); jj++)
+            {
+                if (j == regionsSaddlesID[jj])
+                {
+                    isSaddle = true;
+                }
+            }
+            double pointCoords[3];
+            segmentDataset->GetPoint(j, pointCoords);
+            if (j == maxID)
+            {
+                isMaxima = 1;
+            }
+            else
+            {
+                isMaxima = 0;
+            }
+
+            segmentResults << currentRegion << "," << pointCoords[0] << "," << pointCoords[1] << "," << pointCoords[2] << "," << scalarValues->GetVariantValue(j).ToDouble() << "," << maximumValue << "," << isMaxima << "," 
+                           << isSaddle << "," << segmentDataset->GetNumberOfPoints() << "," << segmentsVolume << "," << numberOfConnections << "\n";
         }
         
         // Print the segment connectivity for debugging
