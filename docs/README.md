@@ -41,7 +41,7 @@ This is main segmentation routine of the code and is run by the command
    
 This routine takes an optional **persistence threshold** which is input here as 0.04. If no persistence threshold is given then 1% of the maximum persistence is taken as the persistence threshold. The -msc analysis saves two files : the *FAU_CriticalPoints.vtk* that saves the critical points data, and *FAU_Segmentation.vtk*, that saves the segmentation data. These *.vtk* files can be viewed using *Paraview*. For the above analysis, the segmentation drawn on a contour of distance 1.6 is as shown below. 
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/FAU-segmentation?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/FAU-segmentation.png?raw=true)
 
 
 ### Void Segmentation
