@@ -29,6 +29,6 @@ The persistence curve for the input grid can be obtained through the command :
 
 This generates four .txt files which saves the number of critcal pairs as a function of the persistence; this can be plotted as shown below.
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/persistence-curve.png?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/persistence-curve.pdf?raw=true)
 
 The persistence curve helps in estimating the **persistence threshold** which is used to removing noise in the analysis. All critical pairs below the **persistence threshold** will be ignored, and much cleaner segments will be generated. A good estimate of the persistence threshold is to choose a value just before the plateau, as the plateau separates noise from actual geometric features. 
