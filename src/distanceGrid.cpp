@@ -171,7 +171,6 @@ void distanceGrid::voidSegmentation(){
         // Get the distance array in the segment    
         auto scalarValues = sectionIDDataset->GetPointData()->GetArray(arrayName.c_str());
         int segmentNumberOfCells = sectionIDDataset->GetNumberOfCells();
-        logger::mainlog << "Number of cells in segment " << currentRegion << "is : " << segmentNumberOfCells << endl;
         double segmentVolume = segmentNumberOfCells * unitCellVolume; 
 
         // Get the maximumValue  and its index of the distance array in the segment. 
@@ -605,7 +604,6 @@ void distanceGrid::accessibleVoidSpace(double moleculeRadius, bool useAllCores){
         int segmentNumberOfCells = segmentDataset->GetNumberOfCells();
         double segmentsVolume = segmentNumberOfCells * unitCellVolume;
 
-        logger::mainlog << "Number of cells in segment " << currentRegion << "is : " << segmentNumberOfCells << endl;
 
         // Get the maximumValue  and its index of the distance array in the segment. 
         double maximumValue = 0.0;
