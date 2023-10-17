@@ -1,4 +1,6 @@
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/logo.png?raw=true)
+<p align="center">
+  <img src="https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/logo.png?raw=true" alt="Sublime's custom image"/>
+</p>
 
 # Overview
 
