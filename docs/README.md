@@ -1,6 +1,6 @@
 # tda-segmentor documentation
 
-We provide here some examples on the usage of the tda-segmentor tool. 
+We provide here some examples on the usage of the tda-segmentor software package. 
 
 
 ## Generation of Input Grids
@@ -9,17 +9,17 @@ The tda-segmentor accepts two types of input grids - **distance grids** and **en
 
 ### Distance grid generation
 
-For nanoporous materials, the distance grids can be generated from the software package [Zeo++](http://www.zeoplusplus.org/). These files are saved in the Gaussian cube format with an extension *.cube* and can be read directly into the tda-segmentor code. 
+For nanoporous materials, the distance grids can be generated from the software package [Zeo++](http://www.zeoplusplus.org/). The grids are saved in the Gaussian cube format with an extension *.cube* and can be read directly into the tda-segmentor code. 
 
 ### Energy grid generation
 
-The energy grids are generated from the interaction of a guest molecule with the nanoporous material. These can be generated from the Julia software package [PorousMaterials.jl](https://github.com/SimonEnsemble/PorousMaterials.jl). This generates too a grid file in the Gaussian cube format (*.cube*) and can be read directly into the tda-segmentor code. Note that the energy grid generated can have points with **Inf** values at some certain grid points; such strings are identified and are alread fixed in the reader function of the tda-segmentor code. 
+The energy grids are generated from the interaction of a guest molecule with the nanoporous material. These can be generated from the Julia software package [PorousMaterials.jl](https://github.com/SimonEnsemble/PorousMaterials.jl). This generates too a grid file in the Gaussian cube format (*.cube*) and can be read directly into the tda-segmentor code. Note that the energy grid generated can have points with **Inf** values at some certain grid points; such strings are identified and are already fixed in  the tda-segmentor code. 
 
 ## Usage
 
-The code has many functionalities that are implemented as various modules such as the **persistence curve**, **accessible void graph**, **solid segmentation**, **accessible solid graph**, etc. Once an analysis is run, the code generates a log file on which lot of information such as the number of grid points, grid resolution, and a commentary on the analysis are stored. All the results of an analysis are stored in the folder **segmentor-baseFileName.results/**
+The code has many functionalities that are implemented as various modules such as the **persistence curve**, **accessible void graph**, **solid segmentation**, **accessible solid graph**, etc. Once an analysis is run, the code generates a log file on which lots of information such as the number of grid points, grid resolution, and a commentary on the analysis are stored. All the results of an analysis are stored in the folder **segmentor-baseFileName.results/**, where if the input file name is *FAU.cube*, the baseFileName is *FAU*. 
 
-Given an input grid with limited information, the first step can be to plot the persistence curve of the scalar field. 
+Given an input grid with limited information, the first step in topological analysis would be to plot the persistence curve of the scalar field. 
 
 ### Persistence Curve
 
@@ -31,11 +31,11 @@ This generates four .txt files which saves the number of critcal pairs as a func
 
 ![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/persistence-curve.png?raw=true)
 
-The persistence curve helps in estimating the **persistence threshold** which is used to removing noise in the analysis. All critical pairs below the **persistence threshold** will be ignored, and much cleaner segments will be generated. A good estimate of the persistence threshold is to choose a value just before the plateau, as the plateau separates noise from actual geometric features. The blue vertical line can be chosen for example as a persistence threshold for this example. NOTE: If TTK is compiled correctly with MPI, the flag uses the multicore capabilities of TTK and gives significant speed-up. 
+The persistence curve helps in estimating the **persistence threshold** which is used to remove noise in the analysis. All critical pairs below the **persistence threshold** will be ignored, and much cleaner segments will be generated. A good estimate of the persistence threshold is to choose a value just before the plateau, as the plateau separates noise from actual geometric features. The blue vertical line can be chosen for example as a persistence threshold for this example. **NOTE:** If TTK is compiled correctly with MPI, the flag *-useallcores* uses the multicore capabilities of TTK and gives significant speed-up. 
 
 ### Morse Smale Complex
 
-This is main segmentation routine of the code and is run by the command 
+This is the main segmentation routine of the code and is run by the command 
 
     tda-segmentor -msc 0.04 -useallcores FAU.cube 
    
@@ -46,18 +46,82 @@ This routine takes an optional **persistence threshold** which is input here as 
 
 ### Void Segmentation
 
+For a more high-throughput analysis, we might want to output the segmentation data of a certain space of the scalar field as easily readable files. The command
+    
+    tda-segmentor -vs 0.04 -useallcores FAU.cube
+
+saves segmentation information of the void space written to a .csv file, *FAU_Void_Segments.csv* in addition to the *.vtk* files, *FAU_Segmentation.vtk* and *FAU_CriticalPoints.vtk*. The .csv file has 10 columns viz. regionID (ID of the segment), x y z (coordinates of the grid point), Scalar (value of distance function at the grid point), RegionMaxValue (maximum value of the distance function in the segment), isMaximum, isSaddle, (if the grid point corresponds to a maxima or 2-saddle), numberOfPoints (number of grid points in the segment), Volume (volume of the segment), numberOfConnections (number of segments the current segment is connected to). The column numberOfConnections can be very usedful in identifying isolated segments. If numberOfConnections is 0, then they are completely disconnected, and are inaccessible to a guest molecule. **NOTE:** Here the persistence threshold is an optional parameter and *tda-segmentor -vs -useallcores FAU.cube* can also be used; the persistence threshold is taken as 1% of the maximum value, but it is recommended to give the persistence threshold as an input. 
 
 ### Solid Segmentation
 
+The solid segmentation routine does the exact same thing as void segmentation, but for the solid space. It is invoked by,
+
+    tda-segmentor -ss 0.04 -useallcores FAU.cube
+
+This saves too a .csv file, *FAU_Solid_Segments.csv*, in addition to the segmenation *.vtk* files. This file too has 10 columns but as the solid space analyzes points with distance function < 0, we have minimas within the segments and we save minimum value in each segment. The 10 colums are : regionID (ID of the segment), x y z (coordinates of the grid point), Scalar (value of distance function at the grid point), RegionMinValue (minimum value of the distance function in the segment), isMinima, isSaddle, (if the grid point corresponds to a minima or 1-saddle), numberOfPoints (number of grid points in the segment), Volume (volume of the segment), numberOfConnections (number of segments the current segment is connected to). **NOTE:** Here the persistence threshold is an optional parameter and *tda-segmentor -ss -useallcores FAU.cube* can also be used; the persistence threshold is taken as 1% of the maximum value, but it is recommended to give the persistence threshold as an input. 
 
 ### Accessible Void Space
 
+This routine saves the segment information in a .csv file accessible to a guest molecule to the nanoporous material. This is invoked by:
+
+    tda-segmentor -avs 0.04 1.6 -useallcores FAU.cube
+ 
+Here, the first parameter, the persistence threshold 0.04 is optional, but the second parameter, the radius of the guest molecule is mandatory. Thus, this command also accepts input of the form
+
+    tda-segmentor -avs 1.6 -useallcores FAU.cube
+
+where the persistence threshold is chosen automatically as 1% of the maximum persistence. This routine too saves in a .csv file, *FAU-avs-radiusVal.csv*, the segmentation information. This file also has 10 columns and have exactly the same meaning as Void Segmentation. Note that the difference between this routine and the void segmentation routine, is that void segmentation is for the entire void space (distance function > 0.0), but accessible void space, is only the void space accessible to a guest molecule (distance function > radius of guest molecule). 
 
 ### Accessible Void Graph
 
+From the morse-smale complex, this module constructs a graph representation of the accessible void space. This routine is invoked by:
+
+    tda-segmentor -avg 0.04 1.6 -useallcores FAU.cube
+
+Like the accessible void space module, *-avg* too accepts two arguments - an optional persistence threshold and a mandatory radius of the guest molecule. If the persistence threshold is to be chosen automatically as 1% of the max. persistence, then, 
+
+    tda-segmentor -avg 1.6 -useallcores FAU.cube
+    
+will also work. This command saves the segmentation data as *.vtk* files, i.e. *FAU_Segmentation.vtk* and *FAU_CriticalPoints.vtk* and also another visualization, *FAU_viz_graph.vtk* for the visualization of the graph as shown below.
+
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/FAU-avg.png?raw=true)
+
+In the above picture, red spheres are the local maximas, and blue spheres are the 2-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. 
+
+This routine also writes the graph in a *.nt2* file that can be used for post-processing. First all the nodes of the graph are stored with an ID, and its X, Y, Z, coordinates respectively. Then the edges are stored with the first two columns indicating the nodes they connect; let us call first the birth and the second the death. Then the next three columns indicates periodicity in X, Y, Z, directions respectively. If the value is 0, then it is not periodic along this axis. If the value is 1, then the death connects the birth along the positive direction of the axis. If the value is -1, then the death connects the birth along the negative direction of the axis. 
 
 ### Accessible Solid Graph
 
+From the morse-smale complex, this constructs the graph representation of the solid space. This is invoked by: 
+
+    tda-segmentor -asg 0.01 random-structure.cube
+    
+Like the -ss module, this accepts an optional persistence threshold, and if not provided choses an automatic 1% of the maximum persistence. This commands saves the segmentation data s *.vtk* files, i.e., *random-structure_Segmentation.vtk* and *random-structure_CriticalPoints.vtk* and also another visualization *.vtk* file, *random-structure_viz_graph.vtk* for the visualization of the graph as shown below.
+
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/random-structure-asg.png?raw=true)
+
+In the above picture, red spheres are the local minimas, and blue spheres are the 1-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. This routine also writes the graph in a *.nt2* file that can be used for post-processing, and has the exact same format as the accessible void graph module. 
 
 ### Other flags
+
+Some other flags can also be given to the tda-segmentor tool. 
+
+* -writefractionalgrid : writes the input grid in the fractional coordinates from 0 to 1. This can be used for testing directly on Paraview, where many of the TTK modules can be applied with the GUI interface. 
+* -savelogfile : If an analysis is already executed in a folder, then this flag, preserves the older log file before running a new analysis. 
+* -usesupercell : For very small lattices, it might be necessary to use the super cell for analysis. By using this flag, a supercell is generated that is used for segmentation. The invocation looks as follows: 
+
+        tda-segmentor -avs 0.04 1.6 -usesupercell -useallcores FAU.cube
+
+* tda-segmentor can also be executed without any options, i.e.
+
+        tda-segmentor FAU.cube
+  
+  will work. This by default runs *-msc* module, with an automatic choice of persistence threshold. 
+
+* One can use a combination of modules such as :
+
+        tda-segmentor -msc 0.01 -avg 0.01 1.6 -avs 0.01 1.6 -useallcores -usesupercell FAU.cube
+        
+ Such commands will also work. 
+ 
 

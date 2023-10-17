@@ -388,7 +388,7 @@ vtkSmartPointer<vtkUnstructuredGrid> grid::saveGraphForVisualization(vtkSmartPoi
 
 /**
  * @brief Saves the graph in .nt2 format which is the following. 
- *        First all the nodes of the graph are stored with in an ID, and its X, Y, Z, coordinates respectivels.
+ *        First all the nodes of the graph are stored with an ID, and its X, Y, Z, coordinates respectively.
  *        Then the edges are stored with the first two columns indicating the nodes they connect; first the birth and then the death.  
  *        Then the next three columns indicates periodicity in X, Y, Z, directions respectively. 
  *        If the value is 0, then it is not periodic along this axis. 
