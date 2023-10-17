@@ -122,6 +122,6 @@ Some other flags can also be given to the tda-segmentor tool.
 
         tda-segmentor -msc 0.01 -avg 0.01 1.6 -avs 0.01 1.6 -useallcores -usesupercell FAU.cube
         
- Such commands will also work. 
+  Such commands will also work. 
  
 
