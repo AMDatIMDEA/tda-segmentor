@@ -147,7 +147,7 @@ will also work. This command saves the segmentation data as *.vtk* files, i.e. *
 
 ![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/FAU-avg.png?raw=true)
 
-In the above picture, red spheres are the local maximas, and blue spheres are the 2-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. 
+In the above picture, on the left is the segmentation and on the right is the graph representation. Red spheres are the local maximas, and blue spheres are the 2-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. 
 
 This routine also writes the graph in a *.nt2* file that can be used for post-processing. First all the nodes of the graph are stored with an ID, and its X, Y, Z, coordinates respectively. Then the edges are stored with the first two columns indicating the nodes they connect; let us call first the birth and the second the death. Then the next three columns indicates periodicity in X, Y, Z, directions respectively. If the value is 0, then it is not periodic along this axis. If the value is 1, then the death connects the birth along the positive direction of the axis. If the value is -1, then the death connects the birth along the negative direction of the axis. 
 
