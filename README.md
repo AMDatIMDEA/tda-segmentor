@@ -1,6 +1,6 @@
 # tda-segmentor Overview
 
-tda-segmentor is a software package written in C++ that can generate segmentation of important geometric features of a nanoporous material. This tool uses ideas from topological data analysis (TDA), to generate what are called as morse smale complexes, which decompose a given space into smaller segments which can then be individually compared and analyzed. This tool is built on the [Topology Toolkit (TTK)](https://topology-tool-kit.github.io/), an open source TDA library that does most of the TDA analysis. The package tda-segmentor, outputs in a high-throughput way the segment information of the void space, the void space accessible to a guest molecule, graph representations of the accessible void space, graph representation of the solid region etc. 
+Welcome to tda-segmentor! This is a software package written in C++ that generates segmentation of a nanoporous material into different parts based on the region of interest. This tool uses ideas from topological data analysis (TDA), to generate what are called as morse smale complexes, which decompose a given space into smaller segments which can then be individually compared and analyzed. This tool is built on the [Topology Toolkit (TTK)](https://topology-tool-kit.github.io/), an open source TDA library that does most of the TDA analysis. The package tda-segmentor, outputs in a high-throughput way the segment information of the void space, the void space accessible to a guest molecule, graph representations of the accessible void space, graph representation of the solid region etc. 
 
 # Installation Instructions
 
@@ -90,7 +90,7 @@ The persistence curve for the input grid can be obtained through the command :
 
 This generates four .txt files which saves the number of critcal pairs as a function of the persistence; this can be plotted as shown below.
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/persistence-curve.png?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/persistence-curve.png?raw=true)
 
 The persistence curve helps in estimating the **persistence threshold** which is used to remove noise in the analysis. All critical pairs below the **persistence threshold** will be ignored, and much cleaner segments will be generated. A good estimate of the persistence threshold is to choose a value just before the plateau, as the plateau separates noise from actual geometric features. The blue vertical line can be chosen for example as a persistence threshold for this example. **NOTE:** If TTK is compiled correctly with MPI, the flag *-useallcores* uses the multicore capabilities of TTK and gives significant speed-up. 
 
@@ -102,7 +102,7 @@ This is the main segmentation routine of the code and is run by the command
    
 This routine takes an optional **persistence threshold** which is input here as 0.04. If no persistence threshold is given then 1% of the maximum persistence is taken as the persistence threshold. The -msc analysis saves two files : the *FAU_CriticalPoints.vtk* that saves the critical points data, and *FAU_Segmentation.vtk*, that saves the segmentation data. These *.vtk* files can be viewed using *Paraview*. For the above analysis, the segmentation drawn on a contour of distance 1.6 is as shown below. 
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/FAU-segmentation.png?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/FAU-segmentation.png?raw=true)
 
 
 ### Void Segmentation
@@ -145,7 +145,7 @@ Like the accessible void space module, *-avg* too accepts two arguments - an opt
     
 will also work. This command saves the segmentation data as *.vtk* files, i.e. *FAU_Segmentation.vtk* and *FAU_CriticalPoints.vtk* and also another visualization, *FAU_viz_graph.vtk* for the visualization of the graph as shown below.
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/FAU-avg.png?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/FAU-avg.png?raw=true)
 
 In the above picture, red spheres are the local maximas, and blue spheres are the 2-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. 
 
@@ -159,7 +159,7 @@ From the morse-smale complex, this constructs the graph representation of the so
     
 Like the -ss module, this accepts an optional persistence threshold, and if not provided choses an automatic 1% of the maximum persistence. This commands saves the segmentation data s *.vtk* files, i.e., *random-structure_Segmentation.vtk* and *random-structure_CriticalPoints.vtk* and also another visualization *.vtk* file, *random-structure_viz_graph.vtk* for the visualization of the graph as shown below.
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/images/random-structure-asg.png?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/random-structure-asg.png?raw=true)
 
 In the above picture, red spheres are the local minimas, and blue spheres are the 1-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. This routine also writes the graph in a *.nt2* file that can be used for post-processing, and has the exact same format as the accessible void graph module. 
 
@@ -188,8 +188,7 @@ Some other flags can also be given to the tda-segmentor tool.
 
 # Copyright notice
 
-Copyright (c) {{ 2023 }}, {{ Fundacion IMDEA Materiales }}
-
+Copyright (c) 2023, Fundacion IMDEA Materiales 
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -216,7 +215,7 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-]
+
 # Acknowledgements
 
 This work was supported through the Plan de Recuperación, Transformación y Resiliencia from the European Union, through the project (MAD2D) - Two-dimensional (2D) disruptive materials for the new technological transformation. 
