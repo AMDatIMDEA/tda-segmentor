@@ -1,3 +1,5 @@
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/logo.png?raw=true)
+
 # tda-segmentor Overview
 
 Welcome to tda-segmentor! This is a software package written in C++ that generates segmentation of a nanoporous material into different parts based on the region of interest. This tool uses ideas from topological data analysis (TDA), to generate what are called as morse smale complexes, which decompose a given space into smaller segments which can then be individually compared and analyzed. This tool is built on the [Topology Toolkit (TTK)](https://topology-tool-kit.github.io/), an open source TDA library that does most of the TDA analysis. The package tda-segmentor, outputs in a high-throughput way the segment information of the void space, the void space accessible to a guest molecule, graph representations of the accessible void space, graph representation of the solid region etc. 
@@ -222,7 +224,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Acknowledgements
 
-This work was supported through the Plan de Recuperación, Transformación y Resiliencia from the European Union, through the project (MAD2D) - Two-dimensional (2D) disruptive materials for the new technological transformation. 
+This work was supported by the Plan de Recuperación, Transformación y Resiliencia of the European Union, through the project (MAD2D) - Two-dimensional (2D) disruptive materials for the new technological transformation. 
 
 # References
 
