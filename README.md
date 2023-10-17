@@ -159,7 +159,7 @@ From the morse-smale complex, this constructs the graph representation of the so
     
 Like the -ss module, this accepts an optional persistence threshold, and if not provided choses an automatic 1% of the maximum persistence. This commands saves the segmentation data s *.vtk* files, i.e., *random-structure_Segmentation.vtk* and *random-structure_CriticalPoints.vtk* and also another visualization *.vtk* file, *random-structure_viz_graph.vtk* for the visualization of the graph as shown below.
 
-![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/docs/random-structure-asg.png?raw=true)
+![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/random-structure-asg.png?raw=true)
 
 In the above picture, red spheres are the local minimas, and blue spheres are the 1-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. This routine also writes the graph in a *.nt2* file that can be used for post-processing, and has the exact same format as the accessible void graph module. 
 
@@ -171,8 +171,12 @@ Some other flags can also be given to the tda-segmentor tool.
 * -savelogfile : If an analysis is already executed in a folder, then this flag, preserves the older log file before running a new analysis. 
 * -usesupercell : For very small lattices, it might be necessary to use the super cell for analysis. By using this flag, a supercell is generated that is used for segmentation. The invocation looks as follows: 
 
-        tda-segmentor -avs 0.04 1.6 -usesupercell -useallcores FAU.cube
+        tda-segmentor -avg 0.03 0.5 -usesupercell -useallcores NPO.cube
 
+  For the zeolite NPO, the supercell segmentation and its graph representation for a guest molecule of radius 0.5 Angstrom is 
+  as shown below
+  ![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/NPO-supercell.png?raw=true)
+  
 * tda-segmentor can also be executed without any options, i.e.
 
         tda-segmentor FAU.cube
