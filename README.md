@@ -1,6 +1,6 @@
 ![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/logo.png?raw=true)
 
-# tda-segmentor Overview
+# Overview
 
 Welcome to tda-segmentor! This is a software package written in C++ that generates segmentation of a nanoporous material into different parts based on the region of interest. This tool uses ideas from topological data analysis (TDA), to generate what are called as morse smale complexes, which decompose a given space into smaller segments which can then be individually compared and analyzed. This tool is built on the [Topology Toolkit (TTK)](https://topology-tool-kit.github.io/), an open source TDA library that does most of the TDA analysis. The package tda-segmentor, outputs in a high-throughput way the segment information of the void space, the void space accessible to a guest molecule, graph representations of the accessible void space, graph representation of the solid region etc. 
 
@@ -76,7 +76,7 @@ For nanoporous materials, the distance grids can be generated from the software 
 
 ### Energy grid generation
 
-The energy grids are generated from the interaction of a guest molecule with the nanoporous material. These can be generated from the Julia software package [PorousMaterials.jl](https://github.com/SimonEnsemble/PorousMaterials.jl). This generates too a grid file in the Gaussian cube format (*.cube*) and can be read directly into the tda-segmentor code. Note that the energy grid generated can have points with **Inf** values at some certain grid points; such strings are identified and are already fixed in  the tda-segmentor code. 
+The energy grids are generated from the interaction of a guest molecule with the nanoporous material. These can be generated from the Julia software package [PorousMaterials.jl](https://github.com/SimonEnsemble/PorousMaterials.jl). This generates too a grid file in the Gaussian cube format (*.cube*) and can be read directly into the tda-segmentor code. Note that the energy grid generated can have points with **Inf** values at certain grid points; such strings are identified and are fixed in  the tda-segmentor code. 
 
 ## Usage
 
@@ -113,7 +113,7 @@ For a more high-throughput analysis, we might want to output the segmentation da
     
     tda-segmentor -vs 0.04 -useallcores FAU.cube
 
-saves segmentation information of the void space written to a .csv file, *FAU_Void_Segments.csv* in addition to the *.vtk* files, *FAU_Segmentation.vtk* and *FAU_CriticalPoints.vtk*. The .csv file has 10 columns viz. regionID (ID of the segment), x y z (coordinates of the grid point), Scalar (value of distance function at the grid point), RegionMaxValue (maximum value of the distance function in the segment), isMaximum, isSaddle, (if the grid point corresponds to a maxima or 2-saddle), numberOfPoints (number of grid points in the segment), Volume (volume of the segment), numberOfConnections (number of segments the current segment is connected to). The column numberOfConnections can be very usedful in identifying isolated segments. If numberOfConnections is 0, then they are completely disconnected, and are inaccessible to a guest molecule. **NOTE:** Here the persistence threshold is an optional parameter and *tda-segmentor -vs -useallcores FAU.cube* can also be used; the persistence threshold is taken as 1% of the maximum value, but it is recommended to give the persistence threshold as an input. 
+saves segmentation information of the void space written to a .csv file, *FAU_Void_Segments.csv* in addition to the *.vtk* files, *FAU_Segmentation.vtk* and *FAU_CriticalPoints.vtk*. The .csv file has 10 columns viz. regionID (ID of the segment), x y z (coordinates of the grid point), Scalar (value of distance function at the grid point), RegionMaxValue (maximum value of the distance function in the segment), isMaximum, isSaddle, (if the grid point corresponds to a maxima or 2-saddle), numberOfPoints (number of grid points in the segment), Volume (volume of the segment), numberOfConnections (number of segments the current segment is connected to). The column numberOfConnections can be very useful in identifying isolated segments. If numberOfConnections is 0, then they are completely disconnected, and are inaccessible to a guest molecule. **NOTE:** Here the persistence threshold is an optional parameter and *tda-segmentor -vs -useallcores FAU.cube* can also be used; the persistence threshold is taken as 1% of the maximum value, but it is recommended to give the persistence threshold as an input. 
 
 ### Solid Segmentation
 
@@ -159,7 +159,7 @@ From the morse-smale complex, this constructs the graph representation of the so
 
     tda-segmentor -asg 0.01 random-structure.cube
     
-Like the -ss module, this accepts an optional persistence threshold, and if not provided choses an automatic 1% of the maximum persistence. This commands saves the segmentation data s *.vtk* files, i.e., *random-structure_Segmentation.vtk* and *random-structure_CriticalPoints.vtk* and also another visualization *.vtk* file, *random-structure_viz_graph.vtk* for the visualization of the graph as shown below.
+Like the -ss module, this accepts an optional persistence threshold, and if not provided choses an automatic 1% of the maximum persistence. This commands saves the segmentation data as *.vtk* files, i.e., *random-structure_Segmentation.vtk* and *random-structure_CriticalPoints.vtk* and also another visualization *.vtk* file, *random-structure_viz_graph.vtk* for the visualization of the graph as shown below.
 
 ![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/random-structure-asg.png?raw=true)
 
