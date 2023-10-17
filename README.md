@@ -28,7 +28,7 @@ with multicore capabilities:
 
 While compiling Paraview:
 
-* PARAVIEW_USE_MPI --------------------- **ON**
+* PARAVIEW_USE_MPI ---------------------------- **ON**
 * VTK_GROUP_ENABLE_MPI ----------------- **YES**
 * VTK_SMP_IMPLEMENTATION_TYPE ---------- **OPENMP**
 * VTKm_ENABLE_OPENMP ------------------- **YES**
