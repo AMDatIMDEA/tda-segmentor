@@ -28,12 +28,12 @@ with multicore capabilities:
 
 While compiling Paraview:
 
-* PARAVIEW_USE_MPI ---------------------------- **ON**
-* VTK_GROUP_ENABLE_MPI ----------------- **YES**
+* PARAVIEW_USE_MPI ------------------------------- **ON**
+* VTK_GROUP_ENABLE_MPI --------------------- **YES**
 * VTK_SMP_IMPLEMENTATION_TYPE ---------- **OPENMP**
-* VTKm_ENABLE_OPENMP ------------------- **YES**
-* VTKm_ENABLE_MPI ---------------------- **YES**
-* VTKm_ENABLE_TBB ---------------------- **YES**
+* VTKm_ENABLE_OPENMP ------------------------- **YES**
+* VTKm_ENABLE_MPI ------------------------------- **YES**
+* VTKm_ENABLE_TBB ------------------------------- **YES**
 
 While compiling TTK:
 
