@@ -234,8 +234,6 @@ If you have used this package, please consider citing the following in your tech
 
 * TDA Segmentor - Tools to extract and analyze local structure and porosity features in porous materials, A. Vasudevan, J.  Z. Prieto, S. Zorkaltsev, M. Haranczyk. 
 
-* The Topology ToolKit, J. Tierny, G. Favelier, J. Levine, C. Gueunet, M. Michaux. IEEE Transactions on Visualization and   Computer Graphics. Proc. of IEEE VIS 2017.
-
 # Contact Information
 
 We are always excited to receive feedback on the tool, and if you may have any additional questions, please find the contact information of the developers below: 
