@@ -238,7 +238,7 @@ If you have used this package, please consider citing the following in your tech
 
 # Contact Information
 
-We would always be excited to receive feedback on the tool, and if you may have any additional questions, please find the contact information of the developers below: 
+We are always excited to receive feedback on the tool, and if you may have any additional questions, please find the contact information of the developers below: 
 
 * Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 * Maciej Haranczyk (maciej.haranczyk@imdea.org)
