@@ -191,8 +191,9 @@ Some other flags can also be given to the tda-segmentor tool.
 
         tda-segmentor -msc 0.01 -avg 0.01 1.6 -avs 0.01 1.6 -useallcores -usesupercell FAU.cube
         
-  Such commands will also work. 
- 
+  Such commands will also work.
+
+* Two macro variables **DEBUG** and **NITERATIONS** are defined in the files *grid.h* and *headers.h* respectively that can be changed if necessary. Setting **DEBUG** to 1, dumps additional information to the log file such as segment connectivity, while **NITERATIONS** by default takes a value 2, which actually smoothens the input data by **NITERATIONS** iterations. 
 
 # Copyright notice
 
