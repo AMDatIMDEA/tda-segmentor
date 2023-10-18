@@ -55,7 +55,7 @@ persistence, minSaddlePairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
-fig = plt.figure(figsize=(5.0, 5.0)); # Figure handle
+fig = plt.figure(figsize=(2.0, 2.0)); # Figure handle
 
 ax = plt.gca();
 
@@ -87,7 +87,7 @@ persistence, SaddleSaddlePairs = np.loadtxt(inputfilename, unpack=True, skiprows
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
-fig = plt.figure(figsize=(5.0, 5.0)); # Figure handle
+fig = plt.figure(figsize=(2.0, 2.0)); # Figure handle
 
 ax = plt.gca();
 
@@ -119,7 +119,7 @@ persistence, maxSaddlePairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
-fig = plt.figure(figsize=(5.0, 5.0)); # Figure handle
+fig = plt.figure(figsize=(2.0, 2.0)); # Figure handle
 
 ax = plt.gca();
 
@@ -149,7 +149,7 @@ persistence, allPairs = np.loadtxt(inputfilename, unpack=True, skiprows=1)
 
 fntsize = 9.0;lwdth = 2.0;
 fntsizelgd = 8.0;
-fig = plt.figure(figsize=(5.0, 5.0)); # Figure handle
+fig = plt.figure(figsize=(2.0, 2.0)); # Figure handle
 
 ax = plt.gca();
 
