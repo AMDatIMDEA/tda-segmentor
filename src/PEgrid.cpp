@@ -400,7 +400,7 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
 
     //2d vector to store the saddles id and the regions connected to them
     vector<set<int>> saddlesConnectivity;
-    std::string manifoldName("AscendingManifold");
+    std::string manifoldName("DescendingManifold");
     getSaddleConnectivity(saddlesDataSet, currentVoidDataSet, manifoldName, cellSize, saddlesConnectivity);
     
     // Next we find the segment that each minima belongs to:
@@ -451,7 +451,7 @@ void PEgrid::accessibleVoidGraph(double moleculeRadius, bool useAllCores){
 
             int connectedSegmentID = it;
             
-            for (auto ip : segmentIDofMaxima){
+            for (auto ip : segmentIDofMinima){
                 if (ip.second == connectedSegmentID){
                     
                     int maximaID = ip.first;
