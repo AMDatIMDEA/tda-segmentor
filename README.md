@@ -4,7 +4,7 @@
 
 # Overview
 
-Welcome to tda-segmentor! This is a software package written in C++ that segments a nanoporous material into different regions, which can then be used to identify unique features and properties. This tool uses ideas from topological data analysis (TDA), to generate what are called as morse smale complexes, which decompose a given space into monotonically disjoint segments which can then be isolated and analyzed. This tool is built on the [Topology Toolkit (TTK)](https://topology-tool-kit.github.io/), an open source TDA library that does most of the TDA analysis. The package tda-segmentor, outputs in a high-throughput way the segment information of the void space, the void space accessible to a guest molecule, graph representations of the accessible void space, graph representation of the solid region etc. 
+Welcome to tda-segmentor! This is a software package written in C++ that segments a nanoporous material into different regions, which can then be used to identify unique features and properties. This tool uses ideas from topological data analysis (TDA), to generate what are called as morse smale complexes, which decompose a given space into monotonically disjoint segments. This tool is built on the [Topology Toolkit (TTK)](https://topology-tool-kit.github.io/), an open source TDA library that does most of the TDA analysis. The package tda-segmentor, outputs in a high-throughput way the segment information of the void space, the void space accessible to a guest molecule, graph representations of the accessible void space, graph representation of the solid region etc. 
 
 # Installation Instructions
 
@@ -151,7 +151,7 @@ will also work. This command saves the segmentation data as *.vtk* files, i.e. *
 
 ![](https://github.com/AMDatIMDEA/tda-segmentor/blob/main/images/FAU-avg.png?raw=true)
 
-In the above picture, on the left is the segmentation and on the right is the graph representation. Red spheres are the local maximas, and blue spheres are the 2-saddles. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. 
+In the above picture, on the left is the segmentation and on the right is the graph representation. Red spheres are the local maximas, and blue spheres are the 2-saddles. In topological terms, this is the Reeb Graph connecting 3-maximas and 2-saddles restricting to scalar data of distance greater than the radius of the guest atom. The graph representation is periodic and just for visualization the periodic node is plotted in gray spheres in the neighboring box. 
 
 This routine also writes the graph in a *.nt2* file that can be used for post-processing. First all the nodes of the graph are stored with an ID, and its X, Y, Z, coordinates respectively. Then the edges are stored with the first two columns indicating the nodes they connect; let us call first the birth and the second the death. Then the next three columns indicates periodicity in X, Y, Z, directions respectively. If the value is 0, then it is not periodic along this axis. If the value is 1, then the death connects the birth along the positive direction of the axis. If the value is -1, then the death connects the birth along the negative direction of the axis. 
 
@@ -191,8 +191,9 @@ Some other flags can also be given to the tda-segmentor tool.
 
         tda-segmentor -msc 0.01 -avg 0.01 1.6 -avs 0.01 1.6 -useallcores -usesupercell FAU.cube
         
-  Such commands will also work. 
- 
+  Such commands will also work.
+
+* Two macro variables **DEBUG** and **NITERATIONS** are defined in the files *grid.h* and *headers.h* respectively that can be changed if necessary. Setting **DEBUG** to 1, dumps additional information to the log file such as segment connectivity, while **NITERATIONS** by default takes a value 2, which actually smoothens the input data by **NITERATIONS** iterations. 
 
 # Copyright notice
 
@@ -207,7 +208,7 @@ are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright notice,
       this list of conditions and the following disclaimer in the documentation
       and/or other materials provided with the distribution.
-    * Neither the name of {{ project }} nor the names of its contributors
+    * Neither the name of tda-segmentor nor the names of its contributors
       may be used to endorse or promote products derived from this software
       without specific prior written permission.
 
@@ -234,11 +235,9 @@ If you have used this package, please consider citing the following in your tech
 
 * TDA Segmentor - Tools to extract and analyze local structure and porosity features in porous materials, A. Vasudevan, J.  Z. Prieto, S. Zorkaltsev, M. Haranczyk. 
 
-* The Topology ToolKit, J. Tierny, G. Favelier, J. Levine, C. Gueunet, M. Michaux. IEEE Transactions on Visualization and   Computer Graphics. Proc. of IEEE VIS 2017.
-
 # Contact Information
 
-We would always be excited to receive feedback on the tool, and if you may have any additional questions, please find the contact information of the developers below: 
+We are always excited to receive feedback on the tool, and if you may have any additional questions, please find the contact information of the developers below: 
 
 * Aditya Vasudevan (adityavv.iitkgp@gmail.com)
 * Maciej Haranczyk (maciej.haranczyk@imdea.org)
