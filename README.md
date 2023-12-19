@@ -65,7 +65,7 @@ for a linux machine and in tda-segmentor.app/Contents/MacOS/ on a Mac machine.
 
 # tda-segmentor documentation
 
-We provide here some examples on the usage of the tda-segmentor software package. 
+We provide here some examples on the usage of the tda-segmentor software package. The distance grids can be found in the examples/ folder.
 
 
 ## Generation of Input Grids
@@ -159,7 +159,7 @@ This routine also writes the graph in a *.nt2* file that can be used for post-pr
 
 From the morse-smale complex, this constructs the graph representation of the solid space. This is invoked by: 
 
-    tda-segmentor -asg 0.01 random-structure.cube
+    tda-segmentor -asg 0.01 grid_0.vti
     
 Like the -ss module, this accepts an optional persistence threshold, and if not provided choses an automatic 1% of the maximum persistence. This commands saves the segmentation data as *.vtk* files, i.e., *random-structure_Segmentation.vtk* and *random-structure_CriticalPoints.vtk* and also another visualization *.vtk* file, *random-structure_viz_graph.vtk* for the visualization of the graph as shown below.
 
