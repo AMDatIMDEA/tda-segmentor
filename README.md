@@ -203,7 +203,7 @@ This work was supported by the Plan de Recuperación, Transformación y Resilien
 
 If you have used this package, please consider citing the following in your technical documents or scientific publications:
 
-* TDA Segmentor - Tools to extract and analyze local structure and porosity features in porous materials, A. Vasudevan, J.  Z. Prieto, S. Zorkaltsev, M. Haranczyk. 
+* TDA Segmentor - Tools to extract and analyze local structure and porosity features in porous materials, A. Vasudevan, J.  Z. Prieto, S. Zorkaltsev, M. Haranczyk. [arXiv:2312.16558](https://arxiv.org/abs/2312.16558)
 
 # Contact Information
 
